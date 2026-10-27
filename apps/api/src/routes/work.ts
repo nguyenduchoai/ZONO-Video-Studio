@@ -96,7 +96,7 @@ export function workRoutes(app: FastifyInstance) {
       history: q.all("SELECT * FROM audit_log WHERE ref_id = ? ORDER BY at", t.id),
     };
   });
-  // Giao việc riêng cho từng agent (xong bước đó là dừng) — trang Agent & Tác vụ + Ngân Nguyệt (giao_viec_rieng).
+  // Giao việc riêng cho từng agent (xong bước đó là dừng) — trang Agent & Tác vụ + Hiền An (giao_viec_rieng).
   r.get("/v1/agents/assigned", ({ bizId }) => assignedOverview(bizId));
   r.post("/v1/agents/assign", async ({ bizId, body, actor }) => {
     const r0 = await assignAgentTask(bizId, body, actor);

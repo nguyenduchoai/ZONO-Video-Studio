@@ -5,10 +5,10 @@ import { assistantBusy, createThread, sendAssistantMessage, stopAssistant } from
 import { credsOf } from "./connections.ts";
 
 /**
- * Ngân Nguyệt trên Telegram: Sếp nhắn bot → cùng trợ lý như trên web (Claude CLI + công cụ hệ thống) → trả lời trong Telegram.
+ * Hiền An trên Telegram: Sếp nhắn bot → cùng trợ lý như trên web (Claude CLI + công cụ hệ thống) → trả lời trong Telegram.
  *  - Long polling getUpdates (không cần webhook công khai). Token bot lấy từ kết nối Telegram ở Trung tâm tích hợp.
  *  - Bot ai cũng nhắn được → CHỈ chat đã ghép nối (mã 6 số / link t.me/<bot>?start=<mã>, hết hạn 15 phút) mới được trả lời.
- *  - Thẻ cần xác nhận → nút ✅ / ❌ ngay trong Telegram, đi qua đúng API xác nhận của Ngân Nguyệt.
+ *  - Thẻ cần xác nhận → nút ✅ / ❌ ngay trong Telegram, đi qua đúng API xác nhận của Hiền An.
  */
 type Chat = { id: string; name: string; at: string; threadId?: string | null };
 type State = { chats: Chat[]; pair?: { code: string; until: string } | null; offset?: number; bot?: { username: string; name: string } | null; error?: string | null; lastPollAt?: string | null };
@@ -30,7 +30,7 @@ async function tg(token: string, method: string, body: Row = {}, timeoutMs = 20_
   return j.result;
 }
 
-/** Markdown của Ngân Nguyệt → HTML Telegram (đậm, code); Telegram từ chối định dạng thì gửi chữ thường. */
+/** Markdown của Hiền An → HTML Telegram (đậm, code); Telegram từ chối định dạng thì gửi chữ thường. */
 const toHtml = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
   .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/`([^`\n]+)`/g, "<code>$1</code>").replace(/^#{1,6}\s+(.+)$/gm, "<b>$1</b>");
 async function send(token: string, chatId: string, text: string, extra: Row = {}) {
@@ -86,7 +86,7 @@ export function removeTelegramChat(bizId: string, chatId: string, actor: string)
 }
 
 // ---------------- Xử lý tin ----------------
-const HELP = "Em là Ngân Nguyệt, trợ lý của hệ thống Agentic AI. Sếp nhắn yêu cầu như trên web (vd: \"báo cáo quảng cáo hôm nay\", \"viết bài Facebook về…\").\n/moi — cuộc trò chuyện mới\n/dung — dừng câu trả lời đang chạy\n/trogiup — hướng dẫn";
+const HELP = "Em là Hiền An, trợ lý của hệ thống Agentic AI. Sếp nhắn yêu cầu như trên web (vd: \"báo cáo quảng cáo hôm nay\", \"viết bài Facebook về…\").\n/moi — cuộc trò chuyện mới\n/dung — dừng câu trả lời đang chạy\n/trogiup — hướng dẫn";
 const lockedNotice = new Map<string, number>();
 
 async function handleMessage(bizId: string, token: string, m: Row) {
@@ -112,7 +112,7 @@ async function handleMessage(bizId: string, token: string, m: Row) {
   if (!chat) {
     if ((lockedNotice.get(chatId) ?? 0) > Date.now() - 3600_000) return;
     lockedNotice.set(chatId, Date.now());
-    return send(token, chatId, "Đây là bot riêng của doanh nghiệp. Để dùng, mở Agentic AI → Cài đặt → Ngân Nguyệt trên Telegram → Tạo mã ghép nối, rồi gửi /start <mã> (hoặc bấm link ghép nối).");
+    return send(token, chatId, "Đây là bot riêng của doanh nghiệp. Để dùng, mở Agentic AI → Cài đặt → Hiền An trên Telegram → Tạo mã ghép nối, rồi gửi /start <mã> (hoặc bấm link ghép nối).");
   }
   if (!text) return send(token, chatId, "Dạ hiện em đọc được tin nhắn chữ thôi ạ — Sếp gõ yêu cầu giúp em nhé.");
   if (text === "/trogiup" || text === "/help") return send(token, chatId, HELP);
@@ -141,7 +141,7 @@ async function handleMessage(bizId: string, token: string, m: Row) {
     let msg = byId<Row>("assistant_message", msgId);
     while (msg?.status === "streaming" && Date.now() < until) { await sleep(1500); msg = byId<Row>("assistant_message", msgId); }
     clearInterval(typing);
-    const out = msg?.status === "streaming" ? "Dạ việc này lâu hơn dự kiến, em vẫn đang làm — Sếp xem kết quả trên web (Ngân Nguyệt) nhé." : String(msg?.text || msg?.error || "Em gặp lỗi khi xử lý, Sếp thử lại giúp em.");
+    const out = msg?.status === "streaming" ? "Dạ việc này lâu hơn dự kiến, em vẫn đang làm — Sếp xem kết quả trên web (Hiền An) nhé." : String(msg?.text || msg?.error || "Em gặp lỗi khi xử lý, Sếp thử lại giúp em.");
     await send(token, chatId, out);
     for (const a of q.all<Row>("SELECT id, title, summary FROM assistant_action WHERE thread_id = ? AND status = 'pending' AND created_at >= ? ORDER BY created_at", threadId, started)) {
       await send(token, chatId, `🔔 Cần Sếp xác nhận: ${a.title}${a.summary ? `\n${a.summary}` : ""}`, {

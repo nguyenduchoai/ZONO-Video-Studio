@@ -27,12 +27,12 @@ beforeAll(() => {
   update("biz", biz, { settings: { ...DEFAULT_SETTINGS, llm: { provider: "codex_cli", codexAccountId: a1 } } }); thread = createThread(biz).id;
 });
 afterAll(() => { closeDb(); rmSync(root, { recursive: true, force: true }); vi.unstubAllEnvs(); });
-describe("Ngân Nguyệt with a selected ChatGPT account", () => {
+describe("Hiền An with a selected ChatGPT account", () => {
   it("uses the existing guarded MCP tools with the correct business and persists progress/usage", async () => {
     const r = await sendAssistantMessage(biz, thread, "Xem báo cáo giúp tôi");
     await vi.waitFor(() => expect(byId<any>("assistant_message", r.message!.id)?.status).toBe("done"));
     const call = fake.calls[0]; expect(call.home).toBe(gateway.aiAccountHome(biz, a1)); expect(call.mcp.zono.env).toMatchObject({ ZONO_BIZ: biz, ZONO_THREAD: thread });
-    expect(call.prompt.match(/Xem báo cáo giúp tôi/g)).toHaveLength(1); expect(call.system).toContain("NGÂN NGUYỆT");
+    expect(call.prompt.match(/Xem báo cáo giúp tôi/g)).toHaveLength(1); expect(call.system).toContain("HIỀN AN");
     expect(byId<any>("assistant_message", r.message!.id)?.log).toHaveLength(2); expect(q.get<any>("SELECT provider,tokens_in FROM model_usage WHERE biz_id = ?", biz)).toMatchObject({ provider: "codex_cli", tokens_in: 100 });
     expect(() => checkActionPath("/v1/llm/accounts/abc/login")).toThrow("chỉ Sếp");
   });

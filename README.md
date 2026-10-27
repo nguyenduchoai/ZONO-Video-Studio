@@ -52,7 +52,7 @@ Không nằm trong repo (sinh riêng cho từng máy, không bao giờ đẩy l�
 
 ## Kết nối ChatGPT qua Codex CLI · nhiều hồ sơ tài khoản
 
-Hệ thống hỗ trợ thêm `codex_cli` bên cạnh `claude_cli` và `sandbox`. Ngân Nguyệt, chat khách (kể cả xem ảnh), agent nội dung/SEO/kịch bản, nghiên cứu/chiến lược qua LLM Gateway dùng kết nối AI đã chọn. Điều khiển Chrome/Flow và Claude in Chrome tiếp tục dùng luồng Claude hiện có.
+Hệ thống hỗ trợ thêm `codex_cli` bên cạnh `claude_cli` và `sandbox`. Hiền An, chat khách (kể cả xem ảnh), agent nội dung/SEO/kịch bản, nghiên cứu/chiến lược qua LLM Gateway dùng kết nối AI đã chọn. Điều khiển Chrome/Flow và Claude in Chrome tiếp tục dùng luồng Claude hiện có.
 
 1. Cài **Codex CLI >= 0.148.0** trên máy chạy hệ thống: `npm install -g @openai/codex`.
 2. Mở **Trung tâm tích hợp → AI** (`/ads/integrations?p=ai`) hoặc **Cài đặt → Model AI**.
@@ -69,7 +69,7 @@ Luồng xác thực và tự động hóa dựa trên [tài liệu đăng nhập
 
 ## Cài trên Windows 11
 
-Chạy được đủ chức năng (agent Claude, Ngân Nguyệt, ZL-CRM, video AI, hậu kỳ video, Chrome Flow). Khác macOS/Linux:
+Chạy được đủ chức năng (agent Claude, Hiền An, ZL-CRM, video AI, hậu kỳ video, Chrome Flow). Khác macOS/Linux:
 
 - **Claude CLI**: Node không gọi được shim `claude.cmd`, nên đặt trong `.env` đường dẫn thẳng tới file chạy:
   `CLAUDE_CLI_PATH=C:/Users/<tên>/AppData/Roaming/npm/node_modules/@anthropic-ai/claude-code/bin/claude.exe`.
@@ -102,7 +102,7 @@ Sao chép `.env.example` → `.env`.
 | Thành phần | Không có key | Có key |
 |---|---|---|
 | **Jev** (`TYPESAFE_API_KEY`) | heuristic cùng định dạng câu trả lời, gắn nhãn "Jev·heuristic" | Jev thật (`jev-latest`) |
-| **Claude / ChatGPT** | Agent nội dung, chat và Ngân Nguyệt dùng Claude CLI hoặc hồ sơ ChatGPT/Codex CLI đã chọn; Chrome/Flow dùng Claude CLI. Không dùng API key nhà cung cấp. Có chế độ sandbox để thử quy trình | Chọn model theo tầng và riêng từng agent; ChatGPT mặc định theo model khả dụng của CLI/tài khoản |
+| **Claude / ChatGPT** | Agent nội dung, chat và Hiền An dùng Claude CLI hoặc hồ sơ ChatGPT/Codex CLI đã chọn; Chrome/Flow dùng Claude CLI. Không dùng API key nhà cung cấp. Có chế độ sandbox để thử quy trình | Chọn model theo tầng và riêng từng agent; ChatGPT mặc định theo model khả dụng của CLI/tài khoản |
 | **Meta / TikTok / Google Ads / Pancake / Zalo** | connector sandbox (số liệu mô phỏng) | cần làm connector thật + duyệt ứng dụng từng nền tảng |
 | **Telegram** (`TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`) | ghi log | gửi cảnh báo/báo cáo sáng thật |
 
@@ -145,19 +145,19 @@ Trang **Agentic Brain** (`/brain`): kho ghi chú Markdown thật trên máy (`da
 
 Tên ngăn định nghĩa một chỗ (`F` trong `packages/orchestrator/src/brain.ts`); kho tạo theo bố cục cũ được tự chuyển, giữ nguyên ghi chú.
 
-- **Giao diện**: *Ngăn trí nhớ* (cây thư mục + tìm Theo tiêu đề / Toàn văn, không dấu vẫn tìm được — FTS5), *Mạng trí nhớ* (mỗi chấm một ghi chú, đường cong = `[[liên kết]]`, nhãn vùng ở giữa từng cụm, bật "Tên vùng" / "Mới 48 giờ", cuộn để phóng to, bấm chấm để mở), *Vùng trí nhớ* (tỷ lệ từng vùng, bấm để làm nổi), đọc/sửa ghi chú (tự lưu, "Ghi chú trỏ về đây", đổi tên tự sửa liên kết, xóa = vào `.trash`), *Vừa cập nhật*, *Hôm nay*, *Đồng bộ*, thả/dán/đính kèm file vào Hộp thư, thanh lệnh **Giao** cho Ngân Nguyệt (gõ hoặc nói bằng micro tiếng Việt). Có thể thêm nhiều kho hoặc **nối thư mục Obsidian có sẵn**.
-- **Tự vận hành** (`brain.tick` mỗi 5 phút + sự kiện): nhật ký ngày/tuần/tháng (Ngân Nguyệt tóm tắt qua Claude CLI), Bảng điều hành + **tiến độ mục tiêu năm**, chân dung khách hàng & **hồ sơ đối thủ** (từ DNA), bài viết / SEO / **kịch bản video** / **video Flow** / **kho hook** / **thư viện bài & video thắng**, báo cáo & **quyết định quảng cáo**, **lead nóng & follow-up Zalo**, **Review** (lỗi hay gặp, bộ tiêu chí, mục bị chặn & lý do), **Feedback loop** (bài học đang áp dụng, lý do Sếp từ chối, đề xuất thay đổi, góp ý cho Ngân Nguyệt), **Chỉ số KPI** & phễu, hồ sơ từng agent, kỹ năng từng skill, 7 **mẫu ghi chú** (brief, kịch bản video, phân tích đối thủ, chân dung khách, thử nghiệm A-B, kịch bản chốt, biên bản họp — chọn khi tạo ghi chú mới). Việc agent làm xong / video / hội thoại với Ngân Nguyệt được lưu ngay vào đúng ngăn. Phần hệ thống ghi nằm giữa `<!-- zono:auto -->` nên chữ Sếp viết thêm không bị ghi đè.
-- **Agent dùng Agentic Brain**: ghi chú trong `15. Tri thức` vào kho tri thức mà Chat/Content Agent tra cứu; Ngân Nguyệt tìm/đọc/ghi (`brain_tim`, `brain_doc`, `brain_ghi`, `brain_them`, `brain_nhat_ky`), đặt **nhắc việc** (`4. Mục tiêu & kế hoạch/Nhắc việc`, đến giờ báo trên máy + trong app).
+- **Giao diện**: *Ngăn trí nhớ* (cây thư mục + tìm Theo tiêu đề / Toàn văn, không dấu vẫn tìm được — FTS5), *Mạng trí nhớ* (mỗi chấm một ghi chú, đường cong = `[[liên kết]]`, nhãn vùng ở giữa từng cụm, bật "Tên vùng" / "Mới 48 giờ", cuộn để phóng to, bấm chấm để mở), *Vùng trí nhớ* (tỷ lệ từng vùng, bấm để làm nổi), đọc/sửa ghi chú (tự lưu, "Ghi chú trỏ về đây", đổi tên tự sửa liên kết, xóa = vào `.trash`), *Vừa cập nhật*, *Hôm nay*, *Đồng bộ*, thả/dán/đính kèm file vào Hộp thư, thanh lệnh **Giao** cho Hiền An (gõ hoặc nói bằng micro tiếng Việt). Có thể thêm nhiều kho hoặc **nối thư mục Obsidian có sẵn**.
+- **Tự vận hành** (`brain.tick` mỗi 5 phút + sự kiện): nhật ký ngày/tuần/tháng (Hiền An tóm tắt qua Claude CLI), Bảng điều hành + **tiến độ mục tiêu năm**, chân dung khách hàng & **hồ sơ đối thủ** (từ DNA), bài viết / SEO / **kịch bản video** / **video Flow** / **kho hook** / **thư viện bài & video thắng**, báo cáo & **quyết định quảng cáo**, **lead nóng & follow-up Zalo**, **Review** (lỗi hay gặp, bộ tiêu chí, mục bị chặn & lý do), **Feedback loop** (bài học đang áp dụng, lý do Sếp từ chối, đề xuất thay đổi, góp ý cho Hiền An), **Chỉ số KPI** & phễu, hồ sơ từng agent, kỹ năng từng skill, 7 **mẫu ghi chú** (brief, kịch bản video, phân tích đối thủ, chân dung khách, thử nghiệm A-B, kịch bản chốt, biên bản họp — chọn khi tạo ghi chú mới). Việc agent làm xong / video / hội thoại với Hiền An được lưu ngay vào đúng ngăn. Phần hệ thống ghi nằm giữa `<!-- zono:auto -->` nên chữ Sếp viết thêm không bị ghi đè.
+- **Agent dùng Agentic Brain**: ghi chú trong `15. Tri thức` vào kho tri thức mà Chat/Content Agent tra cứu; Hiền An tìm/đọc/ghi (`brain_tim`, `brain_doc`, `brain_ghi`, `brain_them`, `brain_nhat_ky`), đặt **nhắc việc** (`4. Mục tiêu & kế hoạch/Nhắc việc`, đến giờ báo trên máy + trong app).
 - Dữ liệu nằm trong `data/` (không lên Git). Máy mới: Agentic Brain tự tạo lại từ DNA, skill, agent khi chạy lần đầu.
 
-## Trợ lý Ngân Nguyệt (tổng điều phối)
+## Trợ lý Hiền An (tổng điều phối)
 
-Nút **Ngân Nguyệt** ở góc phải mọi trang mở khung chat điều hành: Sếp ra lệnh bằng lời, Ngân Nguyệt làm ngay.
+Nút **Hiền An** ở góc phải mọi trang mở khung chat điều hành: Sếp ra lệnh bằng lời, Hiền An làm ngay.
 
-- 6 tab: **Trò chuyện** (micro tiếng Việt), **Việc giao**, **Phát hiện**, **Phản hồi** (👍/👎 + góp ý — Ngân Nguyệt áp dụng từ tin sau, lưu vào Agentic Brain), **Lịch sử**, **Lịch & nhắc**. Nút "Mở như app" trên thanh trên cài hệ thống thành ứng dụng riêng (Chrome/Edge).
+- 6 tab: **Trò chuyện** (micro tiếng Việt), **Việc giao**, **Phát hiện**, **Phản hồi** (👍/👎 + góp ý — Hiền An áp dụng từ tin sau, lưu vào Agentic Brain), **Lịch sử**, **Lịch & nhắc**. Nút "Mở như app" trên thanh trên cài hệ thống thành ứng dụng riêng (Chrome/Edge).
 - **Trò chuyện**: giao việc tức thì cho các agent (Content / Video / SEO, chuỗi chiến dịch brief → nghiên cứu → chiến lược → nội dung, báo cáo Ads, video Flow…), xem và can thiệp mọi tác vụ, báo cáo bằng số liệu thật. Chữ hiện dần, kèm các bước công cụ đã gọi.
-- **Việc giao**: những việc Ngân Nguyệt đã giao + trạng thái trực tiếp. **Phát hiện**: lỗi/kẹt/chờ duyệt cần chú ý, bấm "Nhờ Ngân Nguyệt xử lý". **Lịch sử**: các cuộc trò chuyện (mỗi cuộc giữ ngữ cảnh riêng).
-- Cách chạy: **Claude Code CLI** — mỗi tin nhắn là `claude -p` bằng tài khoản Claude đã đăng nhập (gói Pro/Max, không dùng API key Anthropic; biến ANTHROPIC_API_KEY bị gỡ khỏi môi trường), nối tiếp phiên của cuộc trò chuyện. Công cụ duy nhất là `packages/orchestrator/bin/zono-mcp.mjs` (MCP) gọi API nội bộ của hệ thống trên máy (localhost:8787), ký tên "Ngân Nguyệt" trong nhật ký.
+- **Việc giao**: những việc Hiền An đã giao + trạng thái trực tiếp. **Phát hiện**: lỗi/kẹt/chờ duyệt cần chú ý, bấm "Nhờ Hiền An xử lý". **Lịch sử**: các cuộc trò chuyện (mỗi cuộc giữ ngữ cảnh riêng).
+- Cách chạy: **Claude Code CLI** — mỗi tin nhắn là `claude -p` bằng tài khoản Claude đã đăng nhập (gói Pro/Max, không dùng API key Anthropic; biến ANTHROPIC_API_KEY bị gỡ khỏi môi trường), nối tiếp phiên của cuộc trò chuyện. Công cụ duy nhất là `packages/orchestrator/bin/zono-mcp.mjs` (MCP) gọi API nội bộ của hệ thống trên máy (localhost:8787), ký tên "Hiền An" trong nhật ký.
 - An toàn: đọc + giao việc (vẫn qua Review/Duyệt) chạy ngay; thao tác nhạy cảm (duyệt đăng, trả lời khách, đổi quảng cáo, tốn tín dụng Flow, bật/tắt luồng/agent, kill switch, mọi lệnh ghi qua `goi_api`) thành **thẻ xác nhận** Sếp bấm — trừ khi Sếp bật "Tự thực hiện". Công cụ không tự xác nhận được thẻ, không đụng khóa MCP / model / thông tin kết nối.
 
 ## Sản xuất video Google Flow (Creative Agent)
@@ -185,7 +185,7 @@ Cài một lần: `pnpm video-ai:install` (bootstrap tự gọi; ~3 GB, khóa ph
 | [faster-whisper](https://github.com/SYSTRAN/faster-whisper) (MIT) | Soát lời thoại video Flow, **tạo phụ đề .srt** từ video/âm thanh | `tools/video/stt.py`, giải mã âm thanh bằng ffmpeg (tránh lỗi tương thích PyAV) |
 | [fish-speech](https://github.com/fishaudio/fish-speech) | — **không cài** | Bản S2-Pro (4B) cần GPU/RAM lớn; giấy phép Fish Audio cấm dùng thương mại (kể cả nội bộ) nếu không mua license → dùng **Edge TTS** (giọng Hoài My / Nam Minh) |
 
-Mỗi lần chỉ chạy 1 job video trên máy (khóa hàng đợi `video-ai`, máy 8 GB RAM). Ngân Nguyệt có công cụ `tao_video_tu_dong`, `anh_cu_dong`, `long_tieng`, `trang_thai_video_ai`. Các lệnh video của agent Flow (`zono-video-finish`, `zono-video-stt`, `zono-flow-save`) được tạo trong `data/bin` trỏ về chính repo này.
+Mỗi lần chỉ chạy 1 job video trên máy (khóa hàng đợi `video-ai`, máy 8 GB RAM). Hiền An có công cụ `tao_video_tu_dong`, `anh_cu_dong`, `long_tieng`, `trang_thai_video_ai`. Các lệnh video của agent Flow (`zono-video-finish`, `zono-video-stt`, `zono-flow-save`) được tạo trong `data/bin` trỏ về chính repo này.
 
 ## Jev làm gì trong hệ thống
 

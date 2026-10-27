@@ -76,7 +76,7 @@ export function NoteView({ vault, path, onOpen, onClose, onAsk, resolve }: {
           <button onClick={() => setMode("edit")} className={cx("flex items-center gap-1 rounded-md px-2 py-1 text-xs", mode === "edit" ? "bg-blue-600 text-white" : "text-muted")}><Pencil className="h-3.5 w-3.5" />Sửa</button>
         </div>
         {dirty && <Button size="sm" variant="primary" icon={Save} loading={saving} onClick={() => save()}>Lưu</Button>}
-        <button onClick={() => onAsk(`Đọc ghi chú "${path}" trong Agentic Brain rồi tóm tắt và đề xuất việc nên làm tiếp.`)} className="rounded-lg p-1.5 text-violet-600 hover:bg-violet-500/10" title="Hỏi Ngân Nguyệt về ghi chú này"><Moon className="h-4 w-4" /></button>
+        <button onClick={() => onAsk(`Đọc ghi chú "${path}" trong Agentic Brain rồi tóm tắt và đề xuất việc nên làm tiếp.`)} className="rounded-lg p-1.5 text-violet-600 hover:bg-violet-500/10" title="Hỏi Hiền An về ghi chú này"><Moon className="h-4 w-4" /></button>
         <button onClick={() => setRename(data.title)} className="rounded-lg p-1.5 text-muted hover:bg-soft" title="Đổi tên / chuyển thư mục"><Type className="h-4 w-4" /></button>
         <button onClick={() => api.post(`brain/vaults/${vault}/open`, { path })} className="rounded-lg p-1.5 text-muted hover:bg-soft" title="Mở trong Finder"><FolderOpen className="h-4 w-4" /></button>
         <button onClick={() => setConfirmDel(true)} className="rounded-lg p-1.5 text-muted hover:bg-rose-500/10 hover:text-rose-600" title="Xóa (vào thùng rác)"><Trash2 className="h-4 w-4" /></button>

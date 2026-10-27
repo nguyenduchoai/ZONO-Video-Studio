@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Ngân Nguyệt's tool server (MCP over stdio), started by `claude -p` for each chat turn.
-// Every tool calls the ZONO Agentic AI API on this machine, signed "Ngân Nguyệt" (audit log).
+// Hiền An's tool server (MCP over stdio), started by `claude -p` for each chat turn.
+// Every tool calls the ZONO Agentic AI API on this machine, signed "Hiền An" (audit log).
 // Reads and starting work that still passes review/approval run immediately; anything that changes the outside
 // world goes through /v1/assistant/actions → a confirm card the CEO clicks (or runs at once if the CEO enabled it).
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -9,7 +9,7 @@ import { z } from "zod";
 
 const API = process.env.ZONO_API ?? "http://127.0.0.1:8787";
 const THREAD = process.env.ZONO_THREAD ?? null;
-const ACTOR = process.env.ZONO_ACTOR ?? "Ngân Nguyệt (trợ lý)";
+const ACTOR = process.env.ZONO_ACTOR ?? "Hiền An (trợ lý)";
 const MAX = 14_000;
 
 async function call(method, path, body) {
@@ -79,7 +79,7 @@ tool("ket_noi", "Trạng thái các kết nối nền tảng (Meta, TikTok, Zalo
 tool("tri_thuc", "Tìm trong kho tri thức (sản phẩm, chính sách, FAQ).", { cau_hoi: z.string() }, async ({ cau_hoi }) => call("POST", "/v1/knowledge/search", { query: cau_hoi }));
 tool("nhat_ky", "Nhật ký hoạt động gần đây của hệ thống (ai làm gì, lúc nào).", { so_luong: z.number().int().min(1).max(200).optional() }, async ({ so_luong }) =>
   pick(await get(`/v1/audit-log?limit=${so_luong ?? 40}`), ["at", "actor", "event", "ref_type", "ref_id"], so_luong ?? 40));
-tool("viec_da_giao", "Những việc Ngân Nguyệt đã giao cho các agent và trạng thái hiện tại.", {}, async () => get("/v1/assistant/dispatches"));
+tool("viec_da_giao", "Những việc Hiền An đã giao cho các agent và trạng thái hiện tại.", {}, async () => get("/v1/assistant/dispatches"));
 
 // ---------------- Agentic Brain (trí nhớ công ty — ghi chú Markdown) ----------------
 const FOLDERS_HINT = "1. Tổng quan · 2. Hộp thư · 3. Nhật ký vận hành (Ngày/Tuần/Tháng) · 4. Mục tiêu & kế hoạch · 5. Thương hiệu & DNA · 6. Khách hàng & thị trường (Chân dung khách hàng/Đối thủ/Nghiên cứu) · 7. Chiến dịch · 8. Nội dung (Bài viết/SEO/Thư viện bài thắng) · 9. Video (Kịch bản/Video Flow/Kho hook/Thư viện video thắng) · 10. Quảng cáo (Báo cáo/Quyết định) · 11. Bán hàng & chăm sóc · 12. Review & kiểm duyệt · 13. Feedback loop (Bài học/Sếp từ chối/Đề xuất thay đổi/Thử nghiệm) · 14. Số liệu & báo cáo · 15. Tri thức (Chat Agent dùng trả lời khách) · 16. Sổ tay quy trình (Kỹ năng/Mẫu ghi chú) · 17. Đội AI · 18. Ý tưởng & hội thoại · 19. Lưu trữ · 20. Tệp & hình ảnh";

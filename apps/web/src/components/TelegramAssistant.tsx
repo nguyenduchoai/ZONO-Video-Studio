@@ -5,7 +5,7 @@ import { api, useApi } from "../lib/api";
 import { timeAgo } from "../lib/format";
 import { Badge, Button, Card, PlatformIcon, useToast } from "./ui";
 
-/** Ngân Nguyệt trên Telegram: bot token ở Trung tâm tích hợp → mã ghép nối → Sếp nhắn bot như nhắn trên web. */
+/** Hiền An trên Telegram: bot token ở Trung tâm tích hợp → mã ghép nối → Sếp nhắn bot như nhắn trên web. */
 export function TelegramAssistantCard() {
   const toast = useToast();
   const { data: d, reload } = useApi<any>("assistant/telegram", ["assistant.", "connection."]);
@@ -15,11 +15,11 @@ export function TelegramAssistantCard() {
     try { await fn(); if (ok) toast(ok); reload(); } catch (e: any) { toast(e.message, "err"); } finally { setBusy(null); }
   };
   return (
-    <Card title={<span className="flex items-center gap-2"><PlatformIcon p="telegram" size={20} />Ngân Nguyệt trên Telegram</span>}
+    <Card title={<span className="flex items-center gap-2"><PlatformIcon p="telegram" size={20} />Hiền An trên Telegram</span>}
       action={d?.connected && <Badge tone={d.error ? "amber" : d.running ? "green" : "gray"}>{d.error ? "Có lỗi" : d.running ? "Đang nhận tin" : "Đang khởi động"}</Badge>}>
       {!d ? null : !d.connected ? (
         <div className="space-y-3 text-sm">
-          <p className="text-muted">Nhắn trực tiếp với trợ lý Ngân Nguyệt qua bot Telegram của Sếp — cùng trí nhớ và công cụ như trên web, thẻ cần xác nhận có nút ✅/❌ ngay trong Telegram.</p>
+          <p className="text-muted">Nhắn trực tiếp với trợ lý Hiền An qua bot Telegram của Sếp — cùng trí nhớ và công cụ như trên web, thẻ cần xác nhận có nút ✅/❌ ngay trong Telegram.</p>
           <ol className="list-decimal space-y-1 pl-5 text-ink">
             <li>Mở <b>Quảng cáo → Trung tâm tích hợp → Telegram</b>, dán <b>Bot token</b> của bot (lấy ở @BotFather → /mybots → API Token). Ô Chat ID có thể để trống.</li>
             <li>Quay lại đây bấm <b>Tạo mã ghép nối</b> rồi mở link để bắt đầu chat.</li>
@@ -46,13 +46,13 @@ export function TelegramAssistantCard() {
                   <div key={c.id} className="flex items-center gap-3 px-3 py-2">
                     <CheckCircle2 className="h-4 w-4 text-emerald-500" />
                     <span className="min-w-0 flex-1"><b className="text-ink">{c.name}</b><span className="block text-xs text-muted">ghép nối {timeAgo(c.at)}{d.alertsChatId === c.id ? " · nhận cảnh báo hệ thống" : ""}</span></span>
-                    <Button size="sm" variant="ghost" icon={Trash2} loading={busy === `rm:${c.id}`} onClick={() => { if (confirm(`Bỏ ghép nối ${c.name}? Tài khoản này sẽ không ra lệnh cho Ngân Nguyệt được nữa.`)) void run(`rm:${c.id}`, () => api.del(`assistant/telegram/chats/${c.id}`), "Đã bỏ ghép nối"); }} />
+                    <Button size="sm" variant="ghost" icon={Trash2} loading={busy === `rm:${c.id}`} onClick={() => { if (confirm(`Bỏ ghép nối ${c.name}? Tài khoản này sẽ không ra lệnh cho Hiền An được nữa.`)) void run(`rm:${c.id}`, () => api.del(`assistant/telegram/chats/${c.id}`), "Đã bỏ ghép nối"); }} />
                   </div>
                 ))}
               </div>
             )}
           </div>
-          <p className="text-xs text-muted">Trong Telegram: nhắn yêu cầu như trên web · <code>/moi</code> cuộc trò chuyện mới · <code>/dung</code> dừng câu trả lời · <code>/trogiup</code>. Lịch sử chat cũng hiện trong khung Ngân Nguyệt trên web (cuộc trò chuyện “Telegram · …”).</p>
+          <p className="text-xs text-muted">Trong Telegram: nhắn yêu cầu như trên web · <code>/moi</code> cuộc trò chuyện mới · <code>/dung</code> dừng câu trả lời · <code>/trogiup</code>. Lịch sử chat cũng hiện trong khung Hiền An trên web (cuộc trò chuyện “Telegram · …”).</p>
         </div>
       )}
     </Card>

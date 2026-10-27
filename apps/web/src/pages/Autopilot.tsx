@@ -361,7 +361,7 @@ export function Autopilot() {
                 desc="Kế hoạch của lái tự động không có ngân sách quảng cáo. Tắt = mỗi kế hoạch chờ Sếp duyệt như chiến dịch thường." />
               <SwitchRow icon={ShieldCheck} checked={form.approvalGate} onChange={(v) => patch({ approvalGate: v })} title="Mọi bài / kịch bản chờ Sếp duyệt trước khi đăng"
                 desc="Nên giữ BẬT. Tắt = bài đạt chấm điểm có thể tự đăng theo mức tự chủ của agent viết bài (trang Agent & Tác vụ)." />
-              <SwitchRow icon={Send} checked={form.notifyTelegram} onChange={(v) => patch({ notifyTelegram: v })} title="Báo Sếp qua Telegram (Ngân Nguyệt)"
+              <SwitchRow icon={Send} checked={form.notifyTelegram} onChange={(v) => patch({ notifyTelegram: v })} title="Báo Sếp qua Telegram (Hiền An)"
                 desc="Khi mở chiến dịch mới: tên chiến dịch, vì sao chọn khóa học, số mục đang chờ duyệt." />
             </div>
 

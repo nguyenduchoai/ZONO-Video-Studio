@@ -126,7 +126,7 @@ export function brainRoutes(app: FastifyInstance) {
     return reply.send(createReadStream(abs));
   });
 
-  // Reminders ("Kế hoạch & nhắc việc") — shown in Ngân Nguyệt "Lịch & nhắc", fired by brain.tick
+  // Reminders ("Kế hoạch & nhắc việc") — shown in Hiền An "Lịch & nhắc", fired by brain.tick
   r.get("/v1/brain/reminders", ({ bizId, query }) => {
     try { return upcomingReminders(activeVault(bizId), 100, query.all === "1"); } catch { return []; }
   });

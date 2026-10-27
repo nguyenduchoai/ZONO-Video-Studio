@@ -147,7 +147,7 @@ export function startOrchestrator() {
   }
   const stopWorkers = startWorkers(HANDLERS);
   const stopScheduler = startScheduler();
-  // Ngân Nguyệt trên Telegram (long polling; ngủ khi chưa có kết nối Telegram).
+  // Hiền An trên Telegram (long polling; ngủ khi chưa có kết nối Telegram).
   const stopTelegram = startTelegramAssistant();
   return () => {
     stopWorkers();

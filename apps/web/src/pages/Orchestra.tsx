@@ -194,9 +194,9 @@ export function Orchestra() {
                 <div className="absolute" style={{ left: CENTER.x - 92, top: CENTER.y - 105 }}>
                   <div className={cx("relative grid h-[184px] w-[184px] place-items-center rounded-full border-4 border-violet-200 bg-gradient-to-b from-violet-50 to-white text-center shadow-[0_0_0_10px_rgba(139,92,246,0.06)] dark:border-violet-500/30 dark:from-violet-500/10 dark:to-card", anyRunning && "animate-[pulse_2.4s_ease-in-out_infinite]")}>
                     <div>
-                      <button onClick={() => window.dispatchEvent(new CustomEvent("nguyet:ask", { detail: "Báo cáo nhanh: các agent đang làm gì, việc nào cần Sếp quyết?" }))} title="Hỏi Ngân Nguyệt" className="mx-auto block"><NguyetAvatar size={56} /></button>
+                      <button onClick={() => window.dispatchEvent(new CustomEvent("nguyet:ask", { detail: "Báo cáo nhanh: các agent đang làm gì, việc nào cần Sếp quyết?" }))} title="Hỏi Hiền An" className="mx-auto block"><NguyetAvatar size={56} /></button>
                       <p className="mt-2 text-lg font-extrabold tracking-wide text-violet-800 dark:text-violet-200">AI ĐIỀU PHỐI</p>
-                      <p className="text-xs text-violet-600">Ngân Nguyệt · Orchestrator</p>
+                      <p className="text-xs text-violet-600">Hiền An · Orchestrator</p>
                       <Link to="/approvals" className="mt-1 inline-block rounded-full border border-violet-200 bg-white px-3 py-0.5 text-[11px] font-medium text-violet-700 dark:border-violet-500/30 dark:bg-card">CEO duyệt quyết định{data?.summary?.pending ? ` · ${data.summary.pending}` : ""}</Link>
                     </div>
                   </div>

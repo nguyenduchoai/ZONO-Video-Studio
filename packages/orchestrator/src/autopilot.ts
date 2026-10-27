@@ -47,7 +47,7 @@ export const AutopilotSettingsSchema = z.object({
   postWhenApproved: z.enum(["next_slot", "now"]),
   /** Trần số chiến dịch tự tạo trong 24 giờ (cả mọi nền tảng). */
   maxGoalsPerDay: z.number().int().min(1).max(10),
-  /** Báo Ngân Nguyệt trên Telegram khi mở chiến dịch mới / có việc cần Sếp. */
+  /** Báo Hiền An trên Telegram khi mở chiến dịch mới / có việc cần Sếp. */
   notifyTelegram: z.boolean(),
   /** Tỉ trọng Sếp ghim cho từng khóa học (%, 0 = tạm không đăng); không ghim → chia tự động theo kết quả. */
   productWeights: z.record(z.string().trim().min(1).max(64), z.number().int().min(0).max(100)),

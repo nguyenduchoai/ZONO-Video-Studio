@@ -249,7 +249,7 @@ export function Muse() {
               onClick={() => openMuseChat()}
               className="!bg-amber-400 hover:!bg-amber-300 !text-slate-950 font-semibold shadow-md"
             >
-              <Sparkles className="w-4 h-4 mr-1.5" /> Mở Chat & Đàm thoại Ngân Nguyệt
+              <Sparkles className="w-4 h-4 mr-1.5" /> Mở Chat & Đàm thoại Hiền An
             </Button>
             <Button
               variant="secondary"

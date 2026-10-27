@@ -81,8 +81,8 @@ export async function autopilotPrerequisites(bizId: string, s: AutopilotSettings
   if (s.notifyTelegram) {
     const tg = await telegramAssistantStatus(bizId).catch(() => null) as Row | null;
     const paired = (tg?.chats ?? []).length;
-    add(paired ? { key: "telegram", title: "Báo qua Telegram (Ngân Nguyệt)", status: "ok", detail: `${paired} chat đã ghép nối` }
-      : { key: "telegram", title: "Báo qua Telegram (Ngân Nguyệt)", status: "warn", detail: "Chưa ghép nối chat Telegram — sẽ chỉ báo trên web", action: { label: "Ghép nối ở Cài đặt", href: "/settings" } });
+    add(paired ? { key: "telegram", title: "Báo qua Telegram (Hiền An)", status: "ok", detail: `${paired} chat đã ghép nối` }
+      : { key: "telegram", title: "Báo qua Telegram (Hiền An)", status: "warn", detail: "Chưa ghép nối chat Telegram — sẽ chỉ báo trên web", action: { label: "Ghép nối ở Cài đặt", href: "/settings" } });
   }
   return out;
 }

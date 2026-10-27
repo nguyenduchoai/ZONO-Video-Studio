@@ -7,7 +7,7 @@ import { useSpeech } from "../lib/speech";
 import { Badge, Toggle, cx, inputCls, useToast } from "./ui";
 
 /**
- * Ngân Nguyệt — the CEO's command assistant, floating on every page. Chat (live streaming, tool steps, confirm
+ * Hiền An — the CEO's command assistant, floating on every page. Chat (live streaming, tool steps, confirm
  * cards), work she dispatched, system findings and history. Backend: /v1/assistant/* (packages/orchestrator/src/assistant.ts).
  */
 type Tab = "chat" | "dispatch" | "findings" | "feedback" | "history" | "reminders";
@@ -134,11 +134,11 @@ export function AssistantPanel() {
   };
 
   if (!open) {
-    if (location.pathname.startsWith("/brain")) return null; // the brain page has its own "Nói với Ngân Nguyệt" bar
+    if (location.pathname.startsWith("/brain")) return null; // the brain page has its own "Nói với Hiền An" bar
     return (
-      <button onClick={() => setOpen(true)} title="Trợ lý Ngân Nguyệt (Muse × ZONO Local AI)" aria-label="Mở trợ lý Ngân Nguyệt" className="group fixed bottom-[calc(var(--bottom-nav-h)+1rem)] right-4 z-40 flex items-center gap-2 rounded-full bg-card p-1 shadow-pop ring-1 ring-line transition-all hover:pr-4 hover:shadow-sheet">
+      <button onClick={() => setOpen(true)} title="Trợ lý Hiền An (Muse × ZONO Local AI)" aria-label="Mở trợ lý Hiền An" className="group fixed bottom-[calc(var(--bottom-nav-h)+1rem)] right-4 z-40 flex items-center gap-2 rounded-full bg-card p-1 shadow-pop ring-1 ring-line transition-all hover:pr-4 hover:shadow-sheet">
         <span className="relative"><NguyetAvatar size={46} state="idle" />{urgent > 0 && <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white ring-2 ring-card">{urgent}</span>}</span>
-        <span className="hidden max-w-0 overflow-hidden whitespace-nowrap text-left leading-tight opacity-0 transition-all duration-200 group-hover:max-w-[12rem] group-hover:opacity-100 group-focus-visible:max-w-[12rem] group-focus-visible:opacity-100 sm:block"><span className="block text-sm font-semibold text-ink">Ngân Nguyệt · Muse</span><span className="block text-[11px] text-muted">Đa AI · Chạy Local</span></span>
+        <span className="hidden max-w-0 overflow-hidden whitespace-nowrap text-left leading-tight opacity-0 transition-all duration-200 group-hover:max-w-[12rem] group-hover:opacity-100 group-focus-visible:max-w-[12rem] group-focus-visible:opacity-100 sm:block"><span className="block text-sm font-semibold text-ink">Hiền An · Muse</span><span className="block text-[11px] text-muted">Đa AI · Chạy Local</span></span>
       </button>
     );
   }
@@ -153,12 +153,12 @@ function AssistantDialog({ open, setOpen, tab, setTab, urgent, info, threadId, s
   return (
     <>
     <div className="fixed inset-0 z-40 bg-slate-900/30 sm:hidden" onClick={() => setOpen(false)} aria-hidden />
-    <div role="dialog" aria-label="Trợ lý Ngân Nguyệt" className={cx("fixed inset-x-2 bottom-2 top-2 z-50 flex flex-col overflow-hidden rounded-2xl border border-line bg-card shadow-[0_24px_64px_-12px_rgba(15,23,42,0.35)] transition-all sm:inset-x-auto sm:bottom-4 sm:right-4 sm:top-auto sm:h-[min(820px,calc(100vh-2rem))]", wide ? "sm:w-[min(780px,calc(100vw-2rem))]" : "sm:w-[480px]")}>
+    <div role="dialog" aria-label="Trợ lý Hiền An" className={cx("fixed inset-x-2 bottom-2 top-2 z-50 flex flex-col overflow-hidden rounded-2xl border border-line bg-card shadow-[0_24px_64px_-12px_rgba(15,23,42,0.35)] transition-all sm:inset-x-auto sm:bottom-4 sm:right-4 sm:top-auto sm:h-[min(820px,calc(100vh-2rem))]", wide ? "sm:w-[min(780px,calc(100vw-2rem))]" : "sm:w-[480px]")}>
       <div className="flex items-center gap-3 bg-gradient-to-r from-indigo-600 via-blue-600 to-violet-600 px-4 py-3 text-white">
         <NguyetAvatar size={44} state="idle" />
         <div className="min-w-0 flex-1">
           <p className="flex items-center gap-1.5 truncate text-base font-bold">
-            <span>Ngân Nguyệt · Muse Studio</span>
+            <span>Hiền An · Muse Studio</span>
             <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold">Multi-AI + Local</span>
           </p>
           <p className="truncate text-xs text-white/85">Claude (Phức tạp) · OpenAI (Ảnh) · Gemini/Veo 3 (SEO & Video) · Chạy Local</p>
@@ -258,7 +258,7 @@ function ChatTab({ info, threadId, setThreadId, newThread, pendingAsk, clearAsk,
   const stop = async () => { if (threadId) await api.post(`assistant/threads/${threadId}/stop`).catch(() => {}); };
   const speech = useSpeech((t) => setText((x) => (x ? `${x} ${t}` : t)));
   const setAuto = async (v: boolean) => {
-    try { await api.put("assistant/settings", { autoConfirm: v }); onSettings(); toast(v ? "Ngân Nguyệt sẽ tự thực hiện thao tác nhạy cảm (không hỏi lại)" : "Thao tác nhạy cảm sẽ cần Sếp bấm xác nhận", v ? "info" : "ok"); } catch (e: any) { toast(e.message, "err"); }
+    try { await api.put("assistant/settings", { autoConfirm: v }); onSettings(); toast(v ? "Hiền An sẽ tự thực hiện thao tác nhạy cảm (không hỏi lại)" : "Thao tác nhạy cảm sẽ cần Sếp bấm xác nhận", v ? "info" : "ok"); } catch (e: any) { toast(e.message, "err"); }
   };
 
   // Interleave confirm cards with messages by time.
@@ -295,7 +295,7 @@ function ChatTab({ info, threadId, setThreadId, newThread, pendingAsk, clearAsk,
             <option value="">Model tự động</option>
             {(info?.models ?? []).map((m: any) => <option key={m.id} value={m.id}>{m.label}</option>)}
           </select>
-          <label className="flex shrink-0 items-center gap-1 rounded-xl border border-line px-2 py-1 text-[11px] text-muted" title="Bật: Ngân Nguyệt tự thực hiện thao tác nhạy cảm">
+          <label className="flex shrink-0 items-center gap-1 rounded-xl border border-line px-2 py-1 text-[11px] text-muted" title="Bật: Hiền An tự thực hiện thao tác nhạy cảm">
             <ShieldCheck className={cx("h-3.5 w-3.5", info?.settings?.autoConfirm ? "text-amber-500" : "text-emerald-500")} />Tự làm
             <Toggle checked={!!info?.settings?.autoConfirm} onChange={setAuto} />
           </label>
@@ -321,7 +321,7 @@ function ChatTab({ info, threadId, setThreadId, newThread, pendingAsk, clearAsk,
         {!items.length ? (
           <div className="flex flex-col items-center px-2 pt-4 text-center">
             <NguyetAvatar size={84} state={activeHatchState} />
-            <p className="mt-3 font-bold text-ink">Em là Ngân Nguyệt — Muse × ZONO Local Agent.</p>
+            <p className="mt-3 font-bold text-ink">Em là Hiền An — Muse × ZONO Local Agent.</p>
             <p className="mt-1 text-xs text-muted">
               Đã tích hợp kiến trúc <b>Muse.app (Hatch v9.0)</b> + <b>Ma trận Đa Nhà cung cấp AI</b>: tự động phân công <b>Claude</b> (việc phức tạp/pháp lý/REA), <b>OpenAI</b> (tạo ảnh 4:5), <b>Gemini / Veo 3</b> (bài SEO & video) và chạy trực tiếp <b>Local Studio (Remotion + VieNeu-TTS 48kHz)</b> ngay trong khung chat!
             </p>
@@ -344,7 +344,7 @@ function ChatTab({ info, threadId, setThreadId, newThread, pendingAsk, clearAsk,
       <div className="flex items-end gap-2 border-t border-line p-2">
         <button onClick={speech.toggle} disabled={!speech.supported} title={speech.supported ? (speech.listening ? "Dừng nghe" : "Nói (tiếng Việt)") : "Trình duyệt chưa hỗ trợ nhận giọng nói"}
           className={cx("grid h-[42px] w-[42px] shrink-0 place-items-center rounded-xl border", speech.listening ? "animate-pulse border-rose-400 bg-rose-500 text-white" : "border-line text-ink hover:bg-soft disabled:opacity-40")}>{speech.listening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}</button>
-        <textarea rows={1} value={speech.interim ? `${text} ${speech.interim}` : text} onChange={(e) => setText(e.target.value)} placeholder="Nhắn Ngân Nguyệt (Tạo video, tạo ảnh, viết SEO, rà luật VN, phân tích app…)"
+        <textarea rows={1} value={speech.interim ? `${text} ${speech.interim}` : text} onChange={(e) => setText(e.target.value)} placeholder="Nhắn Hiền An (Tạo video, tạo ảnh, viết SEO, rà luật VN, phân tích app…)"
           onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); void send(); } }}
           className="max-h-32 min-h-[42px] flex-1 resize-none rounded-xl border border-line bg-card px-3 py-2.5 text-sm text-ink outline-none placeholder:text-muted focus:border-blue-500" />
         {running
@@ -396,7 +396,7 @@ function MessageBubble({ m }: { m: any }) {
           </div>
         )}
         <div className="rounded-2xl rounded-tl-md bg-soft px-3 py-2.5 text-ink">
-          {m.text ? <Markdown text={m.text} /> : streaming ? <span className="flex items-center gap-2 text-muted"><Loader2 className="h-3.5 w-3.5 animate-spin" />Ngân Nguyệt đang thực thi trên máy…</span> : null}
+          {m.text ? <Markdown text={m.text} /> : streaming ? <span className="flex items-center gap-2 text-muted"><Loader2 className="h-3.5 w-3.5 animate-spin" />Hiền An đang thực thi trên máy…</span> : null}
           {m.status === "error" && <p className="mt-1 text-xs text-rose-600">{m.error ?? "Lỗi"}</p>}
         </div>
 
@@ -478,14 +478,14 @@ function MessageBubble({ m }: { m: any }) {
   );
 }
 
-/** 👍/👎 on an answer; 👎 asks what to do differently — Ngân Nguyệt applies it from the next message on. */
+/** 👍/👎 on an answer; 👎 asks what to do differently — Hiền An applies it from the next message on. */
 function Rate({ m }: { m: any }) {
   const [fb, setFb] = useState<string | null>(m.feedback ?? null);
   const [asking, setAsking] = useState(false);
   const [note, setNote] = useState(m.feedback_note ?? "");
   const toast = useToast();
   const save = async (feedback: "up" | "down" | null, n?: string) => {
-    try { await api.post(`assistant/messages/${m.id}/feedback`, { feedback, note: n }); setFb(feedback); if (n) toast("Đã ghi góp ý — Ngân Nguyệt sẽ làm theo từ tin sau"); } catch (e: any) { toast(e.message, "err"); }
+    try { await api.post(`assistant/messages/${m.id}/feedback`, { feedback, note: n }); setFb(feedback); if (n) toast("Đã ghi góp ý — Hiền An sẽ làm theo từ tin sau"); } catch (e: any) { toast(e.message, "err"); }
   };
   return (
     <span className="relative ml-auto flex items-center gap-0.5">
@@ -565,7 +565,7 @@ function FindingsTab({ data, ask }: { data: any[] | null; ask: (t: string) => vo
             <p className="flex items-start gap-2 text-sm font-medium text-ink"><I className={cx("mt-0.5 h-4 w-4 shrink-0", f.level === "urgent" ? "text-rose-500" : f.level === "warning" ? "text-amber-500" : "text-blue-500")} />{f.title}</p>
             {f.detail && <p className="mt-1 pl-6 text-xs text-muted">{f.detail}</p>}
             <div className="mt-2 flex gap-2 pl-6">
-              <button onClick={() => ask(f.ask)} className="flex items-center gap-1 rounded-lg bg-blue-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-blue-700"><Moon className="h-3 w-3" />Nhờ Ngân Nguyệt xử lý</button>
+              <button onClick={() => ask(f.ask)} className="flex items-center gap-1 rounded-lg bg-blue-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-blue-700"><Moon className="h-3 w-3" />Nhờ Hiền An xử lý</button>
               <Link to={f.link} className="flex items-center gap-0.5 rounded-lg border border-line px-2.5 py-1 text-xs text-ink hover:bg-soft">Mở<ChevronRight className="h-3 w-3" /></Link>
             </div>
           </div>
@@ -601,7 +601,7 @@ function FeedbackTab({ open }: { open: (threadId: string) => void }) {
   const up = data.filter((d) => d.feedback === "up").length;
   return (
     <div className="flex-1 space-y-2 overflow-y-auto p-3 scroll-thin">
-      <p className="rounded-xl bg-soft p-3 text-xs text-muted">Bấm 👍/👎 dưới mỗi câu trả lời. Góp ý kèm ghi chú (👎) được Ngân Nguyệt áp dụng ngay từ tin nhắn sau và lưu vào Agentic Brain (12. Bài học).{data.length ? ` Đã chấm ${data.length}: 👍 ${up} · 👎 ${data.length - up}.` : ""}</p>
+      <p className="rounded-xl bg-soft p-3 text-xs text-muted">Bấm 👍/👎 dưới mỗi câu trả lời. Góp ý kèm ghi chú (👎) được Hiền An áp dụng ngay từ tin nhắn sau và lưu vào Agentic Brain (12. Bài học).{data.length ? ` Đã chấm ${data.length}: 👍 ${up} · 👎 ${data.length - up}.` : ""}</p>
       {!data.length ? <p className="p-4 text-center text-sm text-muted">Chưa có phản hồi nào.</p> : data.map((d) => (
         <button key={d.id} onClick={() => open(d.thread_id)} className={cx("block w-full rounded-xl border p-3 text-left hover:bg-soft", d.feedback === "up" ? "border-emerald-400/40" : "border-rose-400/40")}>
           <p className="flex items-center gap-1.5 text-xs font-medium text-ink">{d.feedback === "up" ? <ThumbsUp className="h-3.5 w-3.5 text-emerald-600" /> : <ThumbsDown className="h-3.5 w-3.5 text-rose-600" />}<span className="truncate">{d.thread_title}</span><span className="ml-auto shrink-0 text-[10px] text-muted">{timeAgo(d.updated_at)}</span></p>
@@ -628,7 +628,7 @@ function RemindersTab({ ask }: { ask: (t: string) => void }) {
       <div className="space-y-2 rounded-xl border border-line p-3">
         <input className={inputCls} placeholder="Nhắc việc gì? (vd: Gọi nhà cung cấp)" value={title} onChange={(e) => setTitle(e.target.value)} onKeyDown={(e) => e.key === "Enter" && title.trim().length > 1 && add()} />
         <div className="flex gap-2"><input type="datetime-local" className={cx(inputCls, "min-w-0 flex-1")} value={due} onChange={(e) => setDue(e.target.value)} /><button onClick={add} disabled={title.trim().length < 2} className="rounded-xl bg-blue-600 px-3 text-sm font-semibold text-white disabled:opacity-50">Đặt</button></div>
-        <button onClick={() => ask("Nhắc tôi 3 giờ chiều mai gọi nhà cung cấp")} className="text-[11px] text-blue-600 hover:underline">…hoặc nói với Ngân Nguyệt: “Nhắc tôi 3 giờ chiều mai gọi nhà cung cấp”</button>
+        <button onClick={() => ask("Nhắc tôi 3 giờ chiều mai gọi nhà cung cấp")} className="text-[11px] text-blue-600 hover:underline">…hoặc nói với Hiền An: “Nhắc tôi 3 giờ chiều mai gọi nhà cung cấp”</button>
       </div>
       {!data ? <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted" /> : !data.length ? <p className="text-center text-sm text-muted">Chưa có nhắc việc nào sắp tới.</p> : data.map((r) => {
         const past = new Date(r.due).getTime() < Date.now();

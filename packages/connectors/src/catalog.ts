@@ -92,11 +92,11 @@ export const PLATFORMS: PlatformDef[] = [
   },
   {
     key: "telegram", name: "Telegram", category: "messaging", status: "live", color: "#229ED9",
-    description: "Bot gửi cảnh báo tắt ads, đổi ngân sách, báo cáo sáng — và nhắn trực tiếp với trợ lý Ngân Nguyệt (Cài đặt → Ngân Nguyệt trên Telegram).",
-    capabilities: ["Cảnh báo", "Báo cáo", "Chat với Ngân Nguyệt"],
+    description: "Bot gửi cảnh báo tắt ads, đổi ngân sách, báo cáo sáng — và nhắn trực tiếp với trợ lý Hiền An (Cài đặt → Hiền An trên Telegram).",
+    capabilities: ["Cảnh báo", "Báo cáo", "Chat với Hiền An"],
     fields: [
       { key: "bot_token", label: "Bot token", type: "password", secret: true, required: true, placeholder: "123456:ABC-DEF...", help: "Tạo bot với @BotFather → /newbot (hoặc dùng bot có sẵn: @BotFather → /mybots → API Token)." },
-      { key: "chat_id", label: "Chat ID nhận thông báo (tuỳ chọn)", type: "text", placeholder: "-100123... hoặc 123456789", help: "Để trống: khi Sếp ghép nối Ngân Nguyệt trên Telegram, chat đó tự nhận cảnh báo. Nhóm: thêm bot vào nhóm rồi lấy chat id qua @RawDataBot." },
+      { key: "chat_id", label: "Chat ID nhận thông báo (tuỳ chọn)", type: "text", placeholder: "-100123... hoặc 123456789", help: "Để trống: khi Sếp ghép nối Hiền An trên Telegram, chat đó tự nhận cảnh báo. Nhóm: thêm bot vào nhóm rồi lấy chat id qua @RawDataBot." },
     ],
   },
   {

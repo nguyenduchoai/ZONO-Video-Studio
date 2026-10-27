@@ -66,7 +66,7 @@ export function Skills() {
             </div>
             <div className="flex shrink-0 flex-wrap items-center gap-2">
               <Button size="sm" variant="secondary" icon={ShieldCheck} onClick={() => setOpen("vn-legal-check")}>Xem 11 mảng & Thủ tục</Button>
-              <Link to="/assistant"><Button size="sm" variant="primary" icon={Scale}>Rà dự án với Ngân Nguyệt →</Button></Link>
+              <Link to="/assistant"><Button size="sm" variant="primary" icon={Scale}>Rà dự án với Hiền An →</Button></Link>
             </div>
           </div>
         </div>

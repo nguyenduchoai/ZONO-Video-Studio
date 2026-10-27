@@ -11,7 +11,7 @@ import { notifyDesktop } from "./creative.ts";
 /**
  * Agentic Brain runs itself: the system writes its own memory into the vault —
  * daily / weekly / monthly logs, a live "Bảng điều hành", one note per agent, a wiki note per skill, product & knowledge
- * notes, the brand DNA, every finished piece of agent work, videos, conversations with Ngân Nguyệt, lessons,
+ * notes, the brand DNA, every finished piece of agent work, videos, conversations with Hiền An, lessons,
  * and reminders that fire on time. Generated text lives between `zono:auto` markers, so the CEO's own writing
  * in the same note is never overwritten.
  */
@@ -126,7 +126,7 @@ function syncAgents(v: Row) {
       `**Tác vụ:** ${st?.n ?? 0} (xong ${st?.ok ?? 0}, lỗi/chặn ${st?.bad ?? 0})`, "",
       "## Skill đang dùng", mine.length ? mine.map((m) => `- [[${safeName(skills.get(m.skill_key) ?? m.skill_key)}]]`).join("\n") : "—", "",
       "## Việc gần đây", recent.length ? recent.map((r) => `- [[${r.path.replace(/\.md$/, "")}|${r.title}]]`).join("\n") : "—", "",
-      c.key === "assistant" ? "Điều phối tất cả: " + CATALOG.filter((x) => x.key !== "assistant").map((x) => agentLink(x.key)).join(" · ") : "Điều phối bởi [[Ngân Nguyệt]]",
+      c.key === "assistant" ? "Điều phối tất cả: " + CATALOG.filter((x) => x.key !== "assistant").map((x) => agentLink(x.key)).join(" · ") : "Điều phối bởi [[Hiền An]]",
     ].join("\n"));
   }
 }
@@ -143,10 +143,10 @@ function syncLessons(v: Row) {
 function syncFeedback(v: Row) {
   const rows = q.all<Row>("SELECT m.text, m.feedback, m.feedback_note, m.updated_at, t.title FROM assistant_message m JOIN assistant_thread t ON t.id = m.thread_id WHERE m.biz_id = ? AND m.feedback IS NOT NULL ORDER BY m.updated_at DESC LIMIT 200", v.biz_id);
   if (!rows.length) return;
-  upsertAutoBlock(v, `${F.feedback}/Phản hồi cho Ngân Nguyệt.md`, [
-    `Sếp chấm ${rows.length} câu trả lời của [[Ngân Nguyệt]] · 👍 ${rows.filter((r) => r.feedback === "up").length} · 👎 ${rows.filter((r) => r.feedback === "down").length}. Góp ý có ghi chú được Ngân Nguyệt áp dụng ngay từ tin nhắn sau.`, "",
+  upsertAutoBlock(v, `${F.feedback}/Phản hồi cho Hiền An.md`, [
+    `Sếp chấm ${rows.length} câu trả lời của [[Hiền An]] · 👍 ${rows.filter((r) => r.feedback === "up").length} · 👎 ${rows.filter((r) => r.feedback === "down").length}. Góp ý có ghi chú được Hiền An áp dụng ngay từ tin nhắn sau.`, "",
     ...rows.map((r) => `- ${r.feedback === "up" ? "👍" : "👎"} ${viDate(vnDate(new Date(r.updated_at)))} · _${r.title}_${r.feedback_note ? ` — **${r.feedback_note}**` : ""}\n  > ${String(r.text).replace(/\s+/g, " ").slice(0, 160)}…`),
-  ].join("\n"), () => `${stringifyFrontmatter({ type: "lesson", agent: "assistant" })}# Phản hồi cho Ngân Nguyệt\n`);
+  ].join("\n"), () => `${stringifyFrontmatter({ type: "lesson", agent: "assistant" })}# Phản hồi cho Hiền An\n`);
 }
 
 // ---------------- Khách hàng & thị trường ----------------
@@ -162,7 +162,7 @@ function syncMarket(v: Row) {
   }
   for (const c of (d.goals?.competitors ?? []) as string[]) {
     upsertById(v, "competitor", c, `${F.market}/Đối thủ`, c, { type: "competitor" }, [
-      `Đối thủ được ghi trong [[DNA thương hiệu]]. Research Agent và Ngân Nguyệt bổ sung các mục bên dưới khi nghiên cứu.`,
+      `Đối thủ được ghi trong [[DNA thương hiệu]]. Research Agent và Hiền An bổ sung các mục bên dưới khi nghiên cứu.`,
     ].join("\n"));
     const rel = q.get<Row>("SELECT path FROM brain_note WHERE vault_id = ? AND json_extract(meta, '$.competitor') = ?", v.id, c)?.path;
     if (rel && !readNoteFile(v, rel).includes("## Điểm mạnh")) {
@@ -234,7 +234,7 @@ function syncFeedbackLoop(v: Row) {
     "Vòng phản hồi: **Sếp từ chối / Review chấm thấp / số liệu kém → bài học → agent đọc trước khi làm lần sau → đo lại kết quả.**", "",
     `**${lessons.length}** bài học đang hiệu lực:`, "",
     ...[...by.entries()].map(([k, ls]) => `## ${k === "chung" ? "Chung" : agentLink(k)}\n${ls.map((l) => `- ${l.statement}${l.review_at ? ` _(xem lại ${viDate(String(l.review_at).slice(0, 10))})_` : ""}`).join("\n")}`),
-    "", "Liên quan: [[Lỗi hay gặp]] · [[Phản hồi cho Ngân Nguyệt]] · thư mục Sếp từ chối, Đề xuất thay đổi, Thử nghiệm.",
+    "", "Liên quan: [[Lỗi hay gặp]] · [[Phản hồi cho Hiền An]] · thư mục Sếp từ chối, Đề xuất thay đổi, Thử nghiệm.",
   ].join("\n"), () => `${stringifyFrontmatter({ type: "lesson" })}# Feedback loop — Bài học đang áp dụng\n`);
 }
 
@@ -414,10 +414,10 @@ export function archiveConversation(threadId: string) {
   const acts = q.all<Row>("SELECT title, status FROM assistant_action WHERE thread_id = ?", t.id);
   const disp = q.all<Row>("SELECT title, kind FROM assistant_dispatch WHERE thread_id = ?", t.id);
   upsertById(v, "thread_id", t.id, `${F.ideas}/Hội thoại`, `${date} ${t.title}`, { type: "conversation", agent: "assistant", date }, [
-    `Trò chuyện với [[Ngân Nguyệt]] · [[${date}]]`,
+    `Trò chuyện với [[Hiền An]] · [[${date}]]`,
     disp.length ? `\n**Việc đã giao:** ${disp.map((d) => `${d.title} (${d.kind})`).join("; ")}` : "",
     acts.length ? `**Thẻ xác nhận:** ${acts.map((a) => `${a.title} → ${a.status}`).join("; ")}` : "", "",
-    ...msgs.map((m) => `### ${m.role === "user" ? "Sếp" : "Ngân Nguyệt"} · ${vnTime(m.created_at)}\n${m.text}`),
+    ...msgs.map((m) => `### ${m.role === "user" ? "Sếp" : "Hiền An"} · ${vnTime(m.created_at)}\n${m.text}`),
   ].filter((x) => x !== undefined).join("\n"));
 }
 
@@ -452,7 +452,7 @@ function statsMd(s: ReturnType<typeof dayStats>) {
     "", "## Quảng cáo & khách hàng",
     `- Chi tiêu ads: **${vnd(s.spend)}** · Kết quả: **${s.results}** · Click: ${s.clicks}${s.results ? ` · CPA ${vnd(s.spend / s.results)}` : ""}`,
     `- Hội thoại mới: **${s.convs}** · Lead: ${s.leads.map((l) => `${l.grade} ${l.n}`).join(", ") || "0"} · Đơn: **${s.orders?.n ?? 0}** (${vnd(s.orders?.s ?? 0)})`,
-    "", "## Ngân Nguyệt",
+    "", "## Hiền An",
     s.dispatches.length ? s.dispatches.map((d) => `- Đã giao: ${d.title} (${d.kind})`).join("\n") : "- Chưa giao việc nào.",
     s.threads.length ? `- Hội thoại: ${s.threads.map((t) => t.title).join("; ")}` : null,
   ].filter((x) => x != null).join("\n");
@@ -479,7 +479,7 @@ async function aiSummary(bizId: string, what: string, facts: string) {
   try {
     const r = await generate({
       bizId, agentKey: "assistant", tier: "small", schema: Summary,
-      system: "Bạn là Ngân Nguyệt, trợ lý điều phối. Tóm tắt ngắn gọn, đúng số liệu được cho, tiếng Việt, không bịa.",
+      system: "Bạn là Hiền An, trợ lý điều phối. Tóm tắt ngắn gọn, đúng số liệu được cho, tiếng Việt, không bịa.",
       user: `Tóm tắt ${what} cho CEO từ dữ liệu sau (Markdown). Trả JSON: summary (2-4 câu), highlights (3-5 ý), next (2-4 việc nên làm tiếp).\n\n${facts}`,
       sandbox: () => ({ summary: "", highlights: [], next: [] }),
     });
@@ -496,7 +496,7 @@ export async function writeWeekly(bizId: string, anyDayOfWeek: string) {
   const ai = await aiSummary(bizId, `tuần ${week}`, facts);
   const block = [
     `Tuần ${week}: ${viDate(days[0])} → ${viDate(days[6])} · [[${mon.slice(0, 7)}]]`, "",
-    ai ? `## Tóm tắt (Ngân Nguyệt)\n${ai.summary}\n\n**Điểm nổi bật**\n${ai.highlights.map((h) => `- ${h}`).join("\n")}\n\n**Nên làm tiếp**\n${ai.next.map((h) => `- [ ] ${h}`).join("\n")}\n` : "",
+    ai ? `## Tóm tắt (Hiền An)\n${ai.summary}\n\n**Điểm nổi bật**\n${ai.highlights.map((h) => `- ${h}`).join("\n")}\n\n**Nên làm tiếp**\n${ai.next.map((h) => `- [ ] ${h}`).join("\n")}\n` : "",
     "## Các ngày", ...days.map((d) => `- [[${d}]]`), "", "## Số liệu từng ngày", facts,
   ].join("\n");
   return upsertAutoBlock(v, `${F.weekly}/${week}.md`, block, () => `${stringifyFrontmatter({ type: "weekly", week, date: mon })}# Tổng kết tuần ${week}\n\n## Nhận xét của Sếp\n\n`);
@@ -520,7 +520,7 @@ export async function writeMonthly(bizId: string, month: string) {
   const ai = await aiSummary(bizId, `tháng ${month}`, facts);
   const block = [
     `Tháng ${month.split("-").reverse().join("/")}`, "",
-    ai ? `## Tóm tắt (Ngân Nguyệt)\n${ai.summary}\n\n**Điểm nổi bật**\n${ai.highlights.map((h) => `- ${h}`).join("\n")}\n\n**Nên làm tiếp**\n${ai.next.map((h) => `- [ ] ${h}`).join("\n")}\n` : "",
+    ai ? `## Tóm tắt (Hiền An)\n${ai.summary}\n\n**Điểm nổi bật**\n${ai.highlights.map((h) => `- ${h}`).join("\n")}\n\n**Nên làm tiếp**\n${ai.next.map((h) => `- [ ] ${h}`).join("\n")}\n` : "",
     "## Tổng số", facts, "", "## Các tuần", ...weeks.map((w) => `- [[${w}]]`),
   ].join("\n");
   return upsertAutoBlock(v, `${F.monthly}/${month}.md`, block, () => `${stringifyFrontmatter({ type: "monthly", month, date: first })}# Tổng kết tháng ${month}\n\n## Nhận xét của Sếp\n\n`);
@@ -572,7 +572,7 @@ function fireReminders(v: Row) {
   const now = Date.now();
   for (const r of upcomingReminders(v, 200)) {
     if (r.notified || !r.due || new Date(r.due).getTime() > now) continue;
-    notifyDesktop(`Nhắc việc: ${r.title}`, `Ngân Nguyệt nhắc Sếp — ${String(r.due).slice(11, 16)}`);
+    notifyDesktop(`Nhắc việc: ${r.title}`, `Hiền An nhắc Sếp — ${String(r.due).slice(11, 16)}`);
     emit(v.biz_id, "alert.raised", { level: "info", text: `⏰ Nhắc việc: ${r.title}` });
     try { setNoteMeta(v, r.path, { notified: true }); } catch (e) { logger.warn("brain.reminder_mark_failed", { error: String(e) }); }
   }

@@ -37,7 +37,7 @@ export type TaskCategory = "complex" | "general" | "image" | "seo" | "video";
 
 export const TASK_CATEGORIES: { id: TaskCategory; label: string; desc: string; recommended: Provider; agents: string[] }[] = [
   { id: "complex", label: "Công việc phức tạp · Chiến lược · Pháp lý · Code/REA", desc: "Phân tích sâu, lập kế hoạch chiến lược, rà soát pháp lý VN (vn-legal-check), dịch ngược ứng dụng (REA)", recommended: "claude_cli", agents: ["brief", "market_research", "strategy", "review", "analytics"] },
-  { id: "general", label: "Trò chuyện điều phối · Bán hàng · CRM", desc: "Trợ lý Ngân Nguyệt / Muse Chat, tư vấn khách hàng, chăm sóc lead, viết bài mạng xã hội thường ngày", recommended: "claude_cli", agents: ["assistant", "chat", "follow_up", "content", "ads"] },
+  { id: "general", label: "Trò chuyện điều phối · Bán hàng · CRM", desc: "Trợ lý Hiền An / Muse Chat, tư vấn khách hàng, chăm sóc lead, viết bài mạng xã hội thường ngày", recommended: "claude_cli", agents: ["assistant", "chat", "follow_up", "content", "ads"] },
   { id: "image", label: "Tạo Ảnh AI & Thiết kế Visual (4:5 / Banner)", desc: "Sinh ảnh sản phẩm, minh hoạ quảng cáo bằng OpenAI (ChatGPT/Codex) hoặc thiết kế SVG/HTML Chrome Local", recommended: "codex_cli", agents: ["post_image"] },
   { id: "seo", label: "Viết bài chuẩn SEO · Nội dung dài · Tổng hợp Web", desc: "Bài viết chuẩn SEO Website, nghiên cứu từ khóa, tổng hợp tin tức báo chí dài", recommended: "gemini_cli", agents: ["seo_web"] },
   { id: "video", label: "Sản xuất Video · Kịch bản Veo 3 & Local Studio", desc: "Kịch bản video ngắn, điều phối Google Flow Veo 3, Gemini Video & Remotion + VieNeu-TTS Local", recommended: "gemini_cli", agents: ["video_script", "creative"] },

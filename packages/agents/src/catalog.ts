@@ -26,7 +26,7 @@ export const STAGES = [
 ] as const;
 
 export const CATALOG: CatalogEntry[] = [
-  { key: "assistant", label: "Ngân Nguyệt", description: "Trợ lý tổng điều phối của CEO: giao việc ngay cho các agent, xem/can thiệp mọi tác vụ, báo cáo trong 1 khung chat", stage: 0, tools: ["system.read", "agents.dispatch", "tasks.control", "approvals.decide", "ads.control", "creative.start", "chat.reply"], autonomy: "L1", queue: "agent", tier: "medium", usesJev: [], tokenBudgetDay: 2_000_000 },
+  { key: "assistant", label: "Hiền An", description: "Trợ lý tổng điều phối của CEO: giao việc ngay cho các agent, xem/can thiệp mọi tác vụ, báo cáo trong 1 khung chat", stage: 0, tools: ["system.read", "agents.dispatch", "tasks.control", "approvals.decide", "ads.control", "creative.start", "chat.reply"], autonomy: "L1", queue: "agent", tier: "medium", usesJev: [], tokenBudgetDay: 2_000_000 },
   { key: "dna_intake", label: "DNA Agent", description: "Trích xuất DNA thương hiệu, đánh dấu thiếu & mâu thuẫn", stage: 1, tools: ["knowledge.read", "knowledge.write", "doc.parse"], autonomy: "L1", queue: "agent", tier: "medium", usesJev: [], tokenBudgetDay: 300_000 },
   { key: "brief", label: "Brief Agent", description: "Chuẩn hóa mục tiêu thành KPI đo được, đánh giá khả thi", stage: 1, tools: ["knowledge.read"], autonomy: "L1", queue: "agent", tier: "medium", usesJev: [], tokenBudgetDay: 300_000 },
   { key: "market_research", label: "Research Agent", description: "Nghiên cứu thị trường, đối thủ, insight khách hàng", stage: 2, tools: ["web.search", "web.fetch", "ads_library.search", "metrics.read"], autonomy: "L0", queue: "agent", tier: "large", usesJev: [], tokenBudgetDay: 600_000 },

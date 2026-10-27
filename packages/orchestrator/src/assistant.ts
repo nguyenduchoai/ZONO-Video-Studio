@@ -12,16 +12,16 @@ import { createPostImage } from "./post-image.ts";
 import { enqueue } from "./queue.ts";
 
 /**
- * Ngân Nguyệt — the CEO's command assistant. One chat box that sees every part of ZONO Agentic AI and can act
+ * Hiền An — the CEO's command assistant. One chat box that sees every part of ZONO Agentic AI and can act
  * on it: dispatch work to the other agents right away, follow and intervene in tasks, answer with live numbers.
  *
  * How: each CEO message runs `claude -p` (the CEO's Claude account) resuming the thread's Claude session, with
- * ONE tool server — bin/zono-mcp.mjs — whose tools call this API (signed "Ngân Nguyệt" in the audit log).
+ * ONE tool server — bin/zono-mcp.mjs — whose tools call this API (signed "Hiền An" in the audit log).
  * Reading and starting work that still passes review/approval happen immediately. Anything that changes the
  * outside world (approve & publish, reply to a customer, ads changes, spend Flow credits, switch flows/agents,
  * kill switch) becomes a confirm card the CEO clicks in the chat — unless the CEO turned on "tự thực hiện".
  */
-export const ASSISTANT = { key: "assistant", name: "Ngân Nguyệt", actor: "Ngân Nguyệt (trợ lý)" } as const;
+export const ASSISTANT = { key: "assistant", name: "Hiền An", actor: "Hiền An (trợ lý)" } as const;
 const RUN_DIR = resolve(process.cwd(), "data", "assistant");
 const MCP_SERVER = join(import.meta.dirname, "..", "bin", "zono-mcp.mjs");
 const API_URL = `http://127.0.0.1:${process.env.API_PORT ?? 8787}`;
@@ -43,7 +43,7 @@ const modelOf = (bizId: string) => {
   return model && modelMatchesProvider(model, effectiveProvider(bizId).provider) ? model : modelFor(bizId, ASSISTANT.key, "medium");
 };
 
-/** Existing databases were seeded before Ngân Nguyệt existed: give her an agent_config row. */
+/** Existing databases were seeded before Hiền An existed: give her an agent_config row. */
 export function ensureAssistantAgent(bizId: string) {
   if (q.get("SELECT id FROM agent_config WHERE biz_id = ? AND agent_key = ?", bizId, ASSISTANT.key)) return;
   const c = CATALOG.find((x) => x.key === ASSISTANT.key)!;
@@ -117,7 +117,7 @@ function systemPrompt(bizId: string) {
   // What the CEO said about earlier answers (👎 with a note = a rule to follow from now on).
   const fb = q.all<Row>("SELECT feedback, feedback_note, text FROM assistant_message WHERE biz_id = ? AND feedback IS NOT NULL AND feedback_note IS NOT NULL AND feedback_note != '' ORDER BY updated_at DESC LIMIT 8", bizId);
   const auto = assistantSettings(bizId).autoConfirm;
-  return `# BẠN LÀ NGÂN NGUYỆT
+  return `# BẠN LÀ HIỀN AN
 Trợ lý tổng điều phối riêng của CEO ${brand} trong hệ thống ZONO Agentic AI. Xưng "em", gọi người dùng là "Sếp" (tên trong Tài khoản: ${ownerProfile().name}${ownerProfile().title ? `, ${ownerProfile().title}` : ""}). Tiếng Việt, ngắn gọn, đi thẳng vào việc, có số liệu thật.
 Bây giờ: ${now} (giờ Việt Nam). Tình hình nhanh: ${snapshot(bizId)}.
 
@@ -163,7 +163,7 @@ export async function sendAssistantMessage(
 ) {
   const thread = byId<Row>("assistant_thread", threadId);
   if (!thread || thread.biz_id !== bizId) throw new AppError("NOT_FOUND", "Không thấy cuộc trò chuyện", 404);
-  if (running.has(threadId)) throw new AppError("BUSY", "Ngân Nguyệt đang trả lời tin trước, Sếp chờ chút nhé", 409);
+  if (running.has(threadId)) throw new AppError("BUSY", "Hiền An đang trả lời tin trước, Sếp chờ chút nhé", 409);
 
   const category = opts.taskCategory ?? taskCategoryForAgent(ASSISTANT.key, text);
   const forceLocal = opts.provider === "local_studio" || opts.provider === "sandbox";
@@ -183,7 +183,7 @@ export async function sendAssistantMessage(
     update("assistant_thread", threadId, { session_id: thread.session_id, started: 0, ai_provider: provider, ai_account_id: accountId });
   }
 
-  // Outcomes of confirm cards decided since the last turn, so Ngân Nguyệt knows what actually happened.
+  // Outcomes of confirm cards decided since the last turn, so Hiền An knows what actually happened.
   const lastAt = q.scalar<string>("SELECT MAX(created_at) FROM assistant_message WHERE thread_id = ? AND role = 'assistant'", threadId) ?? "";
   const decided = q.all<Row>("SELECT title, status, result FROM assistant_action WHERE thread_id = ? AND decided_at > ?", threadId, lastAt);
   const note = decided.length ? `\n\n[Cập nhật hệ thống: ${decided.map((d) => `thẻ "${d.title}" → ${d.status === "done" ? "Sếp đã xác nhận, đã thực hiện" : d.status === "failed" ? `thực hiện lỗi: ${JSON.stringify(d.result).slice(0, 200)}` : "Sếp đã hủy"}`).join("; ")}]` : "";
@@ -334,9 +334,9 @@ async function runCodexTurn(bizId: string, thread: Row, messageId: string, promp
   let text = "";
   try {
     const budget = q.get<Row>("SELECT token_budget_day FROM agent_config WHERE biz_id = ? AND agent_key = ?", bizId, ASSISTANT.key)?.token_budget_day;
-    if (budget && tokensUsedToday(bizId, ASSISTANT.key) >= budget) throw new AppError("TOKEN_BUDGET_EXCEEDED", "Ngân Nguyệt đã đạt trần token hôm nay", 429);
+    if (budget && tokensUsedToday(bizId, ASSISTANT.key) >= budget) throw new AppError("TOKEN_BUDGET_EXCEEDED", "Hiền An đã đạt trần token hôm nay", 429);
     const history = q.all<Row>("SELECT role, text FROM assistant_message WHERE thread_id = ? AND id != ? AND id != (SELECT id FROM assistant_message WHERE thread_id = ? AND role = 'user' ORDER BY rowid DESC LIMIT 1) AND status = 'done' ORDER BY created_at DESC, rowid DESC LIMIT 24", thread.id, messageId, thread.id).reverse();
-    const context = history.map((m) => `${m.role === "user" ? "Sếp" : "Ngân Nguyệt"}: ${m.text}`).join("\n\n").slice(-40_000);
+    const context = history.map((m) => `${m.role === "user" ? "Sếp" : "Hiền An"}: ${m.text}`).join("\n\n").slice(-40_000);
     const result = await withAiAccount(bizId, accountId, (home, signal) => runCodexAgent({ home, signal, model, system: systemPrompt(bizId),
       prompt: `Lịch sử hội thoại (chỉ dùng làm ngữ cảnh):\n${context}\n\nYêu cầu hiện tại:\n${prompt}`, timeoutMs: TIMEOUT_MS,
       mcp: { zono: { command: process.execPath, args: [MCP_SERVER], env: { ZONO_API: API_URL, ZONO_THREAD: thread.id, ZONO_ACTOR: ASSISTANT.actor, ZONO_BIZ: bizId } } },
@@ -365,9 +365,9 @@ async function runGeminiTurn(bizId: string, thread: Row, messageId: string, prom
   let text = "";
   try {
     const budget = q.get<Row>("SELECT token_budget_day FROM agent_config WHERE biz_id = ? AND agent_key = ?", bizId, ASSISTANT.key)?.token_budget_day;
-    if (budget && tokensUsedToday(bizId, ASSISTANT.key) >= budget) throw new AppError("TOKEN_BUDGET_EXCEEDED", "Ngân Nguyệt đã đạt trần token hôm nay", 429);
+    if (budget && tokensUsedToday(bizId, ASSISTANT.key) >= budget) throw new AppError("TOKEN_BUDGET_EXCEEDED", "Hiền An đã đạt trần token hôm nay", 429);
     const history = q.all<Row>("SELECT role, text FROM assistant_message WHERE thread_id = ? AND id != ? AND id != (SELECT id FROM assistant_message WHERE thread_id = ? AND role = 'user' ORDER BY rowid DESC LIMIT 1) AND status = 'done' ORDER BY created_at DESC, rowid DESC LIMIT 24", thread.id, messageId, thread.id).reverse();
-    const context = history.map((m) => `${m.role === "user" ? "Sếp" : "Ngân Nguyệt"}: ${m.text}`).join("\n\n").slice(-40_000);
+    const context = history.map((m) => `${m.role === "user" ? "Sếp" : "Hiền An"}: ${m.text}`).join("\n\n").slice(-40_000);
     log.push({ at: nowIso(), kind: "tool", text: "Gemini CLI đang xử lý yêu cầu trên máy…" });
     update("assistant_message", messageId, { text: "Đang xử lý bằng Gemini CLI…", log });
     live(bizId, { threadId: thread.id, messageId, status: "streaming", text: "Đang xử lý bằng Gemini CLI…", log });
@@ -699,7 +699,7 @@ async function runLocalAgenticTurn(
       const videosDone = q.scalar<number>("SELECT COUNT(*) FROM creative_job WHERE biz_id = ? AND status = 'done'", bizId) ?? 0;
 
       streamText([
-        `Dạ Sếp, em là **Ngân Nguyệt (ZONO × Muse Hatch Local Agent)**! Em đã nhận yêu cầu: _"${cleanPrompt}"_.`,
+        `Dạ Sếp, em là **Hiền An (ZONO × Muse Hatch Local Agent)**! Em đã nhận yêu cầu: _"${cleanPrompt}"_.`,
         ``,
         `### 📊 Tình hình Hệ thống & Ma trận AI Hiện tại`,
         `- **Bộ kỹ năng (Skills) đã nạp**: **${skillsCount} skills** (đã cài đặt **\`reverse-engineer-anything\` (REA)**, **\`vn-legal-check\`**, **\`ceo-annual-report\`**, **\`master-ke-hoach-chi-tiet\`**, **\`toiuuquangcao\`**)`,
@@ -755,7 +755,7 @@ export function synthesizeMessageTts(bizId: string, messageId: string, voice = "
     .replace(/[#*_`>|~-]/g, " ")
     .replace(/\s+/g, " ")
     .trim()
-    .slice(0, 700) || "Xin chào Sếp, em là Ngân Nguyệt trợ lý điều phối AI.";
+    .slice(0, 700) || "Xin chào Sếp, em là Hiền An trợ lý điều phối AI.";
 
   const ttsBin = resolve(process.cwd(), "bin/zono-vieneu-tts");
   try {
@@ -769,7 +769,7 @@ export function synthesizeMessageTts(bizId: string, messageId: string, voice = "
   return { audioPath: outFile, voice };
 }
 
-// ---------------- "Việc giao": work Ngân Nguyệt dispatched, with live status ----------------
+// ---------------- "Việc giao": work Hiền An dispatched, with live status ----------------
 export function recordDispatch(bizId: string, d: { threadId?: string | null; kind: string; refType: string; refId: string; title: string }) {
   const row = insert("assistant_dispatch", { biz_id: bizId, thread_id: d.threadId ?? null, kind: d.kind, ref_type: d.refType, ref_id: d.refId, title: d.title });
   emit(bizId, "assistant.updated", { dispatchId: row.id });
@@ -810,7 +810,7 @@ export function dispatchAgentTask(bizId: string, p: { agent: keyof typeof DIRECT
 export type ActionRequest = { method: "POST" | "PUT" | "DELETE"; path: string; body?: unknown };
 export function checkActionPath(path: string) {
   if (!/^\/v1\/[\w\-/.:?=&%]+$/.test(path)) throw new AppError("BAD_PATH", "Đường dẫn API không hợp lệ");
-  // Ngân Nguyệt can never confirm her own cards or change her own permissions / secrets.
+  // Hiền An can never confirm her own cards or change her own permissions / secrets.
   if (/^\/v1\/(assistant\/actions|assistant\/settings|mcp-keys|llm\b|connections\b.*\/(credentials|token))/.test(path)) throw new AppError("FORBIDDEN", "Thao tác này chỉ Sếp làm trực tiếp trên giao diện");
 }
 export function createAction(bizId: string, p: { threadId?: string | null; title: string; summary: string; request: ActionRequest }) {

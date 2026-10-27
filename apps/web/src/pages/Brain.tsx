@@ -14,7 +14,7 @@ import { Button, Modal, cx, inputCls, useToast } from "../components/ui";
 /**
  * Agentic Brain — the company's memory (Markdown vault, Obsidian-compatible), in ZONO's own look:
  * left = "Ngăn trí nhớ" (folders + search), centre = "Mạng trí nhớ" (graph) or the open note, right = "Vùng trí nhớ"
- * (regions with share bars, click to highlight), bottom = command bar to Ngân Nguyệt (voice, attach, drop files).
+ * (regions with share bars, click to highlight), bottom = command bar to Hiền An (voice, attach, drop files).
  */
 const store = { get: (k: string) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* storage unavailable */ } } };
 const ask = (text: string) => window.dispatchEvent(new CustomEvent("nguyet:ask", { detail: text }));
@@ -44,7 +44,7 @@ export function Brain() {
   const folders = useMemo(() => folderList(tree.data), [tree.data]);
   useEffect(() => store.set("brain.side", side ? "1" : "0"), [side]);
   useEffect(() => { if (open) setParams({ note: open }, { replace: true }); else setParams({}, { replace: true }); }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
-  // Links like /brain?note=… from elsewhere (reminders, Ngân Nguyệt) while already on this page
+  // Links like /brain?note=… from elsewhere (reminders, Hiền An) while already on this page
   const pn = params.get("note");
   useEffect(() => { if (pn !== open) setOpen(pn); }, [pn]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -68,7 +68,7 @@ export function Brain() {
     return (target: string) => { const t = target.replace(/\.md$/i, "").toLowerCase(); return byPath.get(t) ?? byBase.get(t.split("/").pop()!) ?? null; };
   }, [graph.data]);
 
-  // /brain?link=<Tên ghi chú> (from [[links]] in Ngân Nguyệt's chat) → open once the graph is known
+  // /brain?link=<Tên ghi chú> (from [[links]] in Hiền An's chat) → open once the graph is known
   const linkParam = params.get("link");
   useEffect(() => {
     if (!linkParam || !graph.data) return;
@@ -302,13 +302,13 @@ function AskBar({ vault, openPath, onUpload }: { vault: string | null; openPath:
   };
   return (
     <div className="border-t border-line bg-card px-4 pb-3 pt-2">
-      <p className="mb-1.5 flex items-center gap-2 text-xs text-muted"><span className={cx("h-2 w-2 rounded-full", info?.ready ? "bg-emerald-500" : "bg-amber-500")} />Ngân Nguyệt {info?.ready ? "sẵn sàng" : "chưa sẵn sàng"} · Claude CLI · {info?.settings?.model ?? info?.defaultModel ?? "…"}{openPath && <span className="truncate">· đang xem: {openPath}</span>}<button onClick={() => window.dispatchEvent(new CustomEvent("nguyet:open"))} className="ml-auto shrink-0 font-medium text-violet-600 hover:underline">Mở khung chat Ngân Nguyệt</button></p>
+      <p className="mb-1.5 flex items-center gap-2 text-xs text-muted"><span className={cx("h-2 w-2 rounded-full", info?.ready ? "bg-emerald-500" : "bg-amber-500")} />Hiền An {info?.ready ? "sẵn sàng" : "chưa sẵn sàng"} · Claude CLI · {info?.settings?.model ?? info?.defaultModel ?? "…"}{openPath && <span className="truncate">· đang xem: {openPath}</span>}<button onClick={() => window.dispatchEvent(new CustomEvent("nguyet:open"))} className="ml-auto shrink-0 font-medium text-violet-600 hover:underline">Mở khung chat Hiền An</button></p>
       <div className="flex items-end gap-2">
         <button onClick={speech.toggle} disabled={!speech.supported} title={speech.supported ? (speech.listening ? "Dừng nghe" : "Nói (tiếng Việt)") : "Trình duyệt chưa hỗ trợ nhận giọng nói"}
           className={cx("grid h-11 w-11 shrink-0 place-items-center rounded-full border", speech.listening ? "animate-pulse border-rose-400 bg-rose-500 text-white" : "border-line text-ink hover:bg-soft disabled:opacity-40")}>{speech.listening ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}</button>
         <button onClick={() => file.current?.click()} disabled={!vault} className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-line text-ink hover:bg-soft" title="Lưu file vào Hộp thư của Agentic Brain"><Paperclip className="h-5 w-5" /></button>
         <input ref={file} type="file" multiple className="hidden" onChange={(e) => { if (e.target.files?.length) onUpload(e.target.files); e.target.value = ""; }} />
-        <textarea rows={1} value={speech.interim ? `${text} ${speech.interim}` : text} onChange={(e) => setText(e.target.value)} placeholder="Giao việc, hỏi hoặc nhờ Ngân Nguyệt ghi lại… (thả file vào để lưu)"
+        <textarea rows={1} value={speech.interim ? `${text} ${speech.interim}` : text} onChange={(e) => setText(e.target.value)} placeholder="Giao việc, hỏi hoặc nhờ Hiền An ghi lại… (thả file vào để lưu)"
           onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); send(); } }}
           onPaste={(e) => { if (e.clipboardData.files.length) { e.preventDefault(); onUpload(e.clipboardData.files); } }}
           className="max-h-32 min-h-[44px] flex-1 resize-none rounded-2xl border border-line bg-card px-4 py-2.5 text-sm text-ink outline-none placeholder:text-muted focus:border-violet-400" />

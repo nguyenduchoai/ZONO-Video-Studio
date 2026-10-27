@@ -17,10 +17,10 @@ import {
 import { AppError } from "@dotaka/shared";
 import { currentBizId, routes, type Ctx } from "../http.ts";
 
-/** Ngân Nguyệt — the CEO's command chat. Tool calls arrive with an x-zono-actor header (see zono-mcp.mjs). */
+/** Hiền An — the CEO's command chat. Tool calls arrive with an x-zono-actor header (see zono-mcp.mjs). */
 export function assistantRoutes(app: FastifyInstance) {
   const r = routes(app);
-  // Only the CEO's own clicks may confirm cards or change Ngân Nguyệt's permissions — never her tools.
+  // Only the CEO's own clicks may confirm cards or change Hiền An's permissions — never her tools.
   const ceoOnly = (c: Ctx) => { if (c.req.headers["x-zono-actor"]) throw new AppError("FORBIDDEN", "Chỉ Sếp mới làm được thao tác này", 403); };
 
   /** Run a confirmed card through the normal API (same validation, audit, kill switch). */
@@ -130,11 +130,11 @@ export function assistantRoutes(app: FastifyInstance) {
     if (!assistantSettings(bizId).autoConfirm) return a;
     return execute(bizId, a.id, `${ASSISTANT.actor} · tự thực hiện`);
   });
-  // Ngân Nguyệt trên Telegram: trạng thái, mã ghép nối, bỏ ghép nối 1 chat.
+  // Hiền An trên Telegram: trạng thái, mã ghép nối, bỏ ghép nối 1 chat.
   r.get("/v1/assistant/telegram", ({ bizId }) => telegramAssistantStatus(bizId));
   r.post("/v1/assistant/telegram/pair", (c) => { ceoOnly(c); return createTelegramPairCode(c.bizId, c.actor); });
   r.del("/v1/assistant/telegram/chats/:id", (c) => { ceoOnly(c); return removeTelegramChat(c.bizId, c.params.id, c.actor); });
-  r.post("/v1/assistant/actions/:id/confirm", async (c) => { ceoOnly(c); return execute(c.bizId, c.params.id, "Sếp · qua Ngân Nguyệt"); });
+  r.post("/v1/assistant/actions/:id/confirm", async (c) => { ceoOnly(c); return execute(c.bizId, c.params.id, "Sếp · qua Hiền An"); });
   r.post("/v1/assistant/actions/:id/cancel", (c) => {
     ceoOnly(c);
     const a = byId<Row>("assistant_action", c.params.id);

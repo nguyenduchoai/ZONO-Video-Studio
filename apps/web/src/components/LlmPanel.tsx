@@ -13,7 +13,7 @@ const PROVIDERS = [
 
 const TASK_DOMAINS = [
   { id: "complex", icon: "🧠", label: "Công việc phức tạp · Chiến lược · Pháp lý VN · Code/REA", desc: "Hoạch định chiến lược, rà soát pháp lý 88 mục (vn-legal-check), dịch ngược ứng dụng (REA), phân tích sâu", rec: "claude_cli" },
-  { id: "general", icon: "💬", label: "Trò chuyện điều phối · Bán hàng · CRM", desc: "Trợ lý Ngân Nguyệt / Muse Chat, tư vấn khách hàng, chăm sóc lead, viết bài mạng xã hội thường ngày", rec: "claude_cli" },
+  { id: "general", icon: "💬", label: "Trò chuyện điều phối · Bán hàng · CRM", desc: "Trợ lý Hiền An / Muse Chat, tư vấn khách hàng, chăm sóc lead, viết bài mạng xã hội thường ngày", rec: "claude_cli" },
   { id: "image", icon: "🎨", label: "Tạo Ảnh AI & Thiết kế Visual (4:5 / Poster)", desc: "Sinh ảnh sản phẩm, minh họa quảng cáo bằng OpenAI (ChatGPT) kèm dự phòng Chrome Local 1080×1350", rec: "codex_cli" },
   { id: "seo", icon: "📝", label: "Viết bài chuẩn SEO · Nội dung dài · Tổng hợp Web", desc: "Bài viết chuẩn SEO Website, nghiên cứu từ khóa, tổng hợp tin tức báo chí dài", rec: "gemini_cli" },
   { id: "video", icon: "🎬", label: "Sản xuất Video · Kịch bản Veo 3 & Local Studio", desc: "Kịch bản video ngắn, điều phối Google Flow Veo 3, Gemini Video & Remotion + VieNeu-TTS 48kHz Local", rec: "gemini_cli" },
@@ -291,7 +291,7 @@ export function LlmPanel() {
         </table>
       </div>
       <datalist id="codex-models">{data.catalog.map((m: any) => <option key={m.id} value={m.id}>{m.label}</option>)}</datalist>
-      {s.provider === "codex_cli" && <p className="text-xs text-muted">Giữ <code>default</code> để Codex chọn model theo tài khoản. Có thể nhập ID model GPT được tài khoản hỗ trợ rồi bấm Thử. Ngân Nguyệt, chat khách và các agent nội dung dùng kết nối này; công cụ điều khiển Chrome/Flow hiện dùng Claude CLI.</p>}
+      {s.provider === "codex_cli" && <p className="text-xs text-muted">Giữ <code>default</code> để Codex chọn model theo tài khoản. Có thể nhập ID model GPT được tài khoản hỗ trợ rồi bấm Thử. Hiền An, chat khách và các agent nội dung dùng kết nối này; công cụ điều khiển Chrome/Flow hiện dùng Claude CLI.</p>}
 
       <div className="flex flex-wrap items-center gap-3 text-sm">
         <span className="text-muted">Mức suy nghĩ (effort):</span>

@@ -52,7 +52,7 @@ const MIGRATIONS: [table: string, column: string, ddl: string][] = [
   // External thread info (ZL-CRM conversation id, Zalo nick, thread id) for sending replies/follow-ups
   ["conversation", "ext", "TEXT NOT NULL DEFAULT '{}'"],
   ["follow_up_plan", "meta", "TEXT NOT NULL DEFAULT '{}'"],
-  // CEO feedback on Ngân Nguyệt answers (👍/👎 + note) — "Phản hồi" tab
+  // CEO feedback on Hiền An answers (👍/👎 + note) — "Phản hồi" tab
   ["assistant_message", "feedback", "TEXT"],
   ["assistant_message", "feedback_note", "TEXT"],
   // 1 = went through a sandbox publisher: nothing reached the real page/channel (shown as "Mô phỏng" everywhere)
@@ -162,7 +162,7 @@ export function setAppSetting(key: string, value: unknown) {
     .run(key, JSON.stringify(value), nowIso());
 }
 
-/** Account of the person operating the system (top-right menu; Ngân Nguyệt addresses them by "addressAs"). */
+/** Account of the person operating the system (top-right menu; Hiền An addresses them by "addressAs"). */
 export interface OwnerProfile { name: string; title: string; email: string; phone: string; addressAs: string; avatar: string | null }
 export const DEFAULT_PROFILE: OwnerProfile = { name: "", title: "Chủ doanh nghiệp", email: "", phone: "", addressAs: "Sếp", avatar: null };
 export function ownerProfile(): OwnerProfile {

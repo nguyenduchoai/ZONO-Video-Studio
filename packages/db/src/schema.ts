@@ -352,7 +352,7 @@ CREATE TABLE IF NOT EXISTS automation_run (
 );
 CREATE INDEX IF NOT EXISTS automation_run_recent ON automation_run (automation_id, created_at DESC);
 
--- Ngân Nguyệt: the CEO's command assistant (chat threads, dispatched work, confirm-before-act cards)
+-- Hiền An: the CEO's command assistant (chat threads, dispatched work, confirm-before-act cards)
 CREATE TABLE IF NOT EXISTS assistant_thread (
   id TEXT PRIMARY KEY, biz_id TEXT NOT NULL, title TEXT NOT NULL, session_id TEXT NOT NULL, model TEXT,
   started INTEGER NOT NULL DEFAULT 0, last_message_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL

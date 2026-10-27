@@ -39,7 +39,7 @@ export function routes(app: FastifyInstance) {
       const hit = idem.get(`${requestedBizId(req) ?? ""}:${req.url}:${key}`);
       if (hit && Date.now() - hit.at < 24 * 3600_000) return hit.body;
     }
-    // Ngân Nguyệt's tools call this API from the same machine and sign their changes (audit log shows who did what).
+    // Hiền An's tools call this API from the same machine and sign their changes (audit log shows who did what).
     const as = req.headers["x-zono-actor"];
     const actor = typeof as === "string" && as && ["127.0.0.1", "::1", "::ffff:127.0.0.1"].includes(req.ip) ? decodeURIComponent(as).slice(0, 60) : "Phòng Marketing ZONO";
     const bizId = currentBizId(req);
