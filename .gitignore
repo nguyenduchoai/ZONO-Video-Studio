@@ -1,0 +1,34 @@
+# Dependencies & build output
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Secrets — NEVER commit (tokens, API keys, passwords are generated per machine by `pnpm bootstrap`)
+.env
+.env.local
+.env.*.local
+services/zl-crm/backend/.env
+services/zl-crm/.env
+
+# Runtime data of this machine: database, uploads, rendered videos, exports, backups
+data/*
+!data/.gitkeep
+services/zl-crm/data/
+
+# Machine-local tooling
+tools/video/.venv/
+__pycache__/
+*.pyc
+
+# OS / editor
+.DS_Store
+*.log
+.vscode/*
+!.vscode/extensions.json
+
+# Video AI tools (cloned + weights by scripts/install-video-ai.mjs; patches live in services/video-ai-patches)
+services/video-ai/
+
+# Gói cài Windows: PostgreSQL đóng gói sẵn + nhật ký cài đặt (sinh ra khi đóng gói/cài, không đưa lên Git)
+runtime/
+install.log

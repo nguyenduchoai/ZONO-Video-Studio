@@ -1,0 +1,281 @@
+{
+  "company_name": "Nhà hàng Hải sản Biển Đông",
+  "customer_portrait": {
+    "segments": [
+      "Nhóm khách hàng gia đình",
+      "Nhóm khách đoàn công ty/ cơ quan",
+      "Nhóm khách đoàn du lịch"
+    ],
+    "dimensions": [
+      {
+        "label": "1. Nhân khẩu học",
+        "values": [
+          "Độ tuổi: Ông bà 50-65, Bố mẹ 28-49, Con cái 3-18.\nQuy mô 4-10 người, trung lưu trở lên, thu nhập hộ 30-200tr/tháng.\nKhu vực: Vĩnh Yên & vùng lân cận.",
+          "Người quyết định: Trưởng phòng, Giám đốc chi nhánh, Công đoàn…\nĐộ tuổi 25-50, có ngân sách công ty 15-50tr+/tháng.\nCông ty/cơ quan tại Vĩnh Yên & các khu công nghiệp lân cận.",
+          "Độ tuổi 23-45. Nhóm bạn bè, 2-3 gia đình đi chung, đồng nghiệp đi du lịch.\nKhu vực: Hà Nội, Tam Đảo, Đại Lải…\nThu nhập 10-30tr/người, có trưởng đoàn quyết định."
+        ]
+      },
+      {
+        "label": "3. Hành vi tiêu dùng",
+        "values": [
+          "1-2 lần/tháng; cao điểm cuối tuần, lễ, sinh nhật.\nGọi lẩu hải sản, cháo, set menu. Trẻ con thích khoai chiên, cơm rang.\nTìm trên Google Maps/Facebook/TikTok, hỏi bạn bè.",
+          "Dịp cố định: tất niên, tân niên, kỷ niệm, training.\nĐoàn 20-150 người. Yêu cầu phòng VIP, hội trường, LED.\nSet menu 300-600k/khách; thích ‘an toàn, đủ món, đẹp bàn’.",
+          "Search Google Maps/FB/TikTok với từ khóa ‘hải sản Vĩnh Yên’.\nInbox hỏi phòng riêng, set menu. Ngân sách 250-500k/người.\nThích check-in, up story/Reels nếu trải nghiệm tốt."
+        ]
+      },
+      {
+        "label": "4. Tâm lý (Insight)",
+        "values": [
+          "1. Hải sản phải tươi-sạch-an toàn.\n2. Đi ăn để gắn kết gia đình.\n3. Sợ bị chặt chém, sợ phát sinh.\n4. Muốn ‘all-in-one’: hải sản, món cho trẻ, phòng, bãi đỗ.\n5. Muốn sang nhưng không đau ví.",
+          "1. Đi ăn để thể hiện mặt mũi đơn vị.\n2. Tiền công ty - phải xứng đáng, minh bạch, có VAT.\n3. Một lần nhưng trọn gói: menu, trang trí, LED, MC.\n4. An toàn & đẳng cấp - uy tín công ty/cơ quan.",
+          "1. Phải có bữa ăn đáng nhớ trong chuyến đi.\n2. Sợ ‘chặt chém’, sợ cân gian.\n3. Trưởng đoàn áp lực ‘không mang tiếng’.\n4. Thích ‘sang nhưng hợp lý’, trong tầm kiểm soát."
+        ]
+      },
+      {
+        "label": "5. Nhu cầu & Mong muốn",
+        "values": [
+          "Hải sản siêu tươi, menu đa dạng (cao cấp & tầm trung).\nPhòng 6-12 người, điều hòa, bãi đỗ rộng.\nMua hải sản sống mang về, sơ chế rõ phí 50-100k/kg.\nChăm sóc chu đáo, ảnh đẹp check-in.",
+          "Phòng hội trường, LED, sân khấu, âm thanh.\nSet menu hải sản đa dạng, có món chủ lực.\nDịch vụ trọn gói: trang trí, MC, slide chiếu.\nHợp đồng, VAT, phí rõ ràng không phát sinh.",
+          "Phòng riêng 5-10 người, bãi đỗ rộng.\nCombo/set menu 5-7-10 người rõ giá.\nPhục vụ nhanh, tư vấn định lượng.\nMua hải sản về làm quà, sơ chế sẵn."
+        ]
+      },
+      {
+        "label": "6. Động lực",
+        "values": [
+          "Kỷ niệm đặc biệt: sinh nhật, lễ Tết, gặp gia đình.\nTưởng thưởng sau thời gian vất vả.\nTò mò sau khi xem review FB/TikTok.\nTiện lợi: vừa ăn vừa mua hải sản về.",
+          "Hóa đơn lớn phục vụ nhiều mục tiêu: gắn kết, đãi đối tác.\nKhông gian lớn, LED phù hợp gala/year end.\nMenu hải sản ‘nâng tầm’ bữa tiệc.\nNgười tổ chức ghi điểm với lãnh đạo.",
+          "Kỷ niệm, gắn kết nhóm bạn.\nTrải nghiệm ‘vựa hải sản giữa phố Vĩnh Yên’ độc đáo.\nYên tâm: thấy tận mắt, chọn tại bể.\nTối ưu chi phí chuyến đi."
+        ]
+      },
+      {
+        "label": "7. Rào cản",
+        "values": [
+          "Sợ bill đắt cho các món cao cấp.\nLo cân sai, lên bill không khớp.\nSợ chờ lâu khi có trẻ nhỏ, người già.\nKhoảng cách di chuyển nếu ở xa trung tâm.",
+          "Nghĩ ‘nhà hàng sang = đắt’, sợ vượt ngân sách.\nLo phục vụ chậm, hết đồ khi đông.\nThủ tục báo giá, VAT phức tạp.\nSo sánh với đối thủ đã quen như Ngon, Hường Lê.",
+          "Biển Đông chưa xuất hiện nhiều trên Google/TikTok.\nLo cách xa điểm nghỉ Tam Đảo/Đại Lải.\nGiá hải sản theo kg không niêm yết rõ.\nSợ phục vụ chậm, đoàn nhỏ bị bỏ quên."
+        ]
+      }
+    ]
+  },
+  "general_direction": [
+    {
+      "label": "Mục tiêu chính",
+      "value": "Xây dựng Hải sản Biển Đông trở thành ‘top of mind’ vựa hải sản tươi & nhà hàng tiệc cho gia đình, khách đoàn tại Vĩnh Yên.\nThay đổi thói quen ‘mua hải sản ở chợ’ sang ‘ra Biển Đông cho yên tâm’.\nĐẩy mạnh 2 dòng doanh thu song song: ăn tại chỗ + mua hải sản tươi/sơ chế mang về hoặc ship."
+    },
+    {
+      "label": "Định vị hình ảnh",
+      "value": "Hình ảnh tổng thể: Vựa hải sản tươi giữa thành phố, không gian tiệc chuẩn khách sạn nhưng gần gũi như bữa cơm gia đình.\nTone of voice: Gần gũi, mộc mạc, tự tin về chất lượng, minh bạch giá.\nTrụ cột: Vựa tươi sống - Nhà hàng tiệc chuẩn chỉnh - Khoảnh khắc sum vầy."
+    },
+    {
+      "label": "Gợi ý định vị",
+      "value": "Định vị chiến lược: ‘HẢI SẢN BIỂN ĐÔNG - Vựa hải sản tươi sống & nhà hàng tiệc chuẩn cho gia đình và khách đoàn tại Vĩnh Yên.’\nTuyên ngôn giá trị: Ăn tiệc hải sản tươi như khách sạn, vừa có thể mua cả vựa hải sản mang về, giá rõ ràng, chế biến theo ý, ship nhanh 30 phút.\nSlogan: ‘Vựa tươi mỗi ngày, tiệc sum vầy cho cả nhà.’"
+    },
+    {
+      "label": "Gợi ý BIO",
+      "value": "BIO 1: ‘Hải sản Biển Đông - Vựa tươi mỗi ngày, tiệc sum vầy cho cả nhà. Chọn tại bể, cân tại chỗ, ship nhanh 30 phút.’\nBIO 2: ‘Tươi giữa phố, tiệc ngon đủ chỗ cho cả nhà. Ăn tại chỗ hay mang về, giá rõ ràng, bao 1 đổi 1.’\nBIO 3: ‘Vựa hải sản và nhà hàng tiệc lớn nhất Vĩnh Yên - Tươi thấy mắt, đặt tiệc là có ngay.’"
+    },
+    {
+      "label": "Mục tiêu cụ thể",
+      "value": "1. Nhận diện & uy tín online: 7-14 video/tuần, 1-2 post/ngày. Duy trì Google Maps ≥ 4.5/5.\n2. Đẩy hành vi ‘mua tại vựa / ship 30 phút’: tăng đơn đặt mua mang về mỗi tháng.\n3. Lấp đầy công suất tiệc: +10 booking đoàn/tháng.\n4. Củng cố định vị khác biệt: 1-2 post/tuần nhấn USP ‘bao 1 đổi 1, sơ chế FREE, ship 30 phút’."
+    }
+  ],
+  "platforms": [
+    {
+      "name": "FACEBOOK",
+      "theme": "blue_1",
+      "info_section": [
+        {
+          "label": "Mục tiêu",
+          "value": "Xây fanpage thành kênh chính thức làm thương hiệu, đặt bàn, đặt tiệc, đặt hải sản sống cho khách Vĩnh Yên & du lịch. Nhấn mạnh: hải sản tươi, tiệc lớn, ship 30 phút, sơ chế miễn phí."
+        },
+        {
+          "label": "Tăng trưởng",
+          "value": "Fanpage: +50-70% follow, reach 3-5x follower. Tương tác 3-5%.\nKinh doanh: +10-30 booking tiệc/tháng, 50-70 đơn hải sản/tháng.\nSocial proof: 10-15 review/check-in/tháng."
+        },
+        {
+          "label": "Thời gian đăng bài",
+          "value": "Trưa 11h-13h (combo, vựa). Chiều 16h30-18h30 (đặt bàn tối). Tối 20h-21h30 (reels không gian, review). Mỗi ngày 1-2 khung cố định."
+        },
+        {
+          "label": "Số lượng bài",
+          "value": "Tối thiểu 1-2 bài/ngày. Mỗi tuần 7-14 bài: 3-4 album, 3-4 reels, 1 post ưu đãi. Mỗi tháng 1-2 campaign theo mùa (lễ, tết)."
+        },
+        {
+          "label": "Lưu ý khi đăng bài",
+          "value": "Luôn gắn USP: ‘vựa sống, sơ chế free, ship 30 phút, 1 đổi 1’.\nẢnh/video ưu tiên hải sản tươi đang bơi, món ăn cận cảnh.\nCaption ngắn, có CTA rõ: hotline/inbox/Zalo.\nGhi giá rõ ràng để xóa nỗi sợ ‘chặt chém’.\nLuôn có địa chỉ, bãi đỗ, phòng riêng cuối bài."
+        }
+      ],
+      "pillar_table": {
+        "style": "facebook_style",
+        "title": "Content Pillar Hải Sản Biển Đông",
+        "pillars": [
+          {
+            "name": "(1) Tiệc gia đình và khách đoàn sum vầy tại Biển Đông",
+            "ratio": 0.15,
+            "goal": "Khẳng định Biển Đông là điểm hẹn lý tưởng cho mọi bữa tiệc gia đình, công ty, hội nhóm với không gian đẹp và phục vụ chu đáo.",
+            "angles": [
+              {"angle": "Câu chuyện bữa tối các gia đình tại BĐ", "formats": ["photo_real", "video"]},
+              {"angle": "Tiệc công ty, cơ quan phải xứng tầm",    "formats": ["photo_design", "video"]},
+              {"angle": "Đi đâu họp lớp, họp hội là ra Biển Đông", "formats": ["photo_real", "photo_design", "video"]}
+            ]
+          },
+          {
+            "name": "(2) Vựa hải sản tươi sống - chọn tận tay, giá rõ ràng",
+            "ratio": 0.30,
+            "goal": "Xây dựng hình ảnh vựa hải sản uy tín, tươi sống, minh bạch giá để khách yên tâm mua mang về hoặc đặt chế biến.",
+            "angles": [
+              {"angle": "Đi chợ hải sản kiểu mới tại Biển Đông",          "formats": ["video"]},
+              {"angle": "Học chọn cua, chọn tôm cùng Biển Đông",          "formats": ["photo_design", "video"]},
+              {"angle": "Hậu trường hải sản về bể mỗi ngày",              "formats": ["photo_real", "video"]},
+              {"angle": "Mua sống, sơ chế/chế biến, ship tận nhà",        "formats": ["photo_design", "video"]}
+            ]
+          },
+          {
+            "name": "(3) Bằng chứng niềm tin xã hội - Review thật, niềm tin thật",
+            "ratio": 0.20,
+            "goal": "Tận dụng đánh giá và trải nghiệm thực tế của khách hàng để củng cố uy tín, tạo niềm tin cho khách mới.",
+            "angles": [
+              {"angle": "Khách nói gì trên Google/Facebook",              "formats": ["photo_real", "photo_design", "video"]},
+              {"angle": "Góc review tổ chức tiệc của đoàn công ty",       "formats": ["photo_real", "photo_design", "video"]},
+              {"angle": "Khách góp ý, Biển Đông sửa thật",                "formats": ["photo_real", "photo_design", "video"]}
+            ]
+          },
+          {
+            "name": "(4) Hậu trường phía sau tại Hải Sản Biển Đông",
+            "ratio": 0.25,
+            "goal": "Kể câu chuyện phía sau bếp, quy trình chọn, sơ chế, chế biến để chứng minh sự chuyên nghiệp, sạch sẽ và tận tâm.",
+            "angles": [
+              {"angle": "Hậu trường setup một bữa tiệc lớn",               "formats": ["photo_real", "video"]},
+              {"angle": "Bếp sạch, quy trình phục vụ chuẩn",               "formats": ["photo_real", "video"]},
+              {"angle": "Hậu trường đào tạo nhân viên Biển Đông",           "formats": ["photo_real", "video"]},
+              {"angle": "1 vòng khảo sát nhà hàng của chị chủ BĐ",          "formats": ["photo_real", "video"]}
+            ]
+          },
+          {
+            "name": "(5) Ưu đãi thông minh và chiến dịch theo mùa",
+            "ratio": 0.10,
+            "goal": "Thu hút đặt bàn và đơn hàng mới bằng các chương trình khuyến mãi, combo theo mùa, kích cầu đều khách trong năm.",
+            "angles": [
+              {"angle": "Combo thông minh cho gia đình, nhóm nhỏ",         "formats": ["photo_design", "video"]},
+              {"angle": "Ưu đãi riêng cho khách đoàn đặt sự kiện",         "formats": ["photo_design", "video"]},
+              {"angle": "Ưu đãi theo ngày, dịp, lễ - ăn là lời",           "formats": ["photo_design", "video"]}
+            ]
+          }
+        ]
+      },
+      "content_mapping": {
+        "style": "dual_post",
+        "weeks": [
+          {
+            "label": "Tuần 1",
+            "start_date": "2025-12-15",
+            "days_count": 7,
+            "slots": [
+              {
+                "slot_name": "Title Video",
+                "items": [
+                  {"pillar": "Câu chuyện khách hàng", "title": "Tiệc 20 mâm mà thiếu đúng một món, mình xử thế nào cho khách vui?"},
+                  {"pillar": "Feedback khách hàng",   "title": "Khách chê lẩu mặn trên Google Map, mình không xoá review mà làm thế này"},
+                  {"pillar": "Hậu trường Biển Đông",  "title": "Lương nhân viên học việc không cao, nhưng mình bắt học đủ 10 bước nhận diện hải sản loại 1"},
+                  {"pillar": "Vựa hải sản tươi",      "title": "Cua Cà Mau 1 đổi 1, mình đã dám nói câu này thì quy trình phía sau phải thế nào?"},
+                  {"pillar": "Ưu đãi sản phẩm",       "title": "Giảm giá thì dễ, giữ chất lượng mới khó - mình làm ‘Ngày Của Cua’ mà không cắt nguyên liệu"},
+                  {"pillar": "Feedback khách hàng",   "title": "Bàn 12 người bảo: ‘Ngon nhất đời em đi ăn hải sản’, mình quay lại cả quy trình bếp cho rõ"},
+                  {"pillar": "Vựa hải sản tươi",      "title": "Một con cá hơn 1 triệu, vì sao mình bắt khách cân lại 2 lần trước khi mang đi?"}
+                ]
+              },
+              {
+                "slot_name": "Title Bài viết",
+                "items": [
+                  {"pillar": "Feedback khách hàng",   "title": "Sau tiệc 50 khách, lời nhắn lại của đoàn làm Hải sản Biển Đông thấy mọi nỗ lực đều xứng đáng"},
+                  {"pillar": "Ưu đãi sản phẩm",       "title": "‘Không trông chờ vào săn sale’ - Biển Đông chủ động giảm giá cua, niêm yết rõ từng cỡ"},
+                  {"pillar": "Feedback khách hàng",   "title": "‘Lần đầu mua vựa, lần sau đặt tiệc’ - hành trình của một gia đình chọn Biển Đông làm điểm hẹn"},
+                  {"pillar": "Hậu trường Biển Đông",  "title": "Bếp Biển Đông xử lý từng mẻ cua như thế nào để không còn một hạt cát trong nồi lẩu?"},
+                  {"pillar": "Vựa hải sản tươi",      "title": "Vựa hải sản Biển Đông: khách được tự tay soi từng con cua, thích mới cân, không ưng không bán"},
+                  {"pillar": "Ưu đãi sản phẩm",       "title": "Combo tiệc gia đình tiết kiệm: đặt 1 bàn, Biển Đông tặng thêm món hải sản nóng hổi"},
+                  {"pillar": "Hậu trường Biển Đông",  "title": "Không giao cho ‘sự tinh tế’ của nhân viên: Biển Đông đóng khung từng món ăn từ rau thơm đến nước chấm"}
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "TIKTOK",
+      "theme": "blue_2",
+      "channel_title": "KÊNH TIKTOK HẢI SẢN BIỂN ĐÔNG",
+      "info_section": [
+        {"label": "Mục tiêu",             "value": "Xây TikTok thành kênh viral, trung gian đặt bàn/đặt tiệc/đặt hải sản sống. Nhấn mạnh: tươi, tiệc lớn, ship 30 phút, sơ chế free."},
+        {"label": "Bối cảnh (Địa điểm)",  "value": "Phòng VIP, hội trường, khu tiệc lớn có LED.\nToàn cảnh nhà hàng, bàn ghế set up.\nKhu vựa: bể cua, tôm đang bơi.\nKhu cân, sơ chế, đóng thùng ship.\nBếp nóng: chảo lửa, lẩu sôi.\nPhòng họp nhỏ: chị chủ nói chuyện, chỉnh quy trình."},
+        {"label": "Giọng văn",            "value": "Giọng chị nhân viên/chủ quán: đời, gần gũi, kể chuyện.\nThẳng, có lúc gắt, 100% hướng về chất lượng.\nLuôn có logic/số liệu phía sau.\nSẵn sàng nhận lỗi, chỉnh sai.\nThường đọc giá trong video, minh bạch."},
+        {"label": "Cảm xúc truyền tải",   "value": "Yên tâm & tin tưởng: quy trình rõ, đổi ngay nếu lỗi.\nThèm ăn: cận cảnh cua gạch, lẩu sôi, sashimi.\nẤm cúng, sum vầy: gia đình, bạn bè, công ty cụng ly.\nTự hào & ‘hời’: ăn nhà hàng lớn, giá như chợ."},
+        {"label": "Số lượng video",       "value": "Tối thiểu: 1 video/ngày, 7 video/tuần.\nMục tiêu: 2-3 video/ngày (1 clip vựa, 1 clip món/tiệc), 14-21 video/tuần."},
+        {"label": "Tăng trưởng",          "value": "Mỗi video: 3k-10k view, có clip hot 50k-100k.\nFollow: 10k-30k trong 6 tháng.\nMỗi tháng +50-100 inbox/đặt hàng từ TikTok."},
+        {"label": "Thời lượng video",     "value": "Video review sản phẩm/ưu đãi: 35-45 giây.\nVideo trao giá trị, viral, hậu trường, feedback: 60-90 giây."},
+        {"label": "Thời gian đăng",       "value": "Trưa 11h-13h: tệp văn phòng, nội trợ.\nChiều 17h-18h30: gợi ý ăn tối, mua mang về.\nTối 20h30-22h: recap tiệc, kể chuyện, hậu trường, feedback."}
+      ],
+      "pillar_table": {
+        "style": "tiktok_style",
+        "title": "Content Pillar Hải sản Biển Đông",
+        "pillars": [
+          {
+            "name": "Tiệc hải sản tại Biển Đông",
+            "goal": "Lấp bàn tiệc, tiệc đoàn, tất niên, sinh nhật, họp lớp.",
+            "audience": "Lạnh",
+            "purpose": "Cho khách thấy không khí tiệc thật, khẳng định Biển Đông là địa chỉ đặt tiệc hải sản chuẩn nhà hàng lớn, thúc đẩy inbox giữ bàn, hỏi set menu.",
+            "ratio": 0.15,
+            "angle": "Angle 1 – Series: ‘Đặt tiệc từ con số 0’\nAngle 2 – Series: ‘Menu thật theo túi tiền’\nAngle 3 – Series: ‘Xử lý sự cố trong tiệc’"
+          },
+          {
+            "name": "Đi chợ Biển Đông – Vựa hải sản sống",
+            "goal": "Ghim vào đầu khách Vĩnh Yên: ‘Mua hải sản là ra Biển Đông cho yên tâm’.",
+            "audience": "Lạnh",
+            "purpose": "Ghim nhận thức ‘mua hải sản sống là tới Biển Đông’, xóa nỗi sợ hàng ươn/cân điêu, kéo đơn mua mang về, ship 30 phút, sơ chế free mỗi tuần.",
+            "ratio": 0.30,
+            "angle": "Angle 1 – Series: ‘Hôm nay vựa Biển Đông về gì?’\nAngle 2 – Series: ‘Chọn hộ khách, chỉ luôn cách chọn Hải sản Tươi’\nAngle 3 – Series: ‘Khách mua về làm quà, đóng gói sao cho khỏi tanh xe’"
+          },
+          {
+            "name": "Hậu trường và bí quyết tươi, sạch, thật",
+            "goal": "Xây niềm tin về chất lượng, tạo cảm giác ‘ăn nhà hàng lớn nhưng rất sạch và đáng tiền’.",
+            "audience": "Lạnh",
+            "purpose": "Chứng minh quy trình tươi, sạch, rõ ràng, nâng giá trị món ăn, xây hình ảnh đội ngũ đầu bếp chuyên nghiệp, cho khách cảm giác yên tâm, đáng tiền.",
+            "ratio": 0.30,
+            "angle": "Angle 1 – Series: ‘Một món, mười lần chỉnh’\nAngle 2 – Series: ‘Làm sạch cho tới khi hết sạn’\nAngle 3 – Series: ‘Luật trong bếp Biển Đông’"
+          },
+          {
+            "name": "Review thật và ưu đãi rõ ràng",
+            "goal": "Tạo niềm tin và kích đơn nhanh, tạo sự gắn bó cảm xúc với thương hiệu.",
+            "audience": "Ấm/Nóng",
+            "purpose": "Tận dụng review, check-in, UGC tạo bằng chứng xã hội; dùng flash sale, combo, ưu đãi theo mùa để kích đơn nhanh, giữ Biển Đông ‘top of mind’.",
+            "ratio": 0.25,
+            "angle": "Angle 1 – Series: ‘Đọc review cùng Biển Đông’\nAngle 2 – Series: ‘Ưu đãi nhưng không bớt nguyên liệu’\nAngle 3 – Series: ‘Khách kể lại, Biển Đông nghe’"
+          }
+        ]
+      },
+      "content_mapping": {
+        "style": "single_post",
+        "weeks": [
+          {
+            "label": "Tuần 1",
+            "start_date": "2025-12-15",
+            "days_count": 7,
+            "slots": [
+              {
+                "slot_name": "Title",
+                "items": [
+                  {"pillar": "Tiệc Hải sản tại BĐ",       "title": "Một bữa sinh nhật 10 người mà mình set menu như tiệc cưới, khách có chê thừa không?"},
+                  {"pillar": "Đi chợ Biển Đông",          "title": "Cua Cà Mau nhà mình đang sáu trăm mấy một ký, đây là lý do bảng giá luôn treo ngay cửa"},
+                  {"pillar": "Hậu trường và bí quyết",    "title": "Trước giờ mình rửa mực sai bét, đến khi khách kêu tanh mới dám lật lại cả quy trình"},
+                  {"pillar": "Review và ưu đãi",          "title": "Khách ăn xong chuyển khoản dư 500 nghìn, Biển Đông gọi lại trả hay im luôn?"},
+                  {"pillar": "Tiệc Hải sản tại BĐ",       "title": "Tiệc tất niên công ty 150 người, mình tính giờ ra món sao để không bàn nào phải chờ?"},
+                  {"pillar": "Đi chợ Biển Đông",          "title": "Một buổi sáng nhập cả tấn hải sản, mình loại bao nhiêu ký không đạt mới dám đưa ra bể"},
+                  {"pillar": "Review và ưu đãi",          "title": "Một review 1 sao vì món ra chậm, đây là cách tụi mình xin lỗi và mời khách quay lại ăn bù"}
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

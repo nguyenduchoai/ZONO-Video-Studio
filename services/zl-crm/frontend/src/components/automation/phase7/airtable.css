@@ -1,0 +1,307 @@
+/* Phase 7 Bot-Auto — Airtable-design-analysis CSS variables.
+ * Source spec: DESIGN.md `Airtable-design-analysis` v=alpha.
+ * Imported once via BotAutoShell.vue so all child views inherit the tokens.
+ *
+ * Rules:
+ *   - Primary CTA = near-black (#181d26), NOT link blue.
+ *   - White canvas hero, no gradient.
+ *   - Section vertical rhythm: 96px.
+ *   - Display type weight 400, sub-titles/buttons 500. Never 700.
+ *   - No hover state on solid CTAs (spec policy); pressed-state only.
+ */
+
+/* ── Breakpoints (matches DESIGN.md responsive table) ─────────────────────
+ *   Mobile  < 768px   : single-column, drawer nav, touch targets ≥44
+ *   Tablet  768-1023  : 2-up grids, icon-only sidebar rail
+ *   Desktop 1024-1439 : 3-up grids, full sidebar 240px
+ *   Wide    ≥ 1440px  : max-width 1280px, outer margin grows
+ */
+
+.airtable-scope {
+  /* Colors */
+  --at-primary: #181d26;
+  --at-primary-active: #0d1218;
+  --at-ink: #181d26;
+  --at-body: #333840;
+  --at-muted: #41454d;
+  --at-hairline: #dddddd;
+  --at-border-strong: #9297a0;
+
+  --at-canvas: #ffffff;
+  --at-surface-soft: #f8fafc;
+  --at-surface-strong: #e0e2e6;
+  --at-surface-dark: #181d26;
+
+  --at-coral: #aa2d00;
+  --at-forest: #0a2e0e;
+  --at-cream: #f5e9d4;
+  --at-peach: #fcab79;
+  --at-mint: #a8d8c4;
+  --at-yellow: #f4d35e;
+  --at-mustard: #d9a441;
+
+  --at-link: #1b61c9;
+  --at-link-active: #1a3866;
+  --at-info-border: #458fff;
+  --at-success: #006400;
+
+  --at-on-primary: #ffffff;
+  --at-on-dark: #ffffff;
+
+  /* Radius */
+  --at-r-xs: 2px;
+  --at-r-sm: 6px;
+  --at-r-md: 10px;
+  --at-r-lg: 12px;
+  --at-r-pill: 9999px;
+
+  /* Spacing */
+  --at-s-xxs: 4px;
+  --at-s-xs: 8px;
+  --at-s-sm: 12px;
+  --at-s-md: 16px;
+  --at-s-lg: 24px;
+  --at-s-xl: 32px;
+  --at-s-xxl: 48px;
+  --at-s-section: 96px;
+
+  /* Default surface for the scope */
+  background: var(--at-canvas);
+  color: var(--at-body);
+}
+
+/* ── Typography roles ─────────────────────────────────────────────────── */
+.at-display-lg { font-size: 40px; font-weight: 400; line-height: 1.2; letter-spacing: 0; color: var(--at-ink); }
+.at-display-md { font-size: 32px; font-weight: 400; line-height: 1.2; letter-spacing: 0; color: var(--at-ink); }
+.at-title-lg   { font-size: 24px; font-weight: 400; line-height: 1.35; letter-spacing: 0.12px; color: var(--at-ink); }
+.at-title-md   { font-size: 20px; font-weight: 400; line-height: 1.5;  letter-spacing: 0; color: var(--at-ink); }
+.at-title-sm   { font-size: 18px; font-weight: 500; line-height: 1.4;  letter-spacing: 0; color: var(--at-ink); }
+.at-label-md   { font-size: 16px; font-weight: 500; line-height: 1.4;  letter-spacing: 0; color: var(--at-ink); }
+.at-body-md    { font-size: 14px; font-weight: 400; line-height: 1.25; letter-spacing: 0; color: var(--at-body); }
+.at-caption    { font-size: 14px; font-weight: 500; line-height: 1.35; letter-spacing: 0.16px; color: var(--at-muted); }
+
+/* ── Buttons (signature pair) ─────────────────────────────────────────── */
+.at-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.4;
+  border-radius: var(--at-r-lg);
+  padding: 12px 20px;
+  cursor: pointer;
+  border: 0;
+  transition: background-color 0.08s;
+  font-family: inherit;
+}
+.at-btn--primary {
+  background: var(--at-primary);
+  color: var(--at-on-primary);
+}
+.at-btn--primary:active { background: var(--at-primary-active); }
+.at-btn--secondary {
+  background: var(--at-canvas);
+  color: var(--at-ink);
+  border: 1px solid var(--at-hairline);
+}
+.at-btn--secondary:active { background: var(--at-surface-soft); }
+.at-btn--ghost {
+  background: transparent;
+  color: var(--at-ink);
+  padding: 8px 12px;
+}
+.at-btn--ghost:active { background: var(--at-surface-soft); }
+.at-btn--sm { padding: 8px 14px; font-size: 14px; }
+.at-btn--xs { padding: 6px 10px; font-size: 13px; }
+.at-btn[disabled],
+.at-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Page header pattern ──────────────────────────────────────────────── */
+.at-page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+.at-page-title {
+  font-size: 32px;
+  font-weight: 400;
+  line-height: 1.2;
+  margin: 0 0 8px;
+  color: var(--at-ink);
+}
+.at-page-subtitle {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--at-body);
+  max-width: 640px;
+  margin: 0;
+}
+
+/* ── Card primitives ──────────────────────────────────────────────────── */
+.at-card {
+  background: var(--at-canvas);
+  border: 1px solid var(--at-hairline);
+  border-radius: var(--at-r-md);
+  padding: var(--at-s-md);
+}
+.at-card--lg {
+  border-radius: var(--at-r-lg);
+  padding: var(--at-s-xl);
+}
+.at-card--cream {
+  background: var(--at-cream);
+  border-color: transparent;
+}
+.at-card--soft {
+  background: var(--at-surface-soft);
+  border-color: transparent;
+}
+.at-card--dark {
+  background: var(--at-surface-dark);
+  color: var(--at-on-dark);
+  border-color: transparent;
+}
+.at-card--coral {
+  background: var(--at-coral);
+  color: var(--at-on-primary);
+  border-color: transparent;
+}
+.at-card--forest {
+  background: var(--at-forest);
+  color: var(--at-on-dark);
+  border-color: transparent;
+}
+
+/* ── Chip ─────────────────────────────────────────────────────────────── */
+.at-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--at-r-pill);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  background: var(--at-surface-soft);
+  color: var(--at-body);
+  border: 1px solid var(--at-hairline);
+}
+.at-chip--solid {
+  background: var(--at-primary);
+  color: var(--at-on-primary);
+  border-color: var(--at-primary);
+}
+
+/* ── Input ────────────────────────────────────────────────────────────── */
+.at-input {
+  background: var(--at-canvas);
+  color: var(--at-ink);
+  border: 1px solid var(--at-hairline);
+  border-radius: var(--at-r-sm);
+  padding: 10px 14px;
+  height: 44px;
+  font-size: 14px;
+  width: 100%;
+  font-family: inherit;
+}
+.at-input:focus {
+  outline: none;
+  border-color: var(--at-info-border);
+}
+
+/* ── Hairline divider ─────────────────────────────────────────────────── */
+.at-hairline {
+  border: 0;
+  border-top: 1px solid var(--at-hairline);
+  margin: 0;
+}
+
+/* ── Empty state ──────────────────────────────────────────────────────── */
+.at-empty {
+  text-align: center;
+  padding: 80px 24px;
+  color: var(--at-muted);
+}
+.at-empty__title {
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--at-ink);
+  margin: 16px 0 4px;
+}
+.at-empty__desc {
+  font-size: 14px;
+  color: var(--at-body);
+  margin: 0 auto 24px;
+  max-width: 360px;
+  line-height: 1.5;
+}
+
+/* ── Vuetify overrides scoped to airtable-scope ───────────────────────── */
+.airtable-scope .v-btn--variant-elevated,
+.airtable-scope .v-btn[color="primary"] {
+  background-color: var(--at-primary) !important;
+  color: var(--at-on-primary) !important;
+  box-shadow: none !important;
+}
+.airtable-scope .v-snackbar__content {
+  font-weight: 500;
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+ * RESPONSIVE
+ * Mobile < 768 / Tablet 768-1023 / Desktop ≥1024 / Wide ≥1440
+ * ──────────────────────────────────────────────────────────────────────── */
+
+/* Visibility helpers */
+.at-hide-mobile  { /* show on tablet+ */ }
+.at-only-mobile  { display: none; }
+.at-only-tablet  { display: none; }
+.at-only-desktop { display: initial; }
+
+@media (max-width: 767px) {
+  .at-hide-mobile  { display: none !important; }
+  .at-only-mobile  { display: initial; }
+  .at-only-desktop { display: none; }
+}
+@media (min-width: 768px) and (max-width: 1023px) {
+  .at-only-tablet { display: initial; }
+}
+
+/* Touch targets ≥44px on mobile (WCAG AAA recommendation) */
+@media (max-width: 767px) {
+  .airtable-scope .at-btn { min-height: 44px; padding: 10px 18px; }
+  .airtable-scope .at-btn--sm { min-height: 44px; padding: 10px 16px; }
+  .airtable-scope .at-btn--xs { min-height: 44px; padding: 10px 12px; }
+  .airtable-scope .at-input  { height: 48px; padding: 12px 16px; }
+  .airtable-scope .filter-chip { min-height: 36px; padding: 8px 14px; }
+}
+
+/* Page-level layout adjustments */
+@media (max-width: 1023px) {
+  .airtable-scope .at-page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--at-s-md);
+  }
+  .airtable-scope .at-page-title { font-size: 24px; }
+}
+
+@media (max-width: 767px) {
+  .airtable-scope .at-page-title { font-size: 22px; }
+  .airtable-scope .at-page-subtitle { font-size: 13px; }
+}
+
+/* Container helpers used across views */
+.at-container { max-width: 1280px; margin: 0 auto; }
+@media (min-width: 1440px) {
+  .at-container { max-width: 1280px; }
+}
+

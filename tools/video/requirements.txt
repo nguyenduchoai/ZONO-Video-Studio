@@ -1,0 +1,3 @@
+Pillow==12.3.0
+soundfile>=0.12.1
+vieneu>=0.1.0

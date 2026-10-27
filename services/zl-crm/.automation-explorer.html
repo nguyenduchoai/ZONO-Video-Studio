@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<title>ZaloCRM Automation Explorer</title>
+<style>
+  :root{
+    --bg:#0F1419; --surface:#1A1F26; --surface-2:#252A33;
+    --border:#2D343E; --border-2:#3A4250;
+    --text-1:#E8ECF1; --text-2:#A8B0BC; --text-3:#6B7280;
+    --indigo:#6366F1; --indigo-dim:#4338CA;
+    --green:#10B981; --green-dim:#065F46;
+    --amber:#F59E0B; --amber-dim:#92400E;
+    --red:#EF4444; --red-dim:#7F1D1D;
+    --blue:#3B82F6; --blue-dim:#1E3A8A;
+    --purple:#A855F7; --purple-dim:#6B21A8;
+    --mono:"JetBrains Mono","SF Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text-1);font-family:-apple-system,"Segoe UI",Roboto,sans-serif;font-size:13.5px;line-height:1.5}
+  body{padding:20px 28px 80px;max-width:1480px;margin:0 auto}
+
+  h1{font-size:22px;font-weight:700;margin:0 0 4px;letter-spacing:-.01em}
+  h1 .accent{color:var(--indigo)}
+  .subtitle{font-size:12.5px;color:var(--text-3);margin-bottom:20px}
+
+  /* Tabs */
+  .tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:22px}
+  .tab{padding:9px 16px;cursor:pointer;font-size:13px;color:var(--text-2);border-bottom:2px solid transparent;font-weight:500}
+  .tab.active{color:var(--indigo);border-bottom-color:var(--indigo)}
+  .tab:hover:not(.active){color:var(--text-1)}
+
+  .panel{display:none}
+  .panel.active{display:block}
+
+  /* Card */
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:14px}
+  .card h2{font-size:14px;font-weight:600;margin:0 0 10px;color:var(--text-1);display:flex;align-items:center;gap:8px;letter-spacing:.01em}
+  .card h2 .tag{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:2px 6px;border-radius:4px;background:var(--surface-2);color:var(--text-3)}
+  .card-body{color:var(--text-2);font-size:13px}
+
+  /* Glossary chips */
+  .glossary{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+  .chip{padding:7px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:12px;color:var(--text-1);font-weight:500;transition:all .15s}
+  .chip:hover{border-color:var(--indigo);background:var(--surface-2)}
+  .chip.active{background:var(--indigo);border-color:var(--indigo);color:white}
+  .chip .key{color:var(--text-3);font-family:var(--mono);font-size:10.5px;margin-left:5px}
+
+  .glossary-detail{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--indigo);border-radius:8px;padding:14px 16px;margin-bottom:22px;display:none}
+  .glossary-detail.show{display:block}
+  .glossary-detail h3{font-size:14px;margin:0 0 6px;color:var(--indigo)}
+  .glossary-detail p{margin:0 0 6px;color:var(--text-2);font-size:12.5px}
+  .glossary-detail .meta{font-family:var(--mono);font-size:11px;color:var(--text-3);background:var(--bg);padding:6px 8px;border-radius:5px;margin-top:6px}
+
+  /* Walk-through layout 3-col */
+  .walk{display:grid;grid-template-columns:300px 1fr 320px;gap:14px}
+  .walk-col{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;min-height:420px}
+  .walk-col h3{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-3);margin:0 0 10px}
+
+  /* Controls */
+  .controls{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+  .btn{padding:7px 13px;background:var(--surface);border:1px solid var(--border);border-radius:7px;color:var(--text-1);cursor:pointer;font-size:12px;font-weight:500;display:inline-flex;align-items:center;gap:5px}
+  .btn:hover{background:var(--surface-2);border-color:var(--border-2)}
+  .btn.primary{background:var(--indigo);border-color:var(--indigo);color:white}
+  .btn.primary:hover{background:var(--indigo-dim)}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .tick-counter{font-family:var(--mono);font-size:11.5px;color:var(--text-3);margin-left:auto}
+
+  /* Nick grid */
+  .nick-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .nick{background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;transition:all .25s}
+  .nick.busy{border-color:var(--amber);background:rgba(245,158,11,.08)}
+  .nick.full{border-color:var(--red);background:rgba(239,68,68,.06);opacity:.65}
+  .nick.fresh{border-color:var(--green-dim)}
+  .nick.disabled{opacity:.35;background:var(--bg)}
+  .nick-name{font-size:11.5px;font-weight:600;color:var(--text-1);margin-bottom:3px;display:flex;justify-content:space-between;align-items:center}
+  .nick-tier{font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:1px 5px;border-radius:3px;background:var(--surface);color:var(--text-3)}
+  .nick-tier.new{background:rgba(168,85,247,.18);color:#C084FC}
+  .nick-tier.warming{background:rgba(245,158,11,.18);color:#FBBF24}
+  .nick-tier.trusted{background:rgba(16,185,129,.18);color:#34D399}
+  .nick-stats{font-family:var(--mono);font-size:10.5px;color:var(--text-2);display:flex;justify-content:space-between}
+  .nick-bar{height:3px;background:var(--border);border-radius:99px;margin-top:5px;overflow:hidden}
+  .nick-bar i{display:block;height:100%;background:var(--green);transition:width .3s}
+  .nick.warning .nick-bar i{background:var(--amber)}
+  .nick.full .nick-bar i{background:var(--red)}
+  .nick-cooldown{font-size:10px;color:var(--amber);margin-top:3px;font-family:var(--mono);display:none}
+  .nick.busy .nick-cooldown{display:block}
+
+  /* Queue rows */
+  .queue{display:flex;flex-direction:column;gap:4px;max-height:330px;overflow-y:auto;padding-right:4px}
+  .row{padding:7px 9px;border:1px solid var(--border);border-radius:6px;background:var(--surface-2);font-family:var(--mono);font-size:11px;display:flex;align-items:center;gap:8px;transition:all .25s}
+  .row.active{border-color:var(--indigo);background:rgba(99,102,241,.08);animation:pulse 1s ease infinite}
+  .row.done{opacity:.5;border-color:var(--green-dim)}
+  .row.skip{opacity:.4;border-color:var(--red-dim)}
+  .row .ix{color:var(--text-3);min-width:22px}
+  .row .phone{color:var(--text-1);min-width:118px}
+  .row .arrow{color:var(--text-3)}
+  .row .nick-tag{font-size:9px;padding:1px 5px;border-radius:3px;background:var(--indigo-dim);color:white;font-weight:700;letter-spacing:.04em}
+  .row .status-tag{font-size:9px;padding:1px 5px;border-radius:3px;font-weight:700;letter-spacing:.04em;margin-left:auto}
+  .row .status-tag.pending{background:var(--surface);color:var(--text-3)}
+  .row .status-tag.lookup{background:var(--blue-dim);color:#93C5FD}
+  .row .status-tag.queued{background:var(--amber-dim);color:#FCD34D}
+  .row .status-tag.sent{background:var(--green-dim);color:#6EE7B7}
+  .row .status-tag.skip{background:var(--red-dim);color:#FCA5A5}
+  .row .status-tag.no-zalo{background:var(--red-dim);color:#FCA5A5}
+
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(99,102,241,.4)}50%{box-shadow:0 0 0 4px rgba(99,102,241,0)}}
+
+  /* Log */
+  .log{display:flex;flex-direction:column-reverse;gap:3px;max-height:330px;overflow-y:auto;padding-right:4px;font-family:var(--mono);font-size:11px}
+  .log-line{padding:5px 8px;border-radius:5px;background:var(--surface-2);border-left:2px solid var(--border-2);color:var(--text-2);animation:slideIn .25s ease}
+  .log-line.info{border-left-color:var(--blue)}
+  .log-line.ok{border-left-color:var(--green);color:#A7F3D0}
+  .log-line.warn{border-left-color:var(--amber);color:#FDE68A}
+  .log-line.err{border-left-color:var(--red);color:#FECACA}
+  .log-line .ts{color:var(--text-3);margin-right:6px}
+  .log-line .nick-ref{color:var(--indigo);font-weight:600}
+  @keyframes slideIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+
+  /* Stat counter */
+  .stat-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:14px 0}
+  .stat{background:var(--surface-2);border:1px solid var(--border);border-radius:7px;padding:8px 10px;text-align:center}
+  .stat .v{font-family:var(--mono);font-size:18px;font-weight:700;color:var(--text-1)}
+  .stat .l{font-size:9.5px;color:var(--text-3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin-top:1px}
+  .stat.green .v{color:#34D399}
+  .stat.amber .v{color:#FBBF24}
+  .stat.red .v{color:#F87171}
+  .stat.blue .v{color:#60A5FA}
+
+  /* Flow definition box */
+  .flow-def{background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;font-family:var(--mono);font-size:11px;line-height:1.65;color:var(--text-2);white-space:pre;overflow-x:auto}
+  .flow-def .key{color:#C084FC}
+  .flow-def .str{color:#A7F3D0}
+  .flow-def .num{color:#FBBF24}
+  .flow-def .com{color:var(--text-3);font-style:italic}
+
+  /* Connector arrows in big diagram */
+  .arch{padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:20px}
+  .arch pre{margin:0;font-family:var(--mono);font-size:11.5px;line-height:1.6;color:var(--text-2);overflow-x:auto;white-space:pre}
+  .arch pre .box{color:#93C5FD;font-weight:bold}
+  .arch pre .arrow{color:#FBBF24}
+  .arch pre .label{color:#34D399}
+
+  details summary{cursor:pointer;color:var(--indigo);font-size:12px;padding:6px 0;font-weight:500}
+  details summary:hover{color:#A5B4FC}
+
+  .nick-counter-hint{font-size:10px;color:var(--text-3);text-align:center;margin-top:8px;font-style:italic}
+
+  /* Rules box */
+  .rules{background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.25);border-left:3px solid var(--indigo);border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:12px;color:var(--text-2)}
+  .rules b{color:var(--text-1)}
+  .rules code{font-family:var(--mono);font-size:11px;background:var(--surface);padding:1px 6px;border-radius:3px;color:#FBBF24}
+</style>
+</head>
+<body>
+  <h1>ZaloCRM <span class="accent">Automation Explorer</span></h1>
+  <div class="subtitle">Walk-through hệ thống automation với 50 nick × 20-25 sale. Click chip để xem glossary. Bấm <b>Next tick</b> để chạy walker step-by-step.</div>
+
+  <!-- GLOSSARY -->
+  <div class="glossary" id="glossary"></div>
+  <div class="glossary-detail" id="glossaryDetail"></div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <div class="tab active" data-tab="overview">📊 Sơ đồ tổng thể</div>
+    <div class="tab" data-tab="campaign">🅰️ Campaign: Bulk friend Excel (10 nick)</div>
+    <div class="tab" data-tab="trigger">🅱️ Trigger-flow: S1 Welcome</div>
+    <div class="tab" data-tab="rules">📐 Rules & Edge cases</div>
+  </div>
+
+  <!-- PANEL: OVERVIEW -->
+  <div class="panel active" id="panel-overview">
+    <div class="card">
+      <h2>Architecture <span class="tag">2 entity unified</span></h2>
+      <div class="card-body">
+        <p>Mọi automation đều build trên cùng 2 entity. Khác nhau ở <code>type</code> và <code>trigger</code>.</p>
+      </div>
+    </div>
+
+    <div class="arch">
+<pre>
+                    ┌────────────────────────────────┐
+                    │  <span class="box">📁 AutomationFlow</span>            │
+                    │  (template, save 1 lần)        │
+                    │                                │
+                    │  type: campaign | trigger-flow │
+                    │  trigger: manual/cron/event    │
+                    │  target:  list / filter        │
+                    │  selectedNickIds: [A,B,...]    │
+                    │  steps[]: ordered              │
+                    └──────────────┬─────────────────┘
+                                   │
+                       <span class="label">INSTANTIATE</span>
+                ┌──────────────────┴──────────────────┐
+                ▼                                      ▼
+        ┌────────────────┐                  ┌────────────────────┐
+        │ <span class="box">Campaign Start</span> │                  │ <span class="box">Trigger Match</span>      │
+        │ Sale paste list│                  │ Event "friend      │
+        │ + click Run    │                  │  accepted" fires   │
+        └────────┬───────┘                  └────────┬───────────┘
+                 │                                    │
+                 ▼                                    ▼
+              ┌─────────────────────────────────────────┐
+              │  <span class="box">🏃 AutomationRun</span>                    │
+              │  Campaign: 1 run, rows[N targets]       │
+              │  Trigger:  1 run per matched contact    │
+              └────────────────┬────────────────────────┘
+                               │
+                               ▼
+              ┌─────────────────────────────────────────┐
+              │  <span class="box">🚶 RunRow</span> (per target)               │
+              │  contactId / phone / uid                │
+              │  currentStepId, status, history[]       │
+              │  <span class="label">assignedNickId</span> (sticky lifetime)   │
+              └────────────────┬────────────────────────┘
+                               │ Walker tick mỗi 30s
+                               ▼
+              ┌─────────────────────────────────────────┐
+              │  <span class="box">⚙️  Step Executor</span>                   │
+              │   send  → atoms[] tuần tự qua zalo-pool│
+              │   wait  → set nextRunAt                 │
+              │   if    → eval, choose next step        │
+              │   tag   → update Contact CRM            │
+              │   notify→ push sale Telegram/in-app     │
+              └─────────────────────────────────────────┘
+                               │
+                               ▼
+                       <span class="label">Smart Nick Picker (gate)</span>
+              ┌─────────────────────────────────────────┐
+              │  1. connected ✓                          │
+              │  2. dailyFriendReqSent < cap(tier) ✓     │
+              │  3. NOW - lastFriendReqSentAt ≥ rand   │
+              │     (15-45 phút) ✓                       │
+              │  4. activeHours 6-22h ✓                  │
+              │  5. permission via ZaloAccountAccess ✓   │
+              │  6. NOT already friend với UID này ✓     │
+              │  → pick nick fresh nhất                  │
+              └─────────────────────────────────────────┘
+</pre>
+    </div>
+
+    <div class="card">
+      <h2>🎯 Cốt lõi <span class="tag">đáng nhớ</span></h2>
+      <div class="card-body">
+        <p>• <b>1 entity Flow</b> handle cả 2 shape: Campaign (manual + list) và Trigger-flow (event/cron + filter).</p>
+        <p>• <b>Step Executor unified</b> chạy mọi loại step: send / wait / if / tag / notify.</p>
+        <p>• <b>Atom embed vào step.payload.atoms[]</b> — chưa cần Block entity riêng.</p>
+        <p>• <b>Smart Nick Picker</b> là gate trung tâm: rule throttle + delay + permission + dedup tất cả check ở đây.</p>
+        <p>• <b>Counter ở level NICK</b>, không phải campaign. Nick X dùng cho 3 campaign khác nhau, counter cộng dồn.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- PANEL: CAMPAIGN -->
+  <div class="panel" id="panel-campaign">
+    <div class="rules">
+      <b>🅰️ Campaign Excel friend</b> — 487 SĐT × 10 nick. Smart load-balancer auto pick nick fresh nhất. Per-nick delay <code>random(15-45 phút)</code> giữa các lần gửi. Counter cross-campaign. Active hours 6-22h.
+    </div>
+
+    <details>
+      <summary>📄 Flow definition (click để xem YAML)</summary>
+      <div class="flow-def" style="margin-top:8px"><span class="key">name</span>: <span class="str">"Bulk friend từ Excel"</span>
+<span class="key">type</span>: <span class="str">campaign</span>
+<span class="key">trigger</span>: { kind: <span class="str">manual</span> }
+<span class="key">target</span>:
+  kind: <span class="str">phone_list</span>
+  source: <span class="str">paste-textarea</span>
+<span class="key">selectedNickIds</span>: [A, B, C, D, E, F, G, H, I, J]  <span class="com"># 10 nick</span>
+<span class="key">reapproachAfterDays</span>: <span class="num">30</span>  <span class="com"># config skip-if-active</span>
+<span class="key">steps</span>:
+  - id: s1, type: <span class="str">send</span>, atoms: [{ kind: find_user_by_phone }]
+  - id: s2, type: <span class="str">if</span>, condition: uid is_not_empty, then: s3, else: s_stop
+  - id: s3, type: <span class="str">send</span>, atoms:
+      - kind: send_friend_request
+        message: <span class="str">"Em là {{sale.shortName}} bên Vinhomes..."</span>
+  - id: s_stop, type: <span class="str">stop_flow</span>
+<span class="key">throttle</span>:
+  delay_min_minutes: <span class="num">15</span>     <span class="com"># per-nick random</span>
+  delay_max_minutes: <span class="num">45</span>
+  hour_start: <span class="num">6</span>
+  hour_end: <span class="num">22</span></div>
+    </details>
+
+    <div class="stat-strip" id="stats-campaign">
+      <div class="stat"><div class="v" id="s-total">487</div><div class="l">total</div></div>
+      <div class="stat green"><div class="v" id="s-sent">0</div><div class="l">sent</div></div>
+      <div class="stat amber"><div class="v" id="s-queued">0</div><div class="l">queued</div></div>
+      <div class="stat red"><div class="v" id="s-skip">0</div><div class="l">skipped</div></div>
+      <div class="stat blue"><div class="v" id="s-tick">0</div><div class="l">tick</div></div>
+    </div>
+
+    <div class="controls">
+      <button class="btn primary" onclick="campaignTick()">▶ Next tick</button>
+      <button class="btn" onclick="campaignTickN(5)">⏩ +5 ticks</button>
+      <button class="btn" onclick="campaignTickN(20)">⏭ +20 ticks</button>
+      <button class="btn" onclick="campaignReset()">⟳ Reset</button>
+      <span class="tick-counter" id="campaign-clock">Time: 14:30 (Day 1)</span>
+    </div>
+
+    <div class="walk">
+      <!-- Col 1: Nick pool -->
+      <div class="walk-col">
+        <h3>🎯 Nick pool (10) — gate check</h3>
+        <div class="nick-grid" id="nick-grid"></div>
+        <div class="nick-counter-hint">Counter reset 00:00 mỗi ngày</div>
+      </div>
+
+      <!-- Col 2: Row queue -->
+      <div class="walk-col">
+        <h3>🚶 Row queue (487 SĐT)</h3>
+        <div class="queue" id="row-queue"></div>
+      </div>
+
+      <!-- Col 3: Walker log -->
+      <div class="walk-col">
+        <h3>📜 Walker log (real-time)</h3>
+        <div class="log" id="walker-log"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PANEL: TRIGGER -->
+  <div class="panel" id="panel-trigger">
+    <div class="rules">
+      <b>🅱️ Trigger-flow S1 Welcome</b> — Event-driven. KH accept friend req của nick X → trigger fires → tạo 1 Run mới cho contact đó. Gửi từ <b>chính nick X</b> (sticky). 50 nick có thể nhận accept event song song → 50 Run chạy đồng thời, độc lập.
+    </div>
+
+    <details>
+      <summary>📄 Flow definition</summary>
+      <div class="flow-def" style="margin-top:8px"><span class="key">name</span>: <span class="str">"Welcome KH mới kết bạn"</span>
+<span class="key">type</span>: <span class="str">trigger-flow</span>
+<span class="key">trigger</span>:
+  kind: <span class="str">event</span>
+  name: <span class="str">"friend.accepted"</span>     <span class="com"># emit khi accept hook tới</span>
+<span class="key">target</span>: { kind: event_payload }    <span class="com"># contact + nick từ event</span>
+<span class="key">steps</span>:
+  - id: s1, type: <span class="str">wait</span>, duration: { minutes: <span class="num">30</span> }  <span class="com"># human-like</span>
+  - id: s2, type: <span class="str">send</span>, atoms:
+      - kind: text, body: <span class="str">"Em chào {{contact.firstName}}, em là {{sale.shortName}}..."</span>
+      - kind: image, url: <span class="str">"{{property.welcome_image_url}}"</span>
+  - id: s3, type: <span class="str">wait_for_reply</span>, timeout: { hours: <span class="num">24</span> }
+  - id: s4, type: <span class="str">if</span>, condition: replied eq true, then: s5_replied, else: s5_silent
+  - id: s5_replied, type: <span class="str">send</span>, atoms:
+      - { kind: add_tag, value: <span class="str">"🟢 Đã warm up"</span> }
+  - id: s5_silent, type: <span class="str">send</span>, atoms:
+      - { kind: add_tag, value: <span class="str">"🟡 Im lặng D1"</span> }
+      - { kind: notify_sale, message: <span class="str">"KH chưa rep sau 24h"</span> }</div>
+    </details>
+
+    <div class="stat-strip">
+      <div class="stat blue"><div class="v" id="t-events">0</div><div class="l">events</div></div>
+      <div class="stat amber"><div class="v" id="t-running">0</div><div class="l">running</div></div>
+      <div class="stat green"><div class="v" id="t-done">0</div><div class="l">done</div></div>
+      <div class="stat red"><div class="v" id="t-silent">0</div><div class="l">silent</div></div>
+      <div class="stat"><div class="v" id="t-tick">0</div><div class="l">tick</div></div>
+    </div>
+
+    <div class="controls">
+      <button class="btn primary" onclick="triggerSimulateEvent()">⚡ Simulate "friend.accepted"</button>
+      <button class="btn" onclick="triggerTick()">▶ Next tick (process running runs)</button>
+      <button class="btn" onclick="triggerTickN(10)">⏩ +10 ticks</button>
+      <button class="btn" onclick="triggerSimulateReply()">💬 Simulate KH replies (random run)</button>
+      <button class="btn" onclick="triggerReset()">⟳ Reset</button>
+    </div>
+
+    <div class="walk">
+      <div class="walk-col">
+        <h3>🏃 Active Runs (1 per accept event)</h3>
+        <div id="trigger-runs" style="display:flex;flex-direction:column;gap:6px;max-height:380px;overflow-y:auto"></div>
+      </div>
+      <div class="walk-col">
+        <h3>📜 Event + Walker log</h3>
+        <div class="log" id="trigger-log"></div>
+      </div>
+      <div class="walk-col">
+        <h3>📤 Outbox (msg sent to KH)</h3>
+        <div class="log" id="trigger-outbox"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PANEL: RULES -->
+  <div class="panel" id="panel-rules">
+    <div class="card">
+      <h2>📐 Smart Nick Picker — gate đầy đủ</h2>
+      <div class="card-body">
+        <p>Khi walker pick nick cho 1 row, scan <code>selectedNickIds[]</code> và filter qua 6 rule. Nick nào pass cả 6 → vào candidate pool. Tie-break: pick nick có <code>dailyFriendReqSent</code> thấp nhất.</p>
+        <ol style="margin-left:18px;padding-left:0">
+          <li><b>liveStatus = connected</b> — nick đang online qua zalo-pool</li>
+          <li><b>dailyFriendReqSent &lt; cap(tier)</b> — chưa đầy quota hôm nay (tier: new=10, warming=20, trusted=30)</li>
+          <li><b>NOW - lastFriendReqSentAt ≥ random(15min, 45min)</b> — per-nick delay gate, cross-campaign</li>
+          <li><b>activeHours 6h-22h</b> — không gửi đêm</li>
+          <li><b>permission via ZaloAccountAccess ≥ chat</b> — sale tạo campaign có quyền dùng nick</li>
+          <li><b>NOT already friend với UID này</b> — check Friend table cả org</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🔁 Cross-nick friendship recency rule</h2>
+      <div class="card-body">
+        <p>Khi KH 0908.xxx.123 đã là friend của nick Y rồi (không phải nick X đang muốn gửi), check <code>lastInboundAt</code> max qua tất cả Friend records của contact đó:</p>
+        <p>• <code>NOW - lastInboundAt &gt; X ngày</code> (KH im lặng) → <b>VẪN GỬI</b> từ nick X (re-approach)</p>
+        <p>• <code>NOW - lastInboundAt ≤ X ngày</code> (KH đang active với nick khác) → <b>SKIP</b>, status=<code>active_with_other_nick</code></p>
+        <p>• Chưa từng inbound → coi như im lặng, gửi bình thường</p>
+        <p><code>X</code> là input config trên campaign (default 30 ngày, sale có thể override).</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>⏱ Per-nick delay independence</h2>
+      <div class="card-body">
+        <p>Nick 1 vừa gửi xong → wait 15-45 phút random. Trong thời gian wait, nick 2-10 vẫn AVAILABLE và được walker pick bình thường. Walker không "wait nick 1", chỉ skip nick 1 trong tick này.</p>
+        <p>Hệ quả: 10 nick song song có thể spread ra 30 send / giờ team (nếu delay average 20 phút × 10 nick = 1 send mỗi 2 phút từ team).</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>📊 Quality tier — nick warmup</h2>
+      <div class="card-body">
+        <p>Nick mới &lt; 30 ngày: <code>tier = new</code>, cap = 10 friend-req/day</p>
+        <p>Nick 30-90 ngày: <code>tier = warming</code>, cap = 20 friend-req/day</p>
+        <p>Nick &gt; 90 ngày: <code>tier = trusted</code>, cap = 30 friend-req/day</p>
+        <p>Admin có thể override per-nick qua <code>friend_req_cap_override</code>.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🧲 Sticky nick assignment</h2>
+      <div class="card-body">
+        <p>Khi nick X gửi friend-req cho SĐT 0908...123 → set <code>RunRow.assignedNickId = X</code>.</p>
+        <p>Nếu KH accept (3 ngày sau) → tạo Friend record với <code>ownerNickId = X</code>.</p>
+        <p>Sau đó S1 welcome flow chạy → phải dùng nick X gửi msg, KHÔNG reassign sang nick khác. Tag CRM gắn vào Contact (chung), nhưng thread conversation thuộc nick X.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🚨 Edge cases khi code</h2>
+      <div class="card-body">
+        <p>• Duplicate phone trong 1 list import → dedup at parse (unique(campaignId, phoneE164))</p>
+        <p>• 2 campaign cùng share 1 nick → throttle gate per-nick handle</p>
+        <p>• Server restart giữa flow → walker resume rows với <code>nextRunAt &lt; NOW</code></p>
+        <p>• Sale gửi msg tay đè lên flow đang chạy → hook detect outbound manual → auto-pause Run của contact đó</p>
+        <p>• Nick disconnect giữa campaign → row.status = <code>queued</code>, retry sau khi nick reconnect</p>
+        <p>• Dry-run preview: lookup 10 SĐT random trước khi run thật, hiện estimate (có Zalo / không / đã friend / sẽ skip)</p>
+        <p>• Quiet hours 22-6h: walker skip pick, ngủ tới 6:00 sáng</p>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // ============================================================================
+  // GLOSSARY
+  // ============================================================================
+  const GLOSSARY = {
+    Flow: { full: "AutomationFlow", desc: "Template (kịch bản đã viết), reusable. Lưu DB 1 lần, dùng nhiều lần. Có type: campaign | trigger-flow.", schema: "id, name, type, trigger, target, selectedNickIds[], steps[]" },
+    Run: { full: "AutomationRun", desc: "1 instance đang chạy của 1 Flow. Campaign: 1 Run cho mỗi lần bấm Start. Trigger: 1 Run cho mỗi event match.", schema: "id, flowId, status, startedAt, endedAt, rows[]" },
+    RunRow: { full: "RunRow", desc: "1 target (contact/phone) đang đi qua flow. Mỗi row có state machine riêng: pending → looking-up → queued → sent | skipped.", schema: "id, runId, contactId, currentStepId, assignedNickId (sticky), status, history[]" },
+    Step: { full: "FlowStep", desc: "1 bước trong steps[] của Flow. Có type: send | wait | if | add_tag | notify. Step type send chứa atoms[].", schema: "id, type, payload (atoms[] | duration | condition), delayAfterMin" },
+    Atom: { full: "Atom", desc: "Đơn vị nhỏ nhất gửi/làm. 4 nhóm: content (text/image/file/video), side-effect (tag/score), control (wait/if), friend-ops (find/req).", schema: "{ kind: 'text'|'image'|'file'|..., body|url|value }" },
+    Trigger: { full: "Trigger", desc: "Cái khiến Flow start. 3 kind: manual (click Start), event ('friend.accepted', 'message.received'), cron ('daily 9h', 'weekly Mon').", schema: "{ kind: 'manual'|'event'|'cron', name?, schedule? }" },
+    Throttle: { full: "Throttle gate", desc: "Per-nick rate limit cross-campaign. Random delay 15-45 phút giữa các friend-req. Daily cap theo tier. Active hours 6-22h.", schema: "ZaloAccount.lastFriendReqSentAt + dailyFriendReqSent + qualityTier" },
+    Sticky: { full: "Sticky nick", desc: "Khi nick X gửi friend-req cho SĐT, sau accept thì KH stick với nick X lifetime. Welcome msg, follow-up sau này đều từ nick X.", schema: "RunRow.assignedNickId = X (1-set, never reassign)" }
+  };
+
+  function renderGlossary() {
+    const el = document.getElementById('glossary');
+    el.innerHTML = Object.entries(GLOSSARY).map(([k, v]) =>
+      `<div class="chip" onclick="showGlossary('${k}')">${k}<span class="key">${v.full}</span></div>`
+    ).join('');
+  }
+  function showGlossary(key) {
+    document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    event.target.closest('.chip').classList.add('active');
+    const v = GLOSSARY[key];
+    const detail = document.getElementById('glossaryDetail');
+    detail.innerHTML = `<h3>${key} <span style="color:var(--text-3);font-weight:400;font-size:12px">(${v.full})</span></h3><p>${v.desc}</p><div class="meta">schema: ${v.schema}</div>`;
+    detail.classList.add('show');
+  }
+  renderGlossary();
+
+  // ============================================================================
+  // TABS
+  // ============================================================================
+  document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById('panel-' + t.dataset.tab).classList.add('active');
+  }));
+
+  // ============================================================================
+  // CAMPAIGN SIMULATION
+  // ============================================================================
+  const NICKS = [
+    { id: 'A', name: 'Hùng Sale — GP',     tier: 'trusted', cap: 30, sent: 0, lastSent: null, connected: true,  cooldownUntil: 0 },
+    { id: 'B', name: 'Hùng Sale — SMC',    tier: 'trusted', cap: 30, sent: 0, lastSent: null, connected: true,  cooldownUntil: 0 },
+    { id: 'C', name: 'CSKH Hà',            tier: 'trusted', cap: 30, sent: 0, lastSent: null, connected: true,  cooldownUntil: 0 },
+    { id: 'D', name: 'Mai MKT',            tier: 'trusted', cap: 30, sent: 0, lastSent: null, connected: true,  cooldownUntil: 0 },
+    { id: 'E', name: 'Dung Tele',          tier: 'warming', cap: 20, sent: 0, lastSent: null, connected: true,  cooldownUntil: 0 },
+    { id: 'F', name: 'Phương Lead',        tier: 'trusted', cap: 30, sent: 0, lastSent: null, connected: true,  cooldownUntil: 0 },
+    { id: 'G', name: 'Sale Q9 (NEW)',      tier: 'new',     cap: 10, sent: 0, lastSent: null, connected: true,  cooldownUntil: 0 },
+    { id: 'H', name: 'Backup BĐS',         tier: 'trusted', cap: 30, sent: 0, lastSent: null, connected: false, cooldownUntil: 0 },
+    { id: 'I', name: 'Sale HN (NEW)',      tier: 'new',     cap: 10, sent: 0, lastSent: null, connected: true,  cooldownUntil: 0 },
+    { id: 'J', name: 'Holdings MKT',       tier: 'warming', cap: 20, sent: 0, lastSent: null, connected: true,  cooldownUntil: 0 },
+  ];
+
+  // Generate 487 rows. Simulate ~70% có Zalo, ~5% đã là friend của nick khác, ~25% không có
+  let ROWS = [];
+  let TICK = 0;
+  let CLOCK_MIN = 14 * 60 + 30; // 14:30
+  let DAY = 1;
+  const TICK_MINUTES = 3; // mỗi tick = 3 phút sim time (cho nhanh, thực 1 tick = 30s)
+
+  function makePhone(i) {
+    const base = 908000000 + i * 7;
+    const s = base.toString();
+    return '0' + s.slice(0, 3) + '.' + s.slice(3, 6) + '.' + s.slice(6);
+  }
+  function initRows() {
+    ROWS = [];
+    for (let i = 0; i < 487; i++) {
+      const roll = Math.random();
+      let fate;
+      if (roll < 0.70) fate = 'has_zalo';
+      else if (roll < 0.75) fate = 'already_friend_active'; // skip rule cross-nick
+      else if (roll < 0.80) fate = 'already_friend_old';    // re-approach
+      else fate = 'no_zalo';
+      ROWS.push({ ix: i + 1, phone: makePhone(i), status: 'pending', nick: null, fate, step: 's1' });
+    }
+  }
+  initRows();
+
+  function fmtClock() {
+    const h = Math.floor(CLOCK_MIN / 60), m = CLOCK_MIN % 60;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')} (Day ${DAY})`;
+  }
+  function isActiveHours(minOfDay) {
+    const h = Math.floor(minOfDay / 60);
+    return h >= 6 && h < 22;
+  }
+
+  function pickNickForRow(row) {
+    // 1. connected
+    // 2. sent < cap
+    // 3. cooldown passed
+    // 4. active hours (overall)
+    // 5. permission (assume all granted for sale H trong demo)
+    // 6. not already friend (per row.fate)
+    const candidates = NICKS.filter(n => n.connected)
+      .filter(n => n.sent < n.cap)
+      .filter(n => CLOCK_MIN + DAY * 1440 >= n.cooldownUntil);
+    if (candidates.length === 0) return null;
+    candidates.sort((a, b) => a.sent - b.sent || (a.lastSent ?? 0) - (b.lastSent ?? 0));
+    return candidates[0];
+  }
+
+  function campaignTick() {
+    TICK++;
+    CLOCK_MIN += TICK_MINUTES;
+    if (CLOCK_MIN >= 1440) { CLOCK_MIN -= 1440; DAY++; NICKS.forEach(n => { n.sent = 0; n.cooldownUntil = 0; n.lastSent = null; }); logCamp('info', `🌅 Day ${DAY} bắt đầu — counter reset 00:00`); }
+    if (!isActiveHours(CLOCK_MIN)) { logCamp('warn', `⏸ ${fmtClock()} ngoài active hours 6-22h, walker pause`); render(); return; }
+
+    // Process 1 pending row per tick
+    const pending = ROWS.find(r => r.status === 'pending' || r.status === 'queued');
+    if (!pending) { logCamp('ok', `🎉 Campaign done sau ${TICK} ticks`); render(); return; }
+
+    if (pending.status === 'pending') {
+      // s1 lookup
+      pending.status = 'looking-up';
+      logCamp('info', `Row #${pending.ix} ${pending.phone} → lookup UID`);
+      if (pending.fate === 'no_zalo') {
+        pending.status = 'no_zalo';
+        logCamp('err', `Row #${pending.ix} ❌ không có Zalo, skip`);
+        render(); return;
+      }
+      if (pending.fate === 'already_friend_active') {
+        pending.status = 'skip_active';
+        logCamp('warn', `Row #${pending.ix} ⏭ đã friend nick khác trong 30d, skip (cross-nick recency)`);
+        render(); return;
+      }
+      // pending.fate === 'has_zalo' or 'already_friend_old' → proceed to s3
+      pending.status = 'queued';
+    }
+
+    if (pending.status === 'queued') {
+      const nick = pickNickForRow(pending);
+      if (!nick) {
+        logCamp('warn', `Row #${pending.ix} ⏳ no nick available, defer`);
+        render(); return;
+      }
+      // Send
+      const delay = Math.floor(Math.random() * 31) + 15; // 15-45 min
+      nick.sent += 1;
+      nick.lastSent = CLOCK_MIN + DAY * 1440;
+      nick.cooldownUntil = nick.lastSent + delay;
+      pending.nick = nick.id;
+      pending.status = 'sent';
+      logCamp('ok', `Row #${pending.ix} ✉ nick <span class="nick-ref">${nick.id}</span> sent (${nick.sent}/${nick.cap}, cooldown ${delay}min)`);
+    }
+
+    render();
+  }
+
+  function campaignTickN(n) { for (let i = 0; i < n; i++) campaignTick(); }
+  function campaignReset() { TICK = 0; CLOCK_MIN = 14 * 60 + 30; DAY = 1; NICKS.forEach(n => { n.sent = 0; n.lastSent = null; n.cooldownUntil = 0; n.connected = n.id !== 'H' ? true : false; }); initRows(); document.getElementById('walker-log').innerHTML = ''; render(); }
+
+  function logCamp(level, msg) {
+    const el = document.getElementById('walker-log');
+    const ts = fmtClock();
+    const line = document.createElement('div');
+    line.className = 'log-line ' + level;
+    line.innerHTML = `<span class="ts">${ts}</span> ${msg}`;
+    el.appendChild(line);
+    while (el.children.length > 60) el.removeChild(el.firstChild);
+    el.scrollTop = el.scrollHeight;
+  }
+
+  function render() {
+    document.getElementById('campaign-clock').textContent = 'Time: ' + fmtClock();
+    document.getElementById('s-tick').textContent = TICK;
+    document.getElementById('s-sent').textContent = ROWS.filter(r => r.status === 'sent').length;
+    document.getElementById('s-queued').textContent = ROWS.filter(r => r.status === 'pending' || r.status === 'queued' || r.status === 'looking-up').length;
+    document.getElementById('s-skip').textContent = ROWS.filter(r => r.status === 'no_zalo' || r.status === 'skip_active').length;
+
+    // Nicks
+    document.getElementById('nick-grid').innerHTML = NICKS.map(n => {
+      const pct = (n.sent / n.cap) * 100;
+      const isFull = n.sent >= n.cap;
+      const now = CLOCK_MIN + DAY * 1440;
+      const cdLeft = Math.max(0, n.cooldownUntil - now);
+      const busy = cdLeft > 0;
+      const cls = !n.connected ? 'disabled' : isFull ? 'full' : busy ? 'busy' : pct > 70 ? 'warning' : 'fresh';
+      return `<div class="nick ${cls}">
+        <div class="nick-name">${n.name} <span class="nick-tier ${n.tier}">${n.tier}</span></div>
+        <div class="nick-stats"><span>${n.id}</span><span>${n.sent}/${n.cap}</span></div>
+        <div class="nick-bar"><i style="width:${pct}%"></i></div>
+        <div class="nick-cooldown">⏳ wait ${cdLeft}min</div>
+        ${!n.connected ? '<div class="nick-cooldown" style="display:block;color:var(--red)">❌ disconnected</div>' : ''}
+      </div>`;
+    }).join('');
+
+    // Rows (top 30 visible, prioritize active+done recent)
+    const visible = [...ROWS].sort((a, b) => {
+      const order = { 'looking-up': 0, 'queued': 1, 'pending': 2, 'sent': 3, 'no_zalo': 4, 'skip_active': 5 };
+      return order[a.status] - order[b.status] || a.ix - b.ix;
+    }).slice(0, 30);
+    document.getElementById('row-queue').innerHTML = visible.map(r => {
+      const tagCls = r.status === 'sent' ? 'sent' : r.status === 'no_zalo' ? 'no-zalo' : r.status === 'skip_active' ? 'skip' : r.status === 'queued' || r.status === 'looking-up' ? 'queued' : 'pending';
+      const tagText = r.status === 'looking-up' ? 'LOOKUP' : r.status === 'queued' ? 'QUEUED' : r.status === 'sent' ? `SENT▸${r.nick}` : r.status === 'no_zalo' ? 'NO ZALO' : r.status === 'skip_active' ? 'SKIP/ACTIVE' : 'PENDING';
+      const rowCls = r.status === 'looking-up' || r.status === 'queued' ? 'active' : r.status === 'sent' ? 'done' : (r.status === 'no_zalo' || r.status === 'skip_active') ? 'skip' : '';
+      return `<div class="row ${rowCls}"><span class="ix">#${r.ix}</span><span class="phone">${r.phone}</span><span class="arrow">→</span><span class="status-tag ${tagCls}">${tagText}</span></div>`;
+    }).join('');
+  }
+  render();
+
+  // ============================================================================
+  // TRIGGER-FLOW SIMULATION
+  // ============================================================================
+  const SAMPLE_CONTACTS = [
+    'Anh Hùng', 'Chị Lan', 'Anh Đức', 'Cô Mai', 'Chú Bình',
+    'Chị Hoa', 'Anh Tuấn', 'Chị Linh', 'Anh Sơn', 'Cô Hằng',
+    'Anh Quang', 'Chị Nga', 'Anh Phúc', 'Cô Yến', 'Chú Long',
+  ];
+  let TRIGGER_RUNS = [];
+  let TRIGGER_TICK = 0;
+  let EVENT_COUNT = 0;
+
+  function triggerSimulateEvent() {
+    EVENT_COUNT++;
+    const contactName = SAMPLE_CONTACTS[Math.floor(Math.random() * SAMPLE_CONTACTS.length)];
+    const nickId = NICKS[Math.floor(Math.random() * NICKS.length)].id;
+    const run = {
+      id: 'run_' + EVENT_COUNT,
+      contact: contactName,
+      nick: nickId,
+      step: 's1',
+      status: 'waiting',
+      nextRunAtTick: TRIGGER_TICK + 10, // wait 30 min (10 ticks)
+      replied: null,
+      log: [`Event 'friend.accepted' fired — contact=${contactName}, nick=${nickId}`, `Step s1 wait 30 phút → nextRun tick #${TRIGGER_TICK + 10}`]
+    };
+    TRIGGER_RUNS.push(run);
+    logTrig('info', `⚡ Event accept → tạo Run cho <b>${contactName}</b> (nick ${nickId}) — wait 30 phút`);
+    renderTrigger();
+  }
+
+  function triggerTick() {
+    TRIGGER_TICK++;
+    let processed = 0;
+    TRIGGER_RUNS.forEach(run => {
+      if (run.status === 'done' || run.status === 'silent_done') return;
+      if (run.status === 'waiting' && TRIGGER_TICK >= run.nextRunAtTick) {
+        if (run.step === 's1') {
+          run.step = 's2';
+          run.status = 'sending';
+          run.log.push(`Tick ${TRIGGER_TICK}: wake from s1`);
+          processed++;
+        } else if (run.step === 's3') {
+          // wait_for_reply timed out
+          run.step = 's4';
+          run.replied = false;
+          run.status = 'evaluating';
+          run.log.push(`Tick ${TRIGGER_TICK}: 24h timeout, replied=false`);
+          processed++;
+        }
+      }
+      if (run.status === 'sending' && run.step === 's2') {
+        outbox(run.contact, run.nick, `[text] "Em chào ${run.contact.split(' ')[1] || run.contact}, em là Sale ${run.nick}..."`);
+        outbox(run.contact, run.nick, `[image] welcome_banner.jpg`);
+        run.step = 's3';
+        run.status = 'waiting';
+        run.nextRunAtTick = TRIGGER_TICK + 48; // 24h timeout
+        run.log.push(`s2 sent 2 atoms (text + image)`);
+        run.log.push(`s3 wait_for_reply timeout 24h → tick ${run.nextRunAtTick}`);
+        logTrig('ok', `✉ Run ${run.id} (${run.contact}) gửi 2 atom qua nick <span class="nick-ref">${run.nick}</span>`);
+        processed++;
+      }
+      if (run.status === 'evaluating' && run.step === 's4') {
+        if (run.replied === true) {
+          run.step = 's5_replied';
+          run.log.push(`s4 if replied=true → goto s5_replied (add tag warm-up)`);
+          run.status = 'done';
+          logTrig('ok', `🟢 Run ${run.id} (${run.contact}) replied → tag "Đã warm up"`);
+        } else {
+          run.step = 's5_silent';
+          run.log.push(`s4 if replied=false → goto s5_silent (add tag silent + notify sale)`);
+          run.status = 'silent_done';
+          logTrig('warn', `🟡 Run ${run.id} (${run.contact}) silent 24h → tag + notify sale`);
+        }
+        processed++;
+      }
+    });
+    if (processed === 0 && TRIGGER_RUNS.length > 0) logTrig('info', `Tick ${TRIGGER_TICK}: no runs ready (all waiting)`);
+    renderTrigger();
+  }
+  function triggerTickN(n) { for (let i = 0; i < n; i++) triggerTick(); }
+
+  function triggerSimulateReply() {
+    const candidates = TRIGGER_RUNS.filter(r => r.status === 'waiting' && r.step === 's3');
+    if (candidates.length === 0) { logTrig('warn', 'Không có run nào đang chờ reply'); return; }
+    const run = candidates[Math.floor(Math.random() * candidates.length)];
+    run.step = 's4';
+    run.replied = true;
+    run.status = 'evaluating';
+    run.log.push(`KH replied! → s4 eval`);
+    logTrig('ok', `💬 ${run.contact} replied trong run ${run.id}`);
+    renderTrigger();
+  }
+
+  function triggerReset() { TRIGGER_RUNS = []; TRIGGER_TICK = 0; EVENT_COUNT = 0; document.getElementById('trigger-log').innerHTML = ''; document.getElementById('trigger-outbox').innerHTML = ''; renderTrigger(); }
+
+  function logTrig(level, msg) {
+    const el = document.getElementById('trigger-log');
+    const line = document.createElement('div');
+    line.className = 'log-line ' + level;
+    line.innerHTML = `<span class="ts">t${TRIGGER_TICK}</span> ${msg}`;
+    el.appendChild(line);
+    while (el.children.length > 50) el.removeChild(el.firstChild);
+    el.scrollTop = el.scrollHeight;
+  }
+  function outbox(contact, nick, what) {
+    const el = document.getElementById('trigger-outbox');
+    const line = document.createElement('div');
+    line.className = 'log-line ok';
+    line.innerHTML = `<span class="ts">→ ${contact}</span> [${nick}] ${what}`;
+    el.appendChild(line);
+    while (el.children.length > 40) el.removeChild(el.firstChild);
+    el.scrollTop = el.scrollHeight;
+  }
+
+  function renderTrigger() {
+    document.getElementById('t-tick').textContent = TRIGGER_TICK;
+    document.getElementById('t-events').textContent = EVENT_COUNT;
+    document.getElementById('t-running').textContent = TRIGGER_RUNS.filter(r => r.status !== 'done' && r.status !== 'silent_done').length;
+    document.getElementById('t-done').textContent = TRIGGER_RUNS.filter(r => r.status === 'done').length;
+    document.getElementById('t-silent').textContent = TRIGGER_RUNS.filter(r => r.status === 'silent_done').length;
+
+    document.getElementById('trigger-runs').innerHTML = TRIGGER_RUNS.slice().reverse().map(r => {
+      const statusColor = r.status === 'done' ? 'green' : r.status === 'silent_done' ? 'amber' : r.status === 'sending' || r.status === 'evaluating' ? 'blue' : 'gray';
+      const statusBg = r.status === 'done' ? 'rgba(16,185,129,.1)' : r.status === 'silent_done' ? 'rgba(245,158,11,.1)' : r.status === 'sending' || r.status === 'evaluating' ? 'rgba(59,130,246,.1)' : 'var(--surface-2)';
+      const stepInfo = r.status === 'waiting' ? `waiting → tick #${r.nextRunAtTick}` : r.status === 'done' ? '✅ done (replied)' : r.status === 'silent_done' ? '🟡 silent_done' : r.status;
+      return `<div style="padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:${statusBg};font-size:11.5px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+          <b style="color:var(--text-1)">${r.contact}</b>
+          <span style="font-family:var(--mono);color:var(--text-3);font-size:10px">${r.id}</span>
+        </div>
+        <div style="font-family:var(--mono);font-size:10.5px;color:var(--text-2)">nick <span style="color:var(--indigo);font-weight:600">${r.nick}</span> · step <span style="color:#FBBF24">${r.step}</span> · ${stepInfo}</div>
+      </div>`;
+    }).join('') || '<div style="color:var(--text-3);font-style:italic;font-size:12px;padding:20px;text-align:center">Chưa có Run nào. Click "Simulate friend.accepted" để bắt đầu.</div>';
+  }
+  renderTrigger();
+</script>
+
+</body>
+</html>

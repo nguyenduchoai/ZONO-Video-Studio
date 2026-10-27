@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<title>Zalo Accounts — Roster Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..600&family=DM+Sans:opsz,wght@9..40,300..700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:        #FAF8F4;
+    --surface:   #FFFFFF;
+    --tint:      #F4EFE6;
+    --tint-2:    #EFE7D8;
+    --border:    #E8DFD0;
+    --border-2:  #F0EADF;
+    --text-1:    #1F1A14;
+    --text-2:    #6B5F4F;
+    --text-3:    #A89B85;
+    --gold:      #C9831C;
+    --gold-soft: #F5E3C0;
+    --active:    #0E7C4A;
+    --active-soft:#D9F2E5;
+    --idle:      #9A8E78;
+    --error:     #B5371F;
+    --error-soft:#F7DDD4;
+
+    --sans: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --serif:"Fraunces", Georgia, "Times New Roman", serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text-1);font-family:var(--sans);font-size:13.5px;line-height:1.5;font-feature-settings:"ss01","cv11"}
+  body{padding:36px 56px 120px;max-width:1480px;margin:0 auto}
+
+  ::selection{background:var(--gold-soft);color:var(--text-1)}
+
+  /* ───── HEADER ───── */
+  .head{display:flex;align-items:flex-end;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:20px;margin-bottom:32px}
+  .head .lead h1{font-family:var(--serif);font-weight:500;font-size:44px;line-height:1.05;letter-spacing:-.025em;margin:0 0 8px;font-variation-settings:"opsz" 144,"SOFT" 30}
+  .head .lead .sub{font-size:13px;color:var(--text-2);letter-spacing:.01em}
+  .head .lead .sub b{color:var(--text-1);font-weight:600}
+  .head .lead .sub i{font-style:normal;color:var(--text-3);margin:0 7px}
+
+  .head .right{display:flex;align-items:center;gap:10px}
+  .chip{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border:1px solid var(--border);border-radius:999px;background:var(--surface);font-size:12px;color:var(--text-2);cursor:pointer;font-family:var(--sans);font-weight:500}
+  .chip:hover{border-color:var(--text-3);color:var(--text-1)}
+  .chip.active{background:var(--text-1);color:var(--bg);border-color:var(--text-1)}
+  .chip .dot{width:6px;height:6px;border-radius:50%;background:var(--active)}
+  .chip .x{margin-left:2px;opacity:.6;font-size:14px}
+  .head .ic{width:14px;height:14px;stroke-width:1.6}
+  .search-mini{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);border-radius:999px;background:var(--surface);padding:6px 12px;height:32px;min-width:200px}
+  .search-mini input{border:none;outline:none;background:transparent;font-family:var(--sans);font-size:12px;color:var(--text-1);width:100%}
+  .search-mini input::placeholder{color:var(--text-3)}
+  .search-mini .kbd{font-size:10px;color:var(--text-3);border:1px solid var(--border);padding:0 4px;border-radius:4px;background:var(--bg)}
+
+  /* ───── KPI STRIP ───── */
+  .kpi-strip{display:flex;gap:0;border:1px solid var(--border);border-radius:14px;background:var(--surface);margin-bottom:48px;overflow:hidden}
+  .kpi{flex:1;padding:18px 22px;border-right:1px solid var(--border-2);position:relative}
+  .kpi:last-child{border-right:none}
+  .kpi .lab{font-size:10.5px;color:var(--text-3);text-transform:uppercase;letter-spacing:.12em;font-weight:600;margin-bottom:8px;font-family:var(--sans)}
+  .kpi .val{font-family:var(--serif);font-size:34px;font-weight:500;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+  .kpi .val small{font-family:var(--sans);font-size:14px;color:var(--text-3);font-weight:400;margin-left:4px;font-variant-numeric:tabular-nums}
+  .kpi .delta{font-size:11.5px;color:var(--text-2);margin-top:4px;font-variant-numeric:tabular-nums}
+  .kpi .delta .up{color:var(--active);font-weight:600}
+  .kpi .delta .dn{color:var(--error);font-weight:600}
+
+  /* mini bar */
+  .bar-mini{width:100%;height:4px;background:var(--tint);border-radius:99px;margin-top:8px;overflow:hidden}
+  .bar-mini > i{display:block;height:100%;background:var(--text-1)}
+
+  /* ───── SQUAD ───── */
+  .squad{margin-bottom:56px}
+  .squad-head{display:flex;align-items:baseline;justify-content:space-between;padding-bottom:14px;border-bottom:1px solid var(--border);margin-bottom:20px}
+  .squad-head .ttl{display:flex;align-items:baseline;gap:14px}
+  .squad-head h2{font-family:var(--serif);font-style:italic;font-weight:400;font-size:26px;letter-spacing:-.015em;margin:0;color:var(--text-1)}
+  .squad-head .tag{font-family:var(--sans);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-3);font-weight:600;border:1px solid var(--border);padding:2px 8px;border-radius:99px;background:var(--surface)}
+  .squad-head .digest{font-size:12px;color:var(--text-2);display:flex;align-items:center;gap:14px;font-variant-numeric:tabular-nums}
+  .squad-head .digest b{font-family:var(--serif);font-size:18px;color:var(--text-1);font-weight:500;margin-right:3px}
+  .squad-head .digest .sep{color:var(--text-3)}
+
+  /* ───── GRID ───── */
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  @media (max-width:1100px){.grid{grid-template-columns:repeat(2,1fr)}}
+  @media (max-width:720px){.grid{grid-template-columns:1fr}}
+
+  /* ───── CARD ───── */
+  .card{
+    position:relative;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:18px;
+    cursor:pointer;
+    perspective:1200px;
+    min-height:188px;
+    transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+  }
+  .card:hover{transform:translateY(-2px);box-shadow:0 10px 24px -10px rgba(31,26,20,.12);border-color:#D9CFBC}
+  .card.idle{background:linear-gradient(180deg,var(--surface) 0%,#FBF7F0 100%)}
+  .card.err{border-color:#E8B7A8;background:#FFFAF8}
+  .card-inner{position:relative;width:100%;height:100%;transition:transform .65s cubic-bezier(.4,0,.2,1);transform-style:preserve-3d}
+  .card.flipped .card-inner{transform:rotateY(180deg)}
+  .face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+  .face.back{transform:rotateY(180deg);display:flex;flex-direction:column}
+
+  /* Avatar */
+  .av-row{display:flex;align-items:flex-start;gap:14px;margin-bottom:12px}
+  .av{
+    width:60px;height:60px;border-radius:50%;flex-shrink:0;
+    background:linear-gradient(135deg,#D4B486,#A47148);
+    display:flex;align-items:center;justify-content:center;
+    color:#FFFFFF;font-family:var(--serif);font-weight:500;font-size:22px;letter-spacing:.01em;
+    position:relative;
+    box-shadow:inset 0 0 0 3px var(--surface),0 0 0 1px var(--border);
+  }
+  .av.cs{background:linear-gradient(135deg,#E2A968,#B66A28)}
+  .av.sale{background:linear-gradient(135deg,#D4889A,#9B3F58)}
+  .av.mkt{background:linear-gradient(135deg,#7BA388,#3F6E54)}
+  .av.lead{background:linear-gradient(135deg,#8FA7C4,#3F5F8F)}
+  .av.gray{background:linear-gradient(135deg,#B9AC95,#7B6D55)}
+  .av.evo{background:linear-gradient(135deg,#8DB58A,#3D6B3A)}
+  .av .stt{
+    position:absolute;right:0;bottom:2px;width:14px;height:14px;border-radius:50%;
+    border:2.5px solid var(--surface);
+    background:var(--active);
+  }
+  .card.idle .av .stt{background:var(--idle)}
+  .card.err  .av .stt{background:var(--error)}
+
+  /* Pulse */
+  .av .stt.pulse{animation:pulse 1.6s ease-in-out infinite}
+  @keyframes pulse{
+    0%,100%{box-shadow:0 0 0 2.5px var(--surface),0 0 0 5px rgba(14,124,74,.0)}
+    50%   {box-shadow:0 0 0 2.5px var(--surface),0 0 0 5px rgba(14,124,74,.25)}
+  }
+
+  /* Name block */
+  .nm-block{flex:1;min-width:0}
+  .nm-block .nm{font-family:var(--serif);font-size:19.5px;font-weight:500;letter-spacing:-.01em;line-height:1.2;color:var(--text-1);margin-bottom:2px;display:flex;align-items:center;gap:7px}
+  .nm-block .role-mini{font-size:11px;color:var(--text-2);font-style:italic;font-family:var(--serif);font-weight:400}
+  .nm-block .uid{font-size:11.5px;color:var(--text-3);font-variant-numeric:tabular-nums;margin-top:4px;letter-spacing:.01em}
+  .nm-block .uid b{color:var(--text-2);font-weight:500}
+
+  /* Award badge (gold) */
+  .award{
+    display:inline-flex;align-items:center;gap:3px;
+    background:var(--gold-soft);color:var(--gold);
+    font-size:9.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+    padding:1.5px 6px;border-radius:99px;
+    font-family:var(--sans);
+  }
+  .award.warn{background:var(--error-soft);color:var(--error)}
+
+  /* Sale crew */
+  .crew{display:flex;align-items:center;gap:10px;margin:10px 0 14px}
+  .crew-label{font-size:10.5px;color:var(--text-3);text-transform:uppercase;letter-spacing:.1em;font-weight:600;flex-shrink:0}
+  .crew-stack{display:inline-flex}
+  .crew-stack .av-sm{
+    width:26px;height:26px;border-radius:50%;
+    background:linear-gradient(135deg,#C5A879,#8B6A3F);
+    color:#FFFFFF;font-family:var(--sans);font-weight:600;font-size:9.5px;
+    display:inline-flex;align-items:center;justify-content:center;
+    box-shadow:0 0 0 2px var(--surface);
+    margin-left:-7px;letter-spacing:.02em;
+  }
+  .crew-stack .av-sm:first-child{margin-left:0}
+  .crew-stack .av-sm.cs  {background:linear-gradient(135deg,#E2A968,#B66A28)}
+  .crew-stack .av-sm.sale{background:linear-gradient(135deg,#D4889A,#9B3F58)}
+  .crew-stack .av-sm.mkt {background:linear-gradient(135deg,#7BA388,#3F6E54)}
+  .crew-stack .av-sm.lead{background:linear-gradient(135deg,#8FA7C4,#3F5F8F)}
+  .crew-stack .more{
+    width:26px;height:26px;border-radius:50%;
+    background:var(--tint);color:var(--text-2);
+    font-size:9.5px;font-weight:700;
+    display:inline-flex;align-items:center;justify-content:center;
+    box-shadow:0 0 0 2px var(--surface);margin-left:-7px;
+    font-variant-numeric:tabular-nums;
+  }
+  .crew-empty{font-size:11.5px;color:var(--text-3);font-style:italic;font-family:var(--serif)}
+
+  /* Stats trio */
+  .stats3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;padding-top:14px;border-top:1px solid var(--border-2)}
+  .stats3 .it{display:flex;flex-direction:column;gap:3px;min-width:0}
+  .stats3 .it .lbl{font-size:9.5px;color:var(--text-3);text-transform:uppercase;letter-spacing:.1em;font-weight:600}
+  .stats3 .it .val{font-family:var(--serif);font-size:22px;font-weight:500;line-height:1;color:var(--text-1);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+  .stats3 .it .val small{font-family:var(--sans);font-size:11px;color:var(--text-3);font-weight:400;margin-left:2px;font-variant-numeric:tabular-nums}
+  .stats3 .it .sub{font-size:10.5px;color:var(--text-2);font-variant-numeric:tabular-nums}
+  .stats3 .it .sub.ok {color:var(--active)}
+  .stats3 .it .sub.warn{color:var(--gold)}
+  .stats3 .it .sub.bad {color:var(--error)}
+  .stats3 .it.idle .val{color:var(--text-3)}
+
+  /* spark */
+  .stats3 svg.spark{width:54px;height:14px;display:block;margin-top:2px}
+
+  /* card menu */
+  .card-menu{position:absolute;top:14px;right:14px;width:26px;height:26px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;color:var(--text-3);cursor:pointer}
+  .card-menu:hover{background:var(--tint);color:var(--text-1)}
+  .card-menu svg{width:14px;height:14px}
+
+  .card-check{
+    position:absolute;top:14px;left:14px;width:20px;height:20px;border:1.5px solid var(--border);border-radius:5px;background:var(--surface);
+    opacity:0;transition:opacity .15s;display:flex;align-items:center;justify-content:center;color:var(--text-1)
+  }
+  .card:hover .card-check,.card.checked .card-check{opacity:1}
+  .card.checked{border-color:var(--text-1);box-shadow:0 0 0 1px var(--text-1)}
+  .card.checked .card-check{background:var(--text-1);color:var(--surface);border-color:var(--text-1)}
+  .card-check svg{width:13px;height:13px;stroke-width:3}
+
+  /* ── BACK FACE ── */
+  .face.back{padding:0;background:transparent}
+  .back-head{padding:14px 16px;border-bottom:1px solid var(--border-2);display:flex;align-items:center;justify-content:space-between}
+  .back-head .t{font-family:var(--serif);font-style:italic;font-size:14px;color:var(--text-2)}
+  .back-head .close{cursor:pointer;color:var(--text-3);font-size:18px;line-height:1}
+  .back-body{flex:1;overflow:auto;padding:12px 16px}
+  .back-section{margin-bottom:14px}
+  .back-section .h{font-size:9.5px;color:var(--text-3);text-transform:uppercase;letter-spacing:.12em;font-weight:600;margin-bottom:7px;display:flex;justify-content:space-between;align-items:center}
+  .back-section .h a{font-family:var(--serif);font-style:italic;font-size:11px;color:var(--text-2);text-transform:none;letter-spacing:0;font-weight:400;cursor:pointer}
+  .assign{display:flex;align-items:center;gap:9px;padding:6px 0;border-bottom:1px dashed var(--border-2);font-size:12px}
+  .assign:last-child{border-bottom:none}
+  .assign .av-sm{width:24px;height:24px;border-radius:50%;font-size:9px;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-weight:600;flex-shrink:0;background:linear-gradient(135deg,#C5A879,#8B6A3F)}
+  .assign .nm{flex:1;color:var(--text-1);font-weight:500;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .role{font-family:var(--sans);font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:2px 6px;border-radius:99px}
+  .role.owner {background:var(--gold-soft);color:var(--gold)}
+  .role.editor{background:var(--active-soft);color:var(--active)}
+  .role.viewer{background:var(--tint);color:var(--text-2)}
+
+  .back-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .back-actions button{font-family:var(--sans);font-size:11.5px;color:var(--text-1);background:var(--surface);border:1px solid var(--border);padding:7px 10px;border-radius:7px;cursor:pointer;font-weight:500;text-align:left;display:inline-flex;align-items:center;gap:6px}
+  .back-actions button:hover{background:var(--tint);border-color:var(--text-3)}
+  .back-actions button svg{width:12px;height:12px;stroke-width:1.6;color:var(--text-2)}
+  .back-actions .danger{color:var(--error);border-color:#E8C5BA}
+  .back-actions .danger:hover{background:var(--error-soft);border-color:var(--error)}
+
+  /* Bulk bar */
+  .bulk{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--text-1);color:var(--bg);border-radius:14px;padding:12px 16px;display:none;align-items:center;gap:14px;box-shadow:0 18px 40px rgba(31,26,20,.28);z-index:20;font-family:var(--sans)}
+  .bulk.show{display:flex}
+  .bulk .ct{font-family:var(--serif);font-style:italic;font-size:14px}
+  .bulk .ct b{font-style:normal;color:#F5E3C0;font-weight:600;margin-right:4px;font-variant-numeric:tabular-nums}
+  .bulk .div{width:1px;height:18px;background:rgba(245,227,192,.2)}
+  .bulk button{background:rgba(245,227,192,.08);border:1px solid rgba(245,227,192,.18);color:var(--bg);font-size:11.5px;padding:6px 11px;border-radius:7px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-weight:500}
+  .bulk button:hover{background:rgba(245,227,192,.16)}
+  .bulk button svg{width:11px;height:11px;stroke-width:2}
+  .bulk button.danger{color:#F5C4B5;background:rgba(181,55,31,.18);border-color:rgba(181,55,31,.35)}
+  .bulk .x{cursor:pointer;opacity:.55;margin-left:4px}
+
+  /* FAB */
+  .fab{position:fixed;right:32px;bottom:32px;width:60px;height:60px;border-radius:50%;background:var(--text-1);color:var(--gold-soft);display:flex;align-items:center;justify-content:center;box-shadow:0 14px 30px rgba(31,26,20,.32);cursor:pointer;z-index:15;transition:transform .15s}
+  .fab:hover{transform:scale(1.06)}
+  .fab svg{width:22px;height:22px;stroke-width:1.8}
+  .fab .fab-label{position:absolute;right:72px;background:var(--text-1);color:var(--bg);padding:6px 11px;border-radius:8px;font-size:12px;font-family:var(--serif);font-style:italic;white-space:nowrap;opacity:0;transform:translateX(8px);transition:all .2s;pointer-events:none}
+  .fab:hover .fab-label{opacity:1;transform:translateX(0)}
+
+  /* Footer note */
+  .footer-note{margin-top:64px;padding:20px 0;border-top:1px solid var(--border);font-family:var(--serif);font-style:italic;font-size:13px;color:var(--text-3);text-align:center}
+</style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="head">
+    <div class="lead">
+      <h1>Đội hình.</h1>
+      <div class="sub">
+        <b>16</b> nick · <b>11</b> sale phụ trách
+        <i>·</i>
+        Active <b>12</b>, Idle <b>3</b>, Error <b>1</b>
+        <i>·</i>
+        Cập nhật <b>vừa xong</b>
+      </div>
+    </div>
+    <div class="right">
+      <div class="search-mini">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input placeholder="Tìm nick, sale, UID..." />
+        <span class="kbd">⌘K</span>
+      </div>
+      <button class="chip active">Tất cả</button>
+      <button class="chip"><span class="dot"></span> Active</button>
+      <button class="chip"><span class="dot" style="background:var(--idle)"></span> Idle</button>
+      <button class="chip"><span class="dot" style="background:var(--error)"></span> Error</button>
+    </div>
+  </header>
+
+  <!-- KPI STRIP -->
+  <div class="kpi-strip">
+    <div class="kpi">
+      <div class="lab">Msg today</div>
+      <div class="val">1.842<small>/ 8.000</small></div>
+      <div class="bar-mini"><i style="width:23%"></i></div>
+      <div class="delta"><span class="up">▲ 12%</span> so với hôm qua</div>
+    </div>
+    <div class="kpi">
+      <div class="lab">Uptime team 7d</div>
+      <div class="val">94<small>.2%</small></div>
+      <div class="delta"><span class="up">▲ 1.4pt</span> tuần trước</div>
+    </div>
+    <div class="kpi">
+      <div class="lab">Friend tổng</div>
+      <div class="val">28.491</div>
+      <div class="delta"><span class="up">+312</span> trong 7d</div>
+    </div>
+    <div class="kpi">
+      <div class="lab">Reply rate 24h</div>
+      <div class="val">87<small>.6%</small></div>
+      <div class="delta"><span class="dn">▼ 2.1pt</span> hôm qua</div>
+    </div>
+    <div class="kpi">
+      <div class="lab">Cần re-login</div>
+      <div class="val">1</div>
+      <div class="delta"><span class="dn">CSKH Hà</span> · 9 giờ trước</div>
+    </div>
+  </div>
+
+  <!-- ════════ SQUAD 1: CSKH ════════ -->
+  <section class="squad">
+    <div class="squad-head">
+      <div class="ttl">
+        <h2>Phòng Chăm sóc</h2>
+        <span class="tag">Squad · CSKH</span>
+      </div>
+      <div class="digest">
+        <span><b>3</b> nick</span>
+        <span class="sep">·</span>
+        <span><b>2</b> active</span>
+        <span class="sep">·</span>
+        <span><b>347</b> msg today</span>
+      </div>
+    </div>
+
+    <div class="grid">
+      <!-- Card 1 -->
+      <article class="card" onclick="toggleFlip(this,event)">
+        <div class="card-inner">
+          <div class="face front">
+            <div class="card-check" onclick="toggleCheck(this,event)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <span class="card-menu" onclick="event.stopPropagation()">
+              <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>
+            </span>
+            <div class="av-row">
+              <div class="av evo">EV<span class="stt pulse"></span></div>
+              <div class="nm-block">
+                <div class="nm">Evo Sport <span class="award">★ Top</span></div>
+                <div class="role-mini">CSKH chính · phụ trách KH cao cấp</div>
+                <div class="uid"><b>UID</b> 8729113048329471 · 0908.xxx.421</div>
+              </div>
+            </div>
+            <div class="crew">
+              <span class="crew-label">Crew</span>
+              <span class="crew-stack">
+                <span class="av-sm cs">HÀ</span>
+                <span class="av-sm sale">HÙ</span>
+                <span class="av-sm mkt">MA</span>
+                <span class="more">+2</span>
+              </span>
+            </div>
+            <div class="stats3">
+              <div class="it">
+                <span class="lbl">Msg today</span>
+                <span class="val">347<small>/500</small></span>
+                <span class="sub">2 phút trước</span>
+              </div>
+              <div class="it">
+                <span class="lbl">Uptime 7d</span>
+                <span class="val">98<small>.4%</small></span>
+                <svg class="spark" viewBox="0 0 54 14" preserveAspectRatio="none"><polyline points="0,10 8,7 16,8 24,5 32,6 40,3 48,4 54,2" fill="none" stroke="var(--active)" stroke-width="1.2"/></svg>
+              </div>
+              <div class="it">
+                <span class="lbl">Reply rate</span>
+                <span class="val">92<small>%</small></span>
+                <span class="sub ok">▲ 4pt</span>
+              </div>
+            </div>
+          </div>
+          <!-- BACK -->
+          <div class="face back">
+            <div class="back-head">
+              <span class="t">Evo Sport — chi tiết</span>
+              <span class="close" onclick="toggleFlip(this.closest('.card'),event)">✕</span>
+            </div>
+            <div class="back-body">
+              <div class="back-section">
+                <div class="h"><span>Sale phụ trách (5)</span><a>+ Thêm</a></div>
+                <div class="assign"><span class="av-sm cs">HÀ</span><span class="nm">CSKH Hà — Trưởng nhóm</span><span class="role owner">Owner</span></div>
+                <div class="assign"><span class="av-sm sale">HÙ</span><span class="nm">Hùng Sale — Vinhomes GP</span><span class="role editor">Editor</span></div>
+                <div class="assign"><span class="av-sm mkt">MA</span><span class="nm">Mai MKT — BĐS HCM</span><span class="role editor">Editor</span></div>
+                <div class="assign"><span class="av-sm lead">PH</span><span class="nm">Phương Lead — Telesale HN</span><span class="role viewer">Viewer</span></div>
+                <div class="assign"><span class="av-sm">DU</span><span class="nm">Dung Telesale</span><span class="role viewer">Viewer</span></div>
+              </div>
+              <div class="back-section">
+                <div class="h"><span>Hành động</span></div>
+                <div class="back-actions">
+                  <button><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>Sync danh bạ</button>
+                  <button><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="21 15 17 19 13 15"/><path d="M21 19V5a2 2 0 0 0-2-2H7"/></svg>Sync lịch sử</button>
+                  <button><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/></svg>Đổi QR</button>
+                  <button><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/></svg>Cài đặt</button>
+                  <button class="danger" style="grid-column:1/-1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>Ngắt kết nối / Xoá nick</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Card 2 -->
+      <article class="card" onclick="toggleFlip(this,event)">
+        <div class="card-inner">
+          <div class="face front">
+            <div class="card-check" onclick="toggleCheck(this,event)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <span class="card-menu" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></span>
+            <div class="av-row">
+              <div class="av cs">CS<span class="stt"></span></div>
+              <div class="nm-block">
+                <div class="nm">CSKH Phụ <span class="award warn">⚠ Health</span></div>
+                <div class="role-mini">Hỗ trợ ngoài giờ · backup</div>
+                <div class="uid"><b>UID</b> 4920485762093857 · 0913.xxx.892</div>
+              </div>
+            </div>
+            <div class="crew">
+              <span class="crew-label">Crew</span>
+              <span class="crew-stack">
+                <span class="av-sm cs">HÀ</span>
+              </span>
+            </div>
+            <div class="stats3">
+              <div class="it"><span class="lbl">Msg today</span><span class="val">0<small>/500</small></span><span class="sub bad">9 giờ trước</span></div>
+              <div class="it"><span class="lbl">Uptime 7d</span><span class="val">68<small>.4%</small></span><svg class="spark" viewBox="0 0 54 14"><polyline points="0,6 8,9 16,8 24,11 32,10 40,12 48,11 54,13" fill="none" stroke="var(--error)" stroke-width="1.2"/></svg></div>
+              <div class="it"><span class="lbl">Reply rate</span><span class="val">—</span><span class="sub bad">Cần re-login</span></div>
+            </div>
+          </div>
+          <div class="face back"></div>
+        </div>
+      </article>
+
+      <!-- Card 3 -->
+      <article class="card" onclick="toggleFlip(this,event)">
+        <div class="card-inner">
+          <div class="face front">
+            <div class="card-check" onclick="toggleCheck(this,event)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <span class="card-menu" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></span>
+            <div class="av-row">
+              <div class="av cs">CS<span class="stt pulse"></span></div>
+              <div class="nm-block">
+                <div class="nm">CSKH Hà</div>
+                <div class="role-mini">Trưởng nhóm chăm sóc khách</div>
+                <div class="uid"><b>UID</b> 5829014763928471 · 0938.xxx.115</div>
+              </div>
+            </div>
+            <div class="crew">
+              <span class="crew-label">Crew</span>
+              <span class="crew-stack">
+                <span class="av-sm cs">HÀ</span>
+                <span class="av-sm lead">PH</span>
+              </span>
+            </div>
+            <div class="stats3">
+              <div class="it"><span class="lbl">Msg today</span><span class="val">218<small>/500</small></span><span class="sub">5 phút trước</span></div>
+              <div class="it"><span class="lbl">Uptime 7d</span><span class="val">96<small>.7%</small></span><svg class="spark" viewBox="0 0 54 14"><polyline points="0,9 8,8 16,7 24,8 32,5 40,6 48,4 54,3" fill="none" stroke="var(--active)" stroke-width="1.2"/></svg></div>
+              <div class="it"><span class="lbl">Reply rate</span><span class="val">89<small>%</small></span><span class="sub ok">ổn định</span></div>
+            </div>
+          </div>
+          <div class="face back"></div>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- ════════ SQUAD 2: BÁN HÀNG ════════ -->
+  <section class="squad">
+    <div class="squad-head">
+      <div class="ttl">
+        <h2>Bán hàng — HCM</h2>
+        <span class="tag">Squad · Sale</span>
+      </div>
+      <div class="digest">
+        <span><b>5</b> nick</span>
+        <span class="sep">·</span>
+        <span><b>5</b> active</span>
+        <span class="sep">·</span>
+        <span><b>1.124</b> msg today</span>
+      </div>
+    </div>
+
+    <div class="grid">
+      <!-- 4 -->
+      <article class="card checked" onclick="toggleFlip(this,event)">
+        <div class="card-inner"><div class="face front">
+          <div class="card-check" onclick="toggleCheck(this,event)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <span class="card-menu" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></span>
+          <div class="av-row">
+            <div class="av sale">HÙ<span class="stt pulse"></span></div>
+            <div class="nm-block">
+              <div class="nm">Hùng Sale <span class="award">★ Top</span></div>
+              <div class="role-mini">Vinhomes Grand Park · Q9</div>
+              <div class="uid"><b>UID</b> 2918374651083742 · 0909.xxx.553</div>
+            </div>
+          </div>
+          <div class="crew"><span class="crew-label">Crew</span><span class="crew-stack"><span class="av-sm sale">HÙ</span></span></div>
+          <div class="stats3">
+            <div class="it"><span class="lbl">Msg today</span><span class="val">412<small>/500</small></span><span class="sub">vừa xong</span></div>
+            <div class="it"><span class="lbl">Uptime 7d</span><span class="val">95<small>.7%</small></span><svg class="spark" viewBox="0 0 54 14"><polyline points="0,8 8,9 16,6 24,7 32,5 40,8 48,6 54,5" fill="none" stroke="var(--active)" stroke-width="1.2"/></svg></div>
+            <div class="it"><span class="lbl">Reply rate</span><span class="val">94<small>%</small></span><span class="sub ok">▲ 6pt</span></div>
+          </div>
+        </div><div class="face back"></div></div>
+      </article>
+
+      <!-- 5 -->
+      <article class="card" onclick="toggleFlip(this,event)">
+        <div class="card-inner"><div class="face front">
+          <div class="card-check" onclick="toggleCheck(this,event)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <span class="card-menu" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></span>
+          <div class="av-row">
+            <div class="av sale">DU<span class="stt pulse"></span></div>
+            <div class="nm-block">
+              <div class="nm">Dung Telesale</div>
+              <div class="role-mini">Vinhome Smart City — HN</div>
+              <div class="uid"><b>UID</b> 8294017365028471 · 0976.xxx.301</div>
+            </div>
+          </div>
+          <div class="crew"><span class="crew-label">Crew</span><span class="crew-stack"><span class="av-sm sale">DU</span><span class="av-sm">PH</span></span></div>
+          <div class="stats3">
+            <div class="it"><span class="lbl">Msg today</span><span class="val">289<small>/500</small></span><span class="sub">1 giờ trước</span></div>
+            <div class="it"><span class="lbl">Uptime 7d</span><span class="val">93<small>.8%</small></span><svg class="spark" viewBox="0 0 54 14"><polyline points="0,7 8,8 16,6 24,7 32,5 40,6 48,5 54,4" fill="none" stroke="var(--active)" stroke-width="1.2"/></svg></div>
+            <div class="it"><span class="lbl">Reply rate</span><span class="val">86<small>%</small></span><span class="sub">đều</span></div>
+          </div>
+        </div><div class="face back"></div></div>
+      </article>
+
+      <!-- 6 -->
+      <article class="card" onclick="toggleFlip(this,event)">
+        <div class="card-inner"><div class="face front">
+          <div class="card-check" onclick="toggleCheck(this,event)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <span class="card-menu" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></span>
+          <div class="av-row">
+            <div class="av sale">PH<span class="stt pulse"></span></div>
+            <div class="nm-block">
+              <div class="nm">Phương Lead</div>
+              <div class="role-mini">Telesale chính · HN</div>
+              <div class="uid"><b>UID</b> 1029384756103928 · 0901.xxx.778</div>
+            </div>
+          </div>
+          <div class="crew"><span class="crew-label">Crew</span><span class="crew-stack"><span class="av-sm lead">PH</span><span class="av-sm sale">DU</span><span class="av-sm sale">HÙ</span></span></div>
+          <div class="stats3">
+            <div class="it"><span class="lbl">Msg today</span><span class="val">156<small>/500</small></span><span class="sub">23 phút trước</span></div>
+            <div class="it"><span class="lbl">Uptime 7d</span><span class="val">91<small>.2%</small></span><svg class="spark" viewBox="0 0 54 14"><polyline points="0,5 8,7 16,6 24,8 32,5 40,7 48,5 54,6" fill="none" stroke="var(--active)" stroke-width="1.2"/></svg></div>
+            <div class="it"><span class="lbl">Reply rate</span><span class="val">81<small>%</small></span><span class="sub warn">▼ 3pt</span></div>
+          </div>
+        </div><div class="face back"></div></div>
+      </article>
+    </div>
+  </section>
+
+  <!-- ════════ SQUAD 3: MARKETING ════════ -->
+  <section class="squad">
+    <div class="squad-head">
+      <div class="ttl">
+        <h2>Marketing.</h2>
+        <span class="tag">Squad · MKT</span>
+      </div>
+      <div class="digest">
+        <span><b>4</b> nick</span>
+        <span class="sep">·</span>
+        <span><b>4</b> active</span>
+        <span class="sep">·</span>
+        <span><b>1.218</b> msg today</span>
+      </div>
+    </div>
+
+    <div class="grid">
+      <article class="card checked" onclick="toggleFlip(this,event)">
+        <div class="card-inner"><div class="face front">
+          <div class="card-check" onclick="toggleCheck(this,event)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <span class="card-menu" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></span>
+          <div class="av-row">
+            <div class="av mkt">MA<span class="stt pulse"></span></div>
+            <div class="nm-block">
+              <div class="nm">Mai Marketing <span class="award">★ Top</span></div>
+              <div class="role-mini">BĐS HCM · chính</div>
+              <div class="uid"><b>UID</b> 1839204711839472 · 0987.xxx.118</div>
+            </div>
+          </div>
+          <div class="crew"><span class="crew-label">Crew</span><span class="crew-stack"><span class="av-sm mkt">MA</span><span class="av-sm sale">DU</span></span></div>
+          <div class="stats3">
+            <div class="it"><span class="lbl">Msg today</span><span class="val">483<small>/500</small></span><span class="sub warn">sắp hit limit</span></div>
+            <div class="it"><span class="lbl">Uptime 7d</span><span class="val">96<small>.1%</small></span><svg class="spark" viewBox="0 0 54 14"><polyline points="0,8 8,6 16,7 24,5 32,6 40,4 48,5 54,3" fill="none" stroke="var(--active)" stroke-width="1.2"/></svg></div>
+            <div class="it"><span class="lbl">Reply rate</span><span class="val">90<small>%</small></span><span class="sub ok">▲ 2pt</span></div>
+          </div>
+        </div><div class="face back"></div></div>
+      </article>
+
+      <article class="card checked" onclick="toggleFlip(this,event)">
+        <div class="card-inner"><div class="face front">
+          <div class="card-check" onclick="toggleCheck(this,event)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <span class="card-menu" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></span>
+          <div class="av-row">
+            <div class="av mkt">MK<span class="stt pulse"></span></div>
+            <div class="nm-block">
+              <div class="nm">MKT Phụ 1</div>
+              <div class="role-mini">Chạy ads BĐS Hà Nội</div>
+              <div class="uid"><b>UID</b> 6291038475629103 · 0966.xxx.221</div>
+            </div>
+          </div>
+          <div class="crew"><span class="crew-label">Crew</span><span class="crew-stack"><span class="av-sm mkt">MA</span><span class="av-sm lead">PH</span></span></div>
+          <div class="stats3">
+            <div class="it"><span class="lbl">Msg today</span><span class="val">372<small>/500</small></span><span class="sub">14 phút trước</span></div>
+            <div class="it"><span class="lbl">Uptime 7d</span><span class="val">94<small>.5%</small></span><svg class="spark" viewBox="0 0 54 14"><polyline points="0,7 8,7 16,5 24,8 32,5 40,6 48,4 54,5" fill="none" stroke="var(--active)" stroke-width="1.2"/></svg></div>
+            <div class="it"><span class="lbl">Reply rate</span><span class="val">83<small>%</small></span><span class="sub">đều</span></div>
+          </div>
+        </div><div class="face back"></div></div>
+      </article>
+
+      <article class="card" onclick="toggleFlip(this,event)">
+        <div class="card-inner"><div class="face front">
+          <div class="card-check" onclick="toggleCheck(this,event)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <span class="card-menu" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></span>
+          <div class="av-row">
+            <div class="av mkt">HS<span class="stt pulse"></span></div>
+            <div class="nm-block">
+              <div class="nm">MKT HS — Holdings</div>
+              <div class="role-mini">Lead capture · BĐS cao cấp</div>
+              <div class="uid"><b>UID</b> 8273645928374610 · 0938.xxx.044</div>
+            </div>
+          </div>
+          <div class="crew"><span class="crew-label">Crew</span><span class="crew-stack"><span class="av-sm mkt">MA</span></span></div>
+          <div class="stats3">
+            <div class="it"><span class="lbl">Msg today</span><span class="val">363<small>/500</small></span><span class="sub">7 phút trước</span></div>
+            <div class="it"><span class="lbl">Uptime 7d</span><span class="val">95<small>.3%</small></span><svg class="spark" viewBox="0 0 54 14"><polyline points="0,8 8,6 16,7 24,4 32,5 40,4 48,3 54,4" fill="none" stroke="var(--active)" stroke-width="1.2"/></svg></div>
+            <div class="it"><span class="lbl">Reply rate</span><span class="val">88<small>%</small></span><span class="sub ok">đều</span></div>
+          </div>
+        </div><div class="face back"></div></div>
+      </article>
+    </div>
+  </section>
+
+  <!-- ════════ SQUAD 4: Lưu trữ ════════ -->
+  <section class="squad">
+    <div class="squad-head">
+      <div class="ttl">
+        <h2>Lưu trữ.</h2>
+        <span class="tag">Squad · Backup</span>
+      </div>
+      <div class="digest">
+        <span><b>2</b> nick</span>
+        <span class="sep">·</span>
+        <span class="sep" style="color:var(--idle)">cả 2 idle</span>
+      </div>
+    </div>
+
+    <div class="grid">
+      <article class="card idle" onclick="toggleFlip(this,event)">
+        <div class="card-inner"><div class="face front">
+          <div class="card-check" onclick="toggleCheck(this,event)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <span class="card-menu" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></span>
+          <div class="av-row">
+            <div class="av gray">NA<span class="stt"></span></div>
+            <div class="nm-block">
+              <div class="nm">Nick Cũ — MKT 2024</div>
+              <div class="role-mini">Data archive — chỉ đọc</div>
+              <div class="uid"><b>UID</b> 7820194753820194 · 0938.xxx.044</div>
+            </div>
+          </div>
+          <div class="crew"><span class="crew-label">Crew</span><span class="crew-empty">chưa gán sale</span></div>
+          <div class="stats3">
+            <div class="it idle"><span class="lbl">Msg today</span><span class="val">0</span><span class="sub">2 ngày trước</span></div>
+            <div class="it idle"><span class="lbl">Uptime 7d</span><span class="val">82<small>.3%</small></span><svg class="spark" viewBox="0 0 54 14"><polyline points="0,5 8,7 16,6 24,9 32,7 40,11 48,9 54,12" fill="none" stroke="var(--idle)" stroke-width="1.2"/></svg></div>
+            <div class="it idle"><span class="lbl">Friend</span><span class="val">4.218</span><span class="sub">backup</span></div>
+          </div>
+        </div><div class="face back"></div></div>
+      </article>
+
+      <article class="card idle" onclick="toggleFlip(this,event)">
+        <div class="card-inner"><div class="face front">
+          <div class="card-check" onclick="toggleCheck(this,event)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <span class="card-menu" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></span>
+          <div class="av-row">
+            <div class="av gray">NB<span class="stt"></span></div>
+            <div class="nm-block">
+              <div class="nm">Nick Cũ — Sale 2023</div>
+              <div class="role-mini">Data archive — chỉ đọc</div>
+              <div class="uid"><b>UID</b> 5728193046281937 · 0913.xxx.667</div>
+            </div>
+          </div>
+          <div class="crew"><span class="crew-label">Crew</span><span class="crew-empty">chưa gán sale</span></div>
+          <div class="stats3">
+            <div class="it idle"><span class="lbl">Msg today</span><span class="val">0</span><span class="sub">5 ngày trước</span></div>
+            <div class="it idle"><span class="lbl">Uptime 7d</span><span class="val">71<small>.0%</small></span><svg class="spark" viewBox="0 0 54 14"><polyline points="0,6 8,8 16,7 24,10 32,9 40,11 48,10 54,12" fill="none" stroke="var(--idle)" stroke-width="1.2"/></svg></div>
+            <div class="it idle"><span class="lbl">Friend</span><span class="val">2.871</span><span class="sub">backup</span></div>
+          </div>
+        </div><div class="face back"></div></div>
+      </article>
+    </div>
+  </section>
+
+  <div class="footer-note">— hết đội hình —</div>
+
+  <!-- BULK BAR (shown khi có row checked) -->
+  <div class="bulk show" id="bulk">
+    <span class="ct"><b id="bulkN">3</b>nick đã chọn</span>
+    <span class="div"></span>
+    <button><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>Reconnect</button>
+    <button><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Sync</button>
+    <button><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4"/></svg>Gán sale</button>
+    <button><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>Move squad</button>
+    <span class="div"></span>
+    <button class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>Disable</button>
+    <span class="x" onclick="clearChecks()">✕</span>
+  </div>
+
+  <!-- FAB -->
+  <div class="fab" title="Kết nối nick mới">
+    <span class="fab-label">Kết nối nick mới</span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  </div>
+
+<script>
+  function toggleFlip(el,e){
+    if(e && e.target.closest('.card-menu, .card-check, .back-actions button, .close')) return;
+    el.classList.toggle('flipped');
+  }
+  function toggleCheck(el,e){
+    e.stopPropagation();
+    const card = el.closest('.card');
+    card.classList.toggle('checked');
+    updateBulk();
+  }
+  function clearChecks(){
+    document.querySelectorAll('.card.checked').forEach(c=>c.classList.remove('checked'));
+    updateBulk();
+  }
+  function updateBulk(){
+    const n = document.querySelectorAll('.card.checked').length;
+    const bar = document.getElementById('bulk');
+    document.getElementById('bulkN').textContent = n;
+    bar.classList.toggle('show', n>0);
+  }
+  updateBulk();
+</script>
+
+</body>
+</html>

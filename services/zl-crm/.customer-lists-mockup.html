@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<title>Tệp khách hàng — Bot Automation</title>
+<style>
+  :root{
+    --bg:#F7F8FA; --surface:#FFFFFF; --surface-2:#F4F5F8;
+    --border:#E5E7EB; --border-2:#EFF1F4;
+    --text-1:#111827; --text-2:#4B5563; --text-3:#6B7280; --text-muted:#9CA3AF;
+    --indigo:#6366F1; --indigo-50:#EEF2FF; --indigo-100:#E0E7FF; --indigo-600:#4F46E5;
+    --green:#10B981; --green-50:#ECFDF5; --green-100:#D1FAE5; --green-700:#047857;
+    --amber:#F59E0B; --amber-50:#FFFBEB; --amber-100:#FEF3C7; --amber-700:#B45309;
+    --red:#EF4444; --red-50:#FEF2F2; --red-100:#FEE2E2; --red-700:#B91C1C;
+    --blue:#3B82F6; --blue-50:#EFF6FF;
+    --purple:#A855F7; --purple-50:#FAF5FF;
+    --mono:"JetBrains Mono","SF Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text-1);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:13px;line-height:1.5}
+
+  .app{display:flex;flex-direction:column;min-height:100vh}
+
+  /* Top nav */
+  .topnav{background:var(--text-1);color:white;padding:0 24px;display:flex;align-items:center;gap:24px;height:48px;flex-shrink:0}
+  .topnav .brand{font-weight:700;font-size:14px}
+  .topnav .brand .em{color:#FBBF24}
+  .topnav nav{display:flex;gap:2px;height:100%}
+  .topnav nav a{color:#9CA3AF;text-decoration:none;padding:0 14px;height:100%;display:flex;align-items:center;font-size:12.5px;font-weight:500;border-bottom:2px solid transparent;transition:color .12s, border-color .12s}
+  .topnav nav a:hover{color:white}
+  .topnav nav a.active{color:white;border-bottom-color:#FBBF24}
+  .topnav .spacer{flex:1}
+  .topnav .user{font-size:12px;color:#D1D5DB;display:flex;align-items:center;gap:8px}
+  .topnav .user .av{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#6366F1,#A855F7);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700}
+
+  /* Sub-nav */
+  .subnav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 28px;display:flex;align-items:center;gap:2px;height:44px;flex-shrink:0}
+  .subnav a{text-decoration:none;color:var(--text-2);padding:0 14px;height:100%;display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:500;border-bottom:2px solid transparent;transition:all .12s}
+  .subnav a:hover{color:var(--text-1)}
+  .subnav a.active{color:var(--indigo);border-bottom-color:var(--indigo);background:var(--indigo-50)}
+  .subnav a .ic{width:14px;height:14px}
+  .subnav a .badge{background:var(--text-1);color:white;padding:0 6px;border-radius:99px;font-size:10px;font-weight:700;margin-left:2px;font-variant-numeric:tabular-nums}
+  .subnav a.active .badge{background:var(--indigo)}
+  .subnav .spacer{flex:1}
+  .subnav .help{color:var(--text-3);font-size:12px;display:flex;align-items:center;gap:4px;padding:0 12px}
+
+  .page{padding:24px 28px;flex:1;max-width:100%;width:100%;margin:0 auto}
+
+  .page-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px}
+  .page-head h1{margin:0 0 4px;font-size:20px;font-weight:700;letter-spacing:-.01em}
+  .page-head .sub{color:var(--text-3);font-size:12.5px}
+  .page-head .sub b{color:var(--text-1);font-weight:600}
+  .page-head .actions{display:flex;gap:8px;align-items:center}
+
+  .btn{padding:7px 13px;background:var(--surface);border:1px solid var(--border);border-radius:7px;color:var(--text-1);cursor:pointer;font-size:12.5px;font-weight:500;display:inline-flex;align-items:center;gap:6px;font-family:inherit}
+  .btn:hover{background:var(--surface-2);border-color:#D1D5DB}
+  .btn.primary{background:var(--indigo);border-color:var(--indigo);color:white}
+  .btn.primary:hover{background:var(--indigo-600);border-color:var(--indigo-600)}
+  .btn.ghost{background:transparent;border-color:transparent;color:var(--text-2)}
+  .btn.ghost:hover{background:var(--surface-2)}
+  .btn.danger{color:var(--red-700);border-color:var(--red-100)}
+  .btn.danger:hover{background:var(--red-50)}
+  .btn .ic{width:14px;height:14px;stroke-width:2}
+
+  /* Filter row */
+  .filter-row{display:flex;gap:8px;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 10px;margin-bottom:14px}
+  .search{flex:1;display:flex;align-items:center;gap:6px;padding:0 9px;background:var(--surface-2);border:1px solid var(--border-2);border-radius:7px;height:34px}
+  .search input{flex:1;border:none;background:transparent;outline:none;font-size:12.5px;color:var(--text-1);font-family:inherit}
+  .search input::placeholder{color:var(--text-muted)}
+  .search .ic{width:13px;height:13px;color:var(--text-3)}
+  .select{height:34px;padding:0 10px;border:1px solid var(--border);border-radius:7px;background:var(--surface);font-size:12px;color:var(--text-2);cursor:pointer;font-family:inherit}
+
+  /* ── List table (View 1) ── */
+  .lists-table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  thead th{background:var(--surface-2);font-size:10.5px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;padding:10px 10px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+  thead th.right{text-align:right}
+  thead th.center{text-align:center}
+  tbody td{padding:11px 10px;border-bottom:1px solid var(--border-2);vertical-align:middle;color:var(--text-1)}
+  tbody tr{transition:background .1s;cursor:pointer}
+  tbody tr:hover{background:#FAFBFC}
+  tbody tr.selected{background:var(--indigo-50)}
+  tbody tr:last-child td{border-bottom:none}
+
+  .list-name-cell{display:flex;align-items:center;gap:8px;min-width:0}
+  .list-name-cell .icon-em{font-size:18px;flex-shrink:0}
+  .list-name-cell .nm{font-weight:600;color:var(--text-1);font-size:13px}
+  .list-name-cell .sub{font-size:11px;color:var(--text-3);margin-top:1px}
+
+  .author-cell{display:inline-flex;align-items:center;gap:6px;color:var(--text-2);font-size:12px}
+  .author-cell .av{width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,#6366F1,#A855F7);color:white;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+
+  .source-chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--text-3);background:var(--surface-2);padding:2px 7px;border-radius:5px}
+
+  .num-cell{font-family:var(--mono);font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;text-align:right}
+  .num-cell.green{color:var(--green-700)}
+  .num-cell.red{color:var(--red-700)}
+  .num-cell.amber{color:var(--amber-700)}
+  .num-cell.blue{color:#1D4ED8}
+  .num-cell.muted{color:var(--text-muted);font-weight:400}
+
+  .progress-cell{min-width:120px}
+  .progress-bar{display:flex;height:6px;border-radius:99px;overflow:hidden;background:var(--surface-2)}
+  .progress-bar > i{display:block;height:100%}
+  .progress-bar .ok{background:var(--green)}
+  .progress-bar .warn{background:var(--amber)}
+  .progress-bar .bad{background:var(--red)}
+  .progress-bar .pending{background:#D1D5DB}
+
+  .status-chip{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:99px;font-size:10.5px;font-weight:600;white-space:nowrap}
+  .status-chip.done{background:var(--green-100);color:var(--green-700)}
+  .status-chip.processing{background:var(--amber-100);color:var(--amber-700)}
+
+  .row-actions{text-align:right;white-space:nowrap}
+  .row-actions button{width:26px;height:26px;border-radius:5px;border:none;background:transparent;color:var(--text-3);cursor:pointer;margin-left:2px;display:inline-flex;align-items:center;justify-content:center}
+  .row-actions button:hover{background:var(--surface-2);color:var(--text-1)}
+  .row-actions button .ic{width:13px;height:13px}
+
+  .chk{width:14px;height:14px;accent-color:var(--indigo);cursor:pointer}
+
+  /* ── Detail view ── */
+  .breadcrumb{display:flex;align-items:center;gap:6px;margin-bottom:14px;font-size:12px;color:var(--text-3)}
+  .breadcrumb a{color:var(--indigo);text-decoration:none;cursor:pointer}
+  .breadcrumb a:hover{text-decoration:underline}
+  .breadcrumb .sep{color:#D1D5DB}
+
+  .detail-hero{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:16px}
+  .detail-hero-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px}
+  .detail-hero-head h2{margin:0 0 4px;font-size:18px;font-weight:700;display:flex;align-items:center;gap:8px}
+  .detail-hero-head .sub{color:var(--text-3);font-size:12.5px}
+  .detail-hero-head .sub b{color:var(--text-1);font-weight:600}
+  .detail-hero-head .actions-stack{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+  .detail-hero-head .actions-stack .btn-row{display:flex;gap:6px}
+
+  .hero-stats{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+  .hero-stat{background:var(--surface-2);border:1px solid var(--border-2);border-radius:9px;padding:10px 12px;cursor:pointer;transition:all .12s}
+  .hero-stat:hover{border-color:var(--indigo-100);background:var(--indigo-50)}
+  .hero-stat.active{border-color:var(--indigo);background:var(--indigo-50);box-shadow:0 0 0 3px rgba(99,102,241,.1)}
+  .hero-stat .l{font-size:10.5px;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;font-weight:600;margin-bottom:4px}
+  .hero-stat .v{font-size:20px;font-weight:700;color:var(--text-1);line-height:1;font-variant-numeric:tabular-nums}
+  .hero-stat .pct{font-size:10.5px;color:var(--text-3);margin-top:3px;font-variant-numeric:tabular-nums}
+  .hero-stat.green .v{color:var(--green-700)}
+  .hero-stat.red .v{color:var(--red-700)}
+  .hero-stat.amber .v{color:var(--amber-700)}
+  .hero-stat.blue .v{color:#1D4ED8}
+
+  .subtabs{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:6px;margin-bottom:14px;display:flex;gap:2px;flex-wrap:wrap}
+  .subtab{padding:7px 12px;border-radius:6px;font-size:12px;color:var(--text-2);cursor:pointer;font-weight:500;display:inline-flex;align-items:center;gap:6px;border:none;background:transparent;font-family:inherit}
+  .subtab:hover{background:var(--surface-2);color:var(--text-1)}
+  .subtab.active{background:var(--text-1);color:white}
+  .subtab .count{background:rgba(0,0,0,.06);color:var(--text-2);padding:0 6px;border-radius:99px;font-size:10.5px;font-weight:700;font-variant-numeric:tabular-nums}
+  .subtab.active .count{background:rgba(255,255,255,.18);color:white}
+
+  .filter-strip{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 10px;margin-bottom:14px}
+  .filter-strip .search{flex:1}
+
+  /* Entries table — wider, sticky header */
+  .entries-wrap{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:auto;max-height:calc(100vh - 320px)}
+  .entries-table{font-size:12px;min-width:1400px}
+  .entries-table thead th{position:sticky;top:0;z-index:2}
+  .entries-table tbody td{padding:8px 9px}
+
+  td.ix{color:var(--text-3);font-family:var(--mono);font-size:11px;width:40px}
+  td.phone-cell{font-family:var(--mono);font-size:11.5px;white-space:nowrap}
+  td.phone-cell.raw{color:var(--text-3)}
+  td.phone-cell.e164{color:var(--text-2)}
+  td.phone-cell.local{color:var(--text-1);font-weight:600}
+  td.name{font-weight:500;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  td.name-zalo{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  td.name-zalo.has{color:var(--text-1);font-weight:500}
+  td.name-zalo.no{color:var(--text-muted);font-style:italic}
+
+  .status-pill{display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:99px;font-size:10.5px;font-weight:600;white-space:nowrap}
+  .status-pill.ok{background:var(--green-100);color:var(--green-700)}
+  .status-pill.error{background:var(--red-100);color:var(--red-700)}
+  .status-pill.dup{background:var(--amber-100);color:var(--amber-700)}
+  .status-pill.pending{background:var(--surface-2);color:var(--text-3)}
+  .status-pill.has-zalo{background:var(--blue-50);color:#1D4ED8}
+  .status-pill.no-zalo{background:var(--surface-2);color:var(--text-3)}
+
+  .uid-cell{font-family:var(--mono);font-size:11px;color:var(--text-2);white-space:nowrap}
+  .uid-cell.empty{color:var(--text-muted)}
+
+  .nick-cell{display:inline-flex;align-items:center;gap:5px;font-size:11.5px}
+  .nick-cell .av{width:20px;height:20px;border-radius:50%;font-size:9px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;color:white;flex-shrink:0}
+  .nick-cell .av.evo{background:linear-gradient(135deg,#10B981,#059669)}
+  .nick-cell .av.sale{background:linear-gradient(135deg,#EC4899,#BE185D)}
+  .nick-cell .av.mkt{background:linear-gradient(135deg,#3B82F6,#1D4ED8)}
+  .nick-cell .av.cs{background:linear-gradient(135deg,#F59E0B,#D97706)}
+  .nick-cell .more{font-size:10px;color:var(--indigo);background:var(--indigo-50);padding:0 5px;border-radius:99px;font-weight:700}
+
+  .global-id{font-family:var(--mono);font-size:10.5px;color:var(--purple);background:var(--purple-50);padding:1px 6px;border-radius:4px;white-space:nowrap}
+  .global-id.empty{color:var(--text-muted);background:transparent;font-style:italic}
+
+  .dup-note{font-size:10.5px;color:var(--amber-700);background:var(--amber-50);padding:1px 6px;border-radius:4px;display:inline-block;white-space:nowrap}
+  .err-note{font-size:10.5px;color:var(--red-700);background:var(--red-50);padding:1px 6px;border-radius:4px;display:inline-block;white-space:nowrap}
+
+  /* Pagination */
+  .pag{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;font-size:11.5px;color:var(--text-3)}
+  .pag .ctrls{display:flex;gap:4px;align-items:center}
+  .pag button{height:26px;min-width:26px;padding:0 9px;border:1px solid var(--border);background:white;border-radius:5px;font-size:11px;cursor:pointer;color:var(--text-2);font-family:inherit}
+  .pag button:hover{background:var(--surface-2)}
+  .pag button.cur{background:var(--indigo);color:white;border-color:var(--indigo)}
+
+  /* Modal */
+  .modal-overlay{position:fixed;inset:0;background:rgba(17,24,39,.45);display:flex;align-items:center;justify-content:center;z-index:100}
+  .modal-overlay.hidden{display:none}
+  .modal{background:var(--surface);border-radius:14px;width:580px;max-width:92vw;max-height:88vh;box-shadow:0 24px 60px rgba(17,24,39,.22);display:flex;flex-direction:column;overflow:hidden}
+  .modal-head{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+  .modal-head h3{margin:0;font-size:15px;font-weight:600}
+  .modal-head .x{background:transparent;border:none;color:var(--text-3);font-size:18px;cursor:pointer;padding:4px 8px;border-radius:5px}
+  .modal-head .x:hover{background:var(--surface-2);color:var(--text-1)}
+  .modal-body{padding:18px 20px;overflow-y:auto;flex:1}
+  .modal-foot{padding:12px 20px;background:var(--surface-2);border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .modal-foot .left{font-size:12px;color:var(--text-3)}
+  .modal-foot .right{display:flex;gap:8px}
+
+  .field{margin-bottom:14px}
+  .field label{display:block;font-size:11.5px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px}
+  .field input,.field textarea{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px;outline:none;font-family:inherit;background:white;color:var(--text-1)}
+  .field input:focus,.field textarea:focus{border-color:var(--indigo)}
+  .field textarea{font-family:var(--mono);font-size:12px;min-height:140px;resize:vertical}
+  .field .hint{font-size:11px;color:var(--text-3);margin-top:4px}
+
+  .parse-preview{background:var(--surface-2);border:1px solid var(--border-2);border-radius:8px;padding:11px 13px;margin-top:10px;font-size:12px;color:var(--text-2)}
+  .parse-preview .pp-row{display:flex;align-items:center;gap:8px;padding:2px 0}
+  .parse-preview .pp-row .ico{font-size:13px;width:18px}
+  .parse-preview .pp-row b{color:var(--text-1);font-variant-numeric:tabular-nums}
+
+  .bulk-bar{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--text-1);color:white;border-radius:12px;padding:10px 16px;display:none;align-items:center;gap:12px;box-shadow:0 16px 36px rgba(17,24,39,.28);z-index:50}
+  .bulk-bar.show{display:flex}
+  .bulk-bar .ct{font-weight:600;font-size:13px}
+  .bulk-bar .ct em{color:#FBBF24;font-style:normal;font-weight:700;margin-right:4px;font-variant-numeric:tabular-nums}
+  .bulk-bar .div{width:1px;height:18px;background:rgba(255,255,255,.16)}
+  .bulk-bar button{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:white;font-size:12px;padding:6px 11px;border-radius:7px;cursor:pointer;display:inline-flex;gap:5px;align-items:center;font-family:inherit}
+  .bulk-bar button:hover{background:rgba(255,255,255,.18)}
+  .bulk-bar .x{cursor:pointer;opacity:.6;margin-left:4px;background:transparent;border:none;color:white}
+
+  .empty-cell{padding:48px 16px;text-align:center;color:var(--text-3);font-style:italic;font-size:13px}
+
+  /* List title row tweaks for compact */
+  .stats-tiny{display:flex;gap:14px;align-items:center;font-size:11.5px;font-variant-numeric:tabular-nums}
+  .stats-tiny .item{display:inline-flex;align-items:center;gap:4px;color:var(--text-3)}
+  .stats-tiny .item b{color:var(--text-1);font-weight:700}
+  .stats-tiny .item.ok b{color:var(--green-700)}
+  .stats-tiny .item.err b{color:var(--red-700)}
+  .stats-tiny .item.warn b{color:var(--amber-700)}
+  .stats-tiny .item.zalo b{color:#1D4ED8}
+</style>
+</head>
+<body>
+  <div class="app">
+
+    <!-- ═══ TOP NAV ═══ -->
+    <header class="topnav">
+      <div class="brand">Zalo<span class="em">CRM</span></div>
+      <nav>
+        <a href="#">Chat</a>
+        <a href="#">Khách hàng</a>
+        <a href="#">Bạn bè</a>
+        <a href="#" class="active">Bot Automation</a>
+        <a href="#">Báo cáo</a>
+        <a href="#">Lịch hẹn</a>
+      </nav>
+      <div class="spacer"></div>
+      <div class="user">
+        <span>Hùng Sale</span>
+        <div class="av">HS</div>
+      </div>
+    </header>
+
+    <!-- ═══ SUB NAV (Bot Auto tabs) ═══ -->
+    <div class="subnav">
+      <a href="#">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Blocks <span class="badge">24</span>
+      </a>
+      <a href="#">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18M3 9h18M3 15h18M3 21h18"/></svg>
+        Sequences <span class="badge">8</span>
+      </a>
+      <a href="#">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+        Triggers <span class="badge">12</span>
+      </a>
+      <a href="#">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l18-8-3 18-7-6-4 4z"/></svg>
+        Broadcasts <span class="badge">3</span>
+      </a>
+      <a href="#" class="active">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11v3a2 2 0 0 1-2 2h-3.93a2 2 0 0 0-1.66.9l-.82 1.2a2 2 0 0 1-1.66.9H9.61a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 5.47 16H1.5a.5.5 0 0 1-.5-.5V11"/><path d="M5.5 6h13l3 5H2.5z"/></svg>
+        Tệp khách hàng <span class="badge">14</span>
+      </a>
+      <div class="spacer"></div>
+      <span class="help">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 4 2c-.5.5-2 1.5-2 2.5"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Hướng dẫn
+      </span>
+    </div>
+
+    <main class="page">
+
+      <!-- ═══ VIEW 1: LISTS (table list) ═══ -->
+      <section id="view-lists">
+        <div class="page-head">
+          <div>
+            <h1>📂 Tệp khách hàng</h1>
+            <div class="sub"><b>14</b> tệp · <b>23,847</b> SĐT đã import · cập nhật <b>vừa xong</b></div>
+          </div>
+          <div class="actions">
+            <button class="btn">
+              <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>
+              Quét Zalo all
+            </button>
+            <button class="btn primary" onclick="openCreate()">
+              <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Tạo tệp mới
+            </button>
+          </div>
+        </div>
+
+        <div class="filter-row">
+          <div class="search">
+            <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input placeholder="Tìm theo tên tệp, người tạo..." />
+          </div>
+          <select class="select"><option>Tất cả người tạo</option><option>Sale Hùng</option><option>MKT Mai</option><option>CSKH Hà</option></select>
+          <select class="select"><option>Tất cả thời gian</option><option>7 ngày</option><option>30 ngày</option><option>Quý này</option></select>
+          <select class="select"><option>Trạng thái: Tất cả</option><option>Đang xử lý</option><option>Đã hoàn tất</option></select>
+          <button class="btn ghost">⚙ Cột</button>
+        </div>
+
+        <!-- ── List TABLE (replace grid cards) ── -->
+        <div class="lists-table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:30px"><input type="checkbox" class="chk"/></th>
+                <th>Tên tệp</th>
+                <th>Ngày tạo</th>
+                <th>Người tạo</th>
+                <th>Nguồn</th>
+                <th class="right">Tổng</th>
+                <th class="right">Hợp lệ</th>
+                <th class="right">Lỗi</th>
+                <th class="right">Trùng</th>
+                <th class="right">Có Zalo</th>
+                <th>Tiến độ</th>
+                <th>Trạng thái</th>
+                <th class="right" style="width:130px">Action</th>
+              </tr>
+            </thead>
+            <tbody id="lists-tbody">
+              <!-- JS populate -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ═══ VIEW 2: DETAIL ═══ -->
+      <section id="view-detail" style="display:none">
+        <div class="breadcrumb">
+          <a onclick="backToLists()">📂 Tệp khách hàng</a>
+          <span class="sep">›</span>
+          <span id="detail-name">Lead BĐS Vinhomes Grand Park Q2</span>
+        </div>
+
+        <div class="detail-hero">
+          <div class="detail-hero-head">
+            <div>
+              <h2>🏢 <span id="detail-title">Lead BĐS Vinhomes Grand Park Q2</span></h2>
+              <div class="sub">
+                Tạo <b>19/05/2026 14:30</b> bởi <b>Sale Hùng</b> · Nguồn <b>Paste textarea</b> · ID <code style="font-family:var(--mono);font-size:11px;background:var(--surface-2);padding:1px 5px;border-radius:3px">cl_abc123</code>
+              </div>
+            </div>
+            <div class="actions-stack">
+              <div class="btn-row">
+                <button class="btn primary">
+                  <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                  Tạo campaign từ tệp này
+                </button>
+                <button class="btn">
+                  <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>
+                  Quét lại Zalo
+                </button>
+              </div>
+              <div class="btn-row">
+                <button class="btn ghost">⬇ Export CSV</button>
+                <button class="btn ghost danger">🗑 Xoá tệp</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="hero-stats">
+            <div class="hero-stat active" data-tab="all" onclick="setTab('all')">
+              <div class="l">Tổng SĐT</div>
+              <div class="v">1,000</div>
+              <div class="pct">100%</div>
+            </div>
+            <div class="hero-stat green" data-tab="valid" onclick="setTab('valid')">
+              <div class="l">Hợp lệ</div>
+              <div class="v">847</div>
+              <div class="pct">84.7%</div>
+            </div>
+            <div class="hero-stat red" data-tab="invalid" onclick="setTab('invalid')">
+              <div class="l">Lỗi format</div>
+              <div class="v">64</div>
+              <div class="pct">6.4%</div>
+            </div>
+            <div class="hero-stat amber" data-tab="dup" onclick="setTab('dup')">
+              <div class="l">Trùng</div>
+              <div class="v">89</div>
+              <div class="pct">47 list + 42 CRM</div>
+            </div>
+            <div class="hero-stat blue" data-tab="has-zalo" onclick="setTab('has-zalo')">
+              <div class="l">Có Zalo</div>
+              <div class="v">612</div>
+              <div class="pct">72.3% / hợp lệ</div>
+            </div>
+            <div class="hero-stat" data-tab="no-zalo" onclick="setTab('no-zalo')">
+              <div class="l">Không Zalo</div>
+              <div class="v">235</div>
+              <div class="pct">27.7% / hợp lệ</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="subtabs" id="subtabs">
+          <button class="subtab active" data-tab="all" onclick="setTab('all')">Tất cả <span class="count">1,000</span></button>
+          <button class="subtab" data-tab="valid" onclick="setTab('valid')">✓ Hợp lệ <span class="count">847</span></button>
+          <button class="subtab" data-tab="invalid" onclick="setTab('invalid')">✗ Lỗi format <span class="count">64</span></button>
+          <button class="subtab" data-tab="dup" onclick="setTab('dup')">⚠ Trùng <span class="count">89</span></button>
+          <button class="subtab" data-tab="dup-in-list" onclick="setTab('dup-in-list')">↺ Trùng trong list <span class="count">22</span></button>
+          <button class="subtab" data-tab="dup-cross-list" onclick="setTab('dup-cross-list')">↔ Trùng list khác <span class="count">25</span></button>
+          <button class="subtab" data-tab="dup-with-crm" onclick="setTab('dup-with-crm')">⚷ Trùng CRM <span class="count">42</span></button>
+          <button class="subtab" data-tab="has-zalo" onclick="setTab('has-zalo')">📱 Có Zalo <span class="count">612</span></button>
+          <button class="subtab" data-tab="no-zalo" onclick="setTab('no-zalo')">⊘ Không Zalo <span class="count">235</span></button>
+        </div>
+
+        <div class="filter-strip">
+          <div class="search">
+            <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input placeholder="Tìm SĐT, tên KH, UID..." />
+          </div>
+          <select class="select"><option>Sort: Index ↑</option><option>Phone</option><option>Status</option></select>
+          <button class="btn ghost">⚙ Cột hiển thị</button>
+        </div>
+
+        <!-- Entries table — 3 phone cols + 4 Zalo cols -->
+        <div class="entries-wrap">
+          <table class="entries-table">
+            <thead>
+              <tr>
+                <th style="width:30px"><input type="checkbox" class="chk"/></th>
+                <th>#</th>
+                <th title="Phone gốc anh paste vào">📋 Phone (paste)</th>
+                <th title="Phone chuẩn hoá E.164 (+84...)">🌐 Phone (+84)</th>
+                <th title="Phone format local (0xxx) — dùng matching CRM">🇻🇳 Phone (local)</th>
+                <th>Tên KH (file)</th>
+                <th>Tên KH (Zalo)</th>
+                <th>Trạng thái</th>
+                <th>Zalo UID</th>
+                <th>Nick tìm ra</th>
+                <th>Global ID</th>
+                <th>Ghi chú</th>
+                <th class="right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="entries-tbody"></tbody>
+          </table>
+        </div>
+
+        <div class="pag">
+          <span>Hiện <b id="pag-range">1–25</b> / <b id="pag-total">1,000</b> SĐT</span>
+          <div class="ctrls">
+            <button>‹ Trước</button>
+            <button class="cur">1</button>
+            <button>2</button>
+            <button>3</button>
+            <button>…</button>
+            <button>40</button>
+            <button>Sau ›</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- ═══ MODAL ═══ -->
+    <div class="modal-overlay hidden" id="modal-create">
+      <div class="modal">
+        <div class="modal-head">
+          <h3>📥 Tạo tệp khách hàng mới</h3>
+          <button class="x" onclick="closeCreate()">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="field">
+            <label>Tên tệp</label>
+            <input id="new-list-name" placeholder="VD: Lead Vinhomes Grand Park — Tháng 5" />
+            <div class="hint">Để trống → auto đặt "Tệp {dd/MM HH:mm}"</div>
+          </div>
+          <div class="field">
+            <label>Nguồn dữ liệu</label>
+            <div style="display:flex;gap:8px">
+              <button class="btn" style="flex:1;justify-content:center;border-color:var(--indigo);background:var(--indigo-50);color:var(--indigo-600)">📝 Paste textarea</button>
+              <button class="btn" style="flex:1;justify-content:center">📄 Upload CSV</button>
+              <button class="btn" style="flex:1;justify-content:center">📊 Excel</button>
+            </div>
+          </div>
+          <div class="field">
+            <label>Danh sách SĐT (mỗi dòng 1 SĐT, có thể kèm tên)</label>
+            <textarea id="new-list-raw" placeholder="0908 123 456
+0987-654-321 Nguyễn Văn A
++84.938.111.222
+0913 445 566   Chị Lan VinGroup
+0976 333 444"></textarea>
+            <div class="hint">Hệ thống tự nhận diện SĐT đúng/sai format, dedup, lookup Zalo background.</div>
+          </div>
+          <div class="parse-preview">
+            <div class="pp-row"><span class="ico">📋</span> Đã nhận diện <b>5 dòng</b> trong textarea</div>
+            <div class="pp-row" style="color:var(--green-700)"><span class="ico">✓</span> <b>4 SĐT</b> hợp lệ định dạng VN</div>
+            <div class="pp-row" style="color:var(--red-700)"><span class="ico">✗</span> <b>1 dòng</b> bỏ qua (phone không đủ số)</div>
+            <div class="pp-row" style="color:var(--amber-700)"><span class="ico">⚠</span> <b>2 SĐT</b> trùng với 2 tệp cũ trong tổ chức</div>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <span class="left">Sau khi tạo, hệ thống sẽ async lookup UID Zalo qua zalo-pool (không chặn UI).</span>
+          <div class="right">
+            <button class="btn" onclick="closeCreate()">Huỷ</button>
+            <button class="btn primary" onclick="closeCreate()">Tạo tệp</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ BULK ACTION BAR ═══ -->
+    <div class="bulk-bar" id="bulk-bar">
+      <span class="ct"><em>0</em>SĐT đã chọn</span>
+      <span class="div"></span>
+      <button>↻ Bỏ qua tất cả</button>
+      <button>⊕ Ghi đè Contact cũ</button>
+      <button>📋 Tạo song song</button>
+      <button>📤 Add vào campaign</button>
+      <span class="div"></span>
+      <button class="x" onclick="clearSelection()">✕</button>
+    </div>
+
+  </div>
+
+<script>
+  // ───── Sample lists data (view 1) ─────
+  const LISTS = [
+    { id:'lead-vinhomes-gp-q2', icon:'🏢', name:'Lead BĐS Vinhomes Grand Park Q2', date:'19/05/2026 14:30', authorInit:'HS', authorName:'Sale Hùng', authorBg:'#6366F1,#A855F7', source:'Paste', total:1000, valid:847, invalid:64, dup:89, hasZalo:612, status:'done', progress:[84.7,8.9,6.4] },
+    { id:'mkt-smart-city-may', icon:'📣', name:'MKT Smart City — Tháng 5', date:'20/05/2026 09:15', authorInit:'MA', authorName:'MKT Mai', authorBg:'#3B82F6,#1D4ED8', source:'CSV', total:5234, valid:4891, invalid:109, dup:234, hasZalo:1247, status:'processing', progress:[93.5,4.5,2] },
+    { id:'cskh-q1-cold', icon:'❄️', name:'CSKH Q1 — KH cold cần re-engage', date:'02/05/2026 16:42', authorInit:'HA', authorName:'CSKH Hà', authorBg:'#F59E0B,#D97706', source:'Paste', total:312, valid:301, invalid:11, dup:147, hasZalo:256, status:'done', progress:[96.5,0,3.5] },
+    { id:'vinhomes-ocean-park', icon:'🌊', name:'Vinhomes Ocean Park — Mở bán T6', date:'15/05/2026 11:20', authorInit:'DU', authorName:'Dung Telesale', authorBg:'#EC4899,#BE185D', source:'Excel', total:2141, valid:1983, invalid:158, dup:0, hasZalo:1387, status:'done', progress:[92.6,0,7.4] },
+    { id:'telesale-cu-2024', icon:'📋', name:'Telesale data cũ 2024 — dirty', date:'10/05/2026 14:55', authorInit:'HS', authorName:'Sale Hùng', authorBg:'#6366F1,#A855F7', source:'Paste', total:8500, valid:6234, invalid:1247, dup:1019, hasZalo:4521, status:'done', progress:[73.3,12,14.7] },
+    { id:'ds-zalo-page-event', icon:'🎪', name:'Event Zalo Page tháng 5', date:'05/05/2026 19:30', authorInit:'PH', authorName:'Phương Lead', authorBg:'#10B981,#059669', source:'API', total:487, valid:487, invalid:0, dup:0, hasZalo:487, status:'done', progress:[100,0,0] },
+    { id:'ds-fb-ads-q1', icon:'📱', name:'FB Ads leads Q1 2026', date:'28/04/2026 10:00', authorInit:'MA', authorName:'MKT Mai', authorBg:'#3B82F6,#1D4ED8', source:'CSV', total:1820, valid:1654, invalid:84, dup:82, hasZalo:1213, status:'done', progress:[90.9,4.5,4.6] },
+    { id:'ds-tiktok-leads', icon:'🎵', name:'TikTok leads — Vinhomes', date:'22/04/2026 15:30', authorInit:'DU', authorName:'Dung Telesale', authorBg:'#EC4899,#BE185D', source:'Excel', total:643, valid:601, invalid:24, dup:18, hasZalo:478, status:'done', progress:[93.5,3.7,2.8] },
+  ];
+
+  // ───── Sample entries data (view 2) — 20 row demo với đủ case ─────
+  const NICK_DICT = {
+    'sale-hung': { label:'Sale Hùng', short:'HÙ', av:'sale' },
+    'cskh-ha':   { label:'CSKH Hà',   short:'HÀ', av:'cs' },
+    'mkt-mai':   { label:'Mai MKT',   short:'MA', av:'mkt' },
+    'evo-cskh':  { label:'Evo Sport CSKH', short:'EV', av:'evo' },
+  };
+
+  const SAMPLE_ENTRIES = [
+    { ix:1, raw:'0908.123.456', e164:'+84908123456', local:'0908123456', nameFile:'Anh Hùng VinGroup', nameZalo:'Trần Hùng', status:'has-zalo', uid:'8729113048329471', nickKey:'evo-cskh', multiNick:2, globalId:'gid_3kn2v9', note:'' },
+    { ix:2, raw:'0987 654 321 Chị Lan', e164:'+84987654321', local:'0987654321', nameFile:'Chị Lan', nameZalo:'Lan Nguyễn', status:'has-zalo', uid:'1839204711839472', nickKey:'mkt-mai', multiNick:0, globalId:'gid_8mq4r1', note:'Đã lưu Contact' },
+    { ix:3, raw:'+84.938.111.222', e164:'+84938111222', local:'0938111222', nameFile:'', nameZalo:'', status:'no-zalo', uid:null, nickKey:null, multiNick:0, globalId:null, note:'Không có Zalo' },
+    { ix:4, raw:'0913.445.566 Anh Trung', e164:'+84913445566', local:'0913445566', nameFile:'Anh Trung', nameZalo:'Phan Quang Trung', status:'has-zalo', uid:'5829014763928471', nickKey:'sale-hung', multiNick:1, globalId:'gid_z5n8w2', note:'' },
+    { ix:5, raw:'098765', e164:null, local:null, nameFile:'', nameZalo:'', status:'invalid', uid:null, nickKey:null, multiNick:0, globalId:null, note:'Thiếu số (chỉ 6 số)' },
+    { ix:6, raw:'09.0123.4567', e164:'+84901234567', local:'0901234567', nameFile:'', nameZalo:'Hoàng Hữu Phúc', status:'dup-in-list', uid:'4920485762093857', nickKey:'sale-hung', multiNick:0, globalId:'gid_p2x6t9', note:'Trùng row #234 trong tệp này' },
+    { ix:7, raw:'0901-222-333', e164:'+84901222333', local:'0901222333', nameFile:'Chú Hùng', nameZalo:'Lê Văn Hùng (cô)', status:'has-zalo', uid:'6291038475629103', nickKey:'cskh-ha', multiNick:3, globalId:'gid_b9m1k4', note:'' },
+    { ix:8, raw:'abc def ghi', e164:null, local:null, nameFile:'', nameZalo:'', status:'invalid', uid:null, nickKey:null, multiNick:0, globalId:null, note:'Không phải số điện thoại' },
+    { ix:9, raw:'+84913 666 777', e164:'+84913666777', local:'0913666777', nameFile:'Anh Dũng', nameZalo:'Đỗ Tuấn Dũng', status:'dup-with-crm', uid:'8273645928374610', nickKey:'sale-hung', multiNick:0, globalId:'gid_q4w7e3', note:'Đã có Contact cnt_x9k2 trong CRM' },
+    { ix:10, raw:'0976 333 444', e164:'+84976333444', local:'0976333444', nameFile:'Cô Hằng', nameZalo:'Nguyễn Thu Hằng', status:'has-zalo', uid:'8294017365028471', nickKey:'mkt-mai', multiNick:0, globalId:'gid_h3r5y8', note:'' },
+    { ix:11, raw:'0908 123 456 Anh Hùng', e164:'+84908123456', local:'0908123456', nameFile:'Anh Hùng', nameZalo:'Trần Hùng', status:'dup-in-list', uid:'8729113048329471', nickKey:'evo-cskh', multiNick:0, globalId:'gid_3kn2v9', note:'Trùng row #1 cùng tệp' },
+    { ix:12, raw:'+84.938.555.666', e164:'+84938555666', local:'0938555666', nameFile:'', nameZalo:'', status:'no-zalo', uid:null, nickKey:null, multiNick:0, globalId:null, note:'' },
+    { ix:13, raw:'0901.777.888', e164:'+84901777888', local:'0901777888', nameFile:'Anh Quang', nameZalo:'Phạm Minh Quang', status:'dup-cross-list', uid:'1029384756103928', nickKey:'cskh-ha', multiNick:1, globalId:'gid_n7v2c4', note:'Trùng tệp "CSKH Q1" row #128' },
+    { ix:14, raw:'097 666 5544', e164:'+84976665544', local:'0976665544', nameFile:'Chị Mai', nameZalo:'Vũ Hoa Mai', status:'has-zalo', uid:'7820194753820194', nickKey:'mkt-mai', multiNick:0, globalId:'gid_t8k3l6', note:'' },
+    { ix:15, raw:'09.13.44.55.66', e164:'+84913445566', local:'0913445566', nameFile:'', nameZalo:'Phan Quang Trung', status:'dup-in-list', uid:'5829014763928471', nickKey:'sale-hung', multiNick:0, globalId:'gid_z5n8w2', note:'Trùng row #4 (khác format)' },
+    { ix:16, raw:'0913 444 5556', e164:'+84913444555', local:'0913444555', nameFile:'Anh Sơn', nameZalo:'Hoàng Đức Sơn', status:'has-zalo', uid:'4628193046281937', nickKey:'sale-hung', multiNick:0, globalId:'gid_a1f9d2', note:'' },
+    { ix:17, raw:'0976.789.012', e164:'+84976789012', local:'0976789012', nameFile:'Cô Yến', nameZalo:'', status:'no-zalo', uid:null, nickKey:null, multiNick:0, globalId:null, note:'Đã tạo Contact cnt_y3m8' },
+    { ix:18, raw:'(+84) 901 234 567', e164:'+84901234567', local:'0901234567', nameFile:'', nameZalo:'Hoàng Hữu Phúc', status:'dup-in-list', uid:'4920485762093857', nickKey:'sale-hung', multiNick:0, globalId:'gid_p2x6t9', note:'Trùng row #6' },
+    { ix:19, raw:'09.05.66.77.88', e164:'+84905667788', local:'0905667788', nameFile:'Chú Long', nameZalo:'Bùi Thanh Long', status:'has-zalo', uid:'9182736459182736', nickKey:'evo-cskh', multiNick:2, globalId:'gid_s4j7p1', note:'' },
+    { ix:20, raw:'01234567', e164:null, local:null, nameFile:'', nameZalo:'', status:'invalid', uid:null, nickKey:null, multiNick:0, globalId:null, note:'Số đầu không hợp lệ (01...)' },
+  ];
+
+  const STATUS_MAP = {
+    'has-zalo':       { label:'✓ Có Zalo',        cls:'has-zalo' },
+    'no-zalo':        { label:'⊘ Không Zalo',     cls:'no-zalo' },
+    'invalid':        { label:'✗ Lỗi format',     cls:'error' },
+    'dup-in-list':    { label:'↺ Trùng list này', cls:'dup' },
+    'dup-cross-list': { label:'↔ Trùng list khác', cls:'dup' },
+    'dup-with-crm':   { label:'⚷ Trùng CRM',      cls:'dup' },
+    'pending':        { label:'⏳ Đang xử lý',    cls:'pending' },
+  };
+
+  let currentListId = null;
+  let currentTab = 'all';
+
+  // ═══ Render View 1 (lists table) ═══
+  function renderLists() {
+    const tbody = document.getElementById('lists-tbody');
+    tbody.innerHTML = LISTS.map(l => {
+      const statusChip = l.status === 'done'
+        ? `<span class="status-chip done">✓ Hoàn tất</span>`
+        : `<span class="status-chip processing">🔄 Quét Zalo (25%)</span>`;
+      const zaloDisplay = l.status === 'processing'
+        ? `<span class="num-cell muted">— /${l.valid.toLocaleString()}</span>`
+        : `<span class="num-cell blue">${l.hasZalo.toLocaleString()}</span>`;
+      return `
+        <tr onclick="openDetail('${l.id}')">
+          <td onclick="event.stopPropagation()"><input type="checkbox" class="chk"/></td>
+          <td>
+            <div class="list-name-cell">
+              <span class="icon-em">${l.icon}</span>
+              <div>
+                <div class="nm">${l.name}</div>
+                <div class="sub">Paste ${l.total.toLocaleString()} SĐT</div>
+              </div>
+            </div>
+          </td>
+          <td style="color:var(--text-2);font-size:12px;white-space:nowrap">${l.date}</td>
+          <td>
+            <span class="author-cell">
+              <span class="av" style="background:linear-gradient(135deg,${l.authorBg})">${l.authorInit}</span>
+              ${l.authorName}
+            </span>
+          </td>
+          <td><span class="source-chip">${l.source}</span></td>
+          <td class="num-cell">${l.total.toLocaleString()}</td>
+          <td class="num-cell green">${l.valid.toLocaleString()}</td>
+          <td class="num-cell ${l.invalid>0?'red':'muted'}">${l.invalid.toLocaleString()}</td>
+          <td class="num-cell ${l.dup>0?'amber':'muted'}">${l.dup.toLocaleString()}</td>
+          <td>${zaloDisplay}</td>
+          <td class="progress-cell">
+            <div class="progress-bar">
+              <i class="ok" style="width:${l.progress[0]}%"></i>
+              <i class="warn" style="width:${l.progress[1]}%"></i>
+              <i class="bad" style="width:${l.progress[2]}%"></i>
+            </div>
+          </td>
+          <td>${statusChip}</td>
+          <td class="row-actions" onclick="event.stopPropagation()">
+            <button title="Tạo campaign"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+            <button title="Export CSV"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
+            <button title="More"><svg class="ic" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  // ═══ Navigation ═══
+  function openDetail(listId) {
+    currentListId = listId;
+    const list = LISTS.find(l => l.id === listId);
+    if (list) {
+      document.getElementById('detail-name').textContent = list.name;
+      document.getElementById('detail-title').textContent = list.name;
+    }
+    document.getElementById('view-lists').style.display = 'none';
+    document.getElementById('view-detail').style.display = 'block';
+    currentTab = 'all';
+    syncTabUI();
+    renderEntries();
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+
+  function backToLists() {
+    document.getElementById('view-lists').style.display = 'block';
+    document.getElementById('view-detail').style.display = 'none';
+    currentListId = null;
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+
+  function setTab(tab) {
+    currentTab = tab;
+    syncTabUI();
+    renderEntries();
+  }
+
+  function syncTabUI() {
+    document.querySelectorAll('.subtab').forEach(b => b.classList.toggle('active', b.dataset.tab === currentTab));
+    document.querySelectorAll('.hero-stat').forEach(b => b.classList.toggle('active', b.dataset.tab === currentTab));
+  }
+
+  // ═══ Render entries (view 2) ═══
+  function renderEntries() {
+    let entries = SAMPLE_ENTRIES;
+
+    if (currentTab !== 'all') {
+      if (currentTab === 'valid') {
+        entries = entries.filter(e => e.status === 'has-zalo' || e.status === 'no-zalo');
+      } else if (currentTab === 'dup') {
+        entries = entries.filter(e => e.status.startsWith('dup'));
+      } else {
+        entries = entries.filter(e => e.status === currentTab);
+      }
+    }
+
+    const tbody = document.getElementById('entries-tbody');
+    if (entries.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="13" class="empty-cell">Không có SĐT nào ở tab này</td></tr>`;
+      document.getElementById('pag-range').textContent = '0–0';
+      document.getElementById('pag-total').textContent = '0';
+      return;
+    }
+
+    tbody.innerHTML = entries.map(e => {
+      const st = STATUS_MAP[e.status] || STATUS_MAP.pending;
+      const nick = e.nickKey ? NICK_DICT[e.nickKey] : null;
+      const phoneE164 = e.e164 || '—';
+      const phoneLocal = e.local || '—';
+      const nameZaloCell = e.nameZalo
+        ? `<td class="name-zalo has">${e.nameZalo}</td>`
+        : `<td class="name-zalo no">${e.status==='invalid'?'—':'(chưa có)'}</td>`;
+      const uidCell = e.uid
+        ? `<td class="uid-cell">${e.uid}</td>`
+        : `<td class="uid-cell empty">—</td>`;
+      const nickCell = nick
+        ? `<td><span class="nick-cell"><span class="av ${nick.av}">${nick.short}</span>${nick.label}${e.multiNick>0?`<span class="more">+${e.multiNick}</span>`:''}</span></td>`
+        : `<td><span style="color:var(--text-muted);font-size:11px">—</span></td>`;
+      const globalCell = e.globalId
+        ? `<td><span class="global-id">${e.globalId}</span></td>`
+        : `<td><span class="global-id empty">—</span></td>`;
+      const noteCell = e.note
+        ? `<td>${e.status==='invalid'
+            ? `<span class="err-note">${e.note}</span>`
+            : e.status.startsWith('dup')
+              ? `<span class="dup-note">${e.note}</span>`
+              : `<span style="color:var(--text-2);font-size:11.5px">${e.note}</span>`
+          }</td>`
+        : `<td><span style="color:var(--text-muted)">—</span></td>`;
+
+      return `
+        <tr onclick="toggleRow(this)">
+          <td onclick="event.stopPropagation()"><input type="checkbox" class="chk" onchange="updateBulk()"/></td>
+          <td class="ix">#${e.ix}</td>
+          <td class="phone-cell raw">${e.raw}</td>
+          <td class="phone-cell e164">${phoneE164}</td>
+          <td class="phone-cell local">${phoneLocal}</td>
+          <td class="name">${e.nameFile || '<span style="color:var(--text-muted);font-style:italic">(không có)</span>'}</td>
+          ${nameZaloCell}
+          <td><span class="status-pill ${st.cls}">${st.label}</span></td>
+          ${uidCell}
+          ${nickCell}
+          ${globalCell}
+          ${noteCell}
+          <td class="row-actions" onclick="event.stopPropagation()">
+            <button title="Mở Contact"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></button>
+            <button title="Sửa"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
+            <button title="Xoá"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    document.getElementById('pag-range').textContent = `1–${Math.min(25, entries.length)}`;
+    document.getElementById('pag-total').textContent = entries.length.toLocaleString('vi-VN');
+  }
+
+  function toggleRow(tr) {
+    const cb = tr.querySelector('.chk');
+    if (cb) { cb.checked = !cb.checked; updateBulk(); }
+  }
+
+  function updateBulk() {
+    const n = document.querySelectorAll('#entries-tbody .chk:checked').length;
+    const bar = document.getElementById('bulk-bar');
+    bar.querySelector('.ct em').textContent = n;
+    bar.classList.toggle('show', n > 0);
+    document.querySelectorAll('#entries-tbody tr').forEach(tr => {
+      const cb = tr.querySelector('.chk');
+      tr.classList.toggle('selected', cb && cb.checked);
+    });
+  }
+
+  function clearSelection() {
+    document.querySelectorAll('#entries-tbody .chk').forEach(c => c.checked = false);
+    updateBulk();
+  }
+
+  function openCreate() { document.getElementById('modal-create').classList.remove('hidden'); }
+  function closeCreate() { document.getElementById('modal-create').classList.add('hidden'); }
+
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeCreate(); });
+
+  // Init
+  renderLists();
+</script>
+</body>
+</html>

@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Hướng dẫn sử dụng ZaloCRM</title>
+<style>
+  :root{
+    --bg:#faf6ee; --panel:#fffdf8; --ink:#2a2620; --muted:#7a7466;
+    --line:#e9e1d2; --brand:#2563eb; --brand-soft:#eaf1ff;
+    --green:#16a34a; --amber:#d97706; --red:#dc2626; --violet:#7c3aed;
+    --radius:14px; --shadow:0 1px 3px rgba(40,33,20,.06),0 8px 24px rgba(40,33,20,.05);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif;
+    line-height:1.65;font-size:16px}
+  a{color:var(--brand);text-decoration:none}
+  a:hover{text-decoration:underline}
+  code{background:#f1ece0;border:1px solid var(--line);border-radius:6px;padding:.08em .4em;font-size:.88em;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  kbd{background:#fff;border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;padding:.05em .45em;
+    font-family:ui-monospace,monospace;font-size:.82em;box-shadow:0 1px 0 rgba(0,0,0,.04)}
+
+  /* Layout */
+  .wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+  header.hero{background:linear-gradient(135deg,#1e293b,#334155);color:#fff;padding:44px 0 38px}
+  header.hero .wrap{display:flex;align-items:center;gap:22px;flex-wrap:wrap}
+  .logo{width:60px;height:60px;border-radius:16px;background:#fff;display:grid;place-items:center;flex:0 0 auto;
+    box-shadow:0 6px 18px rgba(0,0,0,.25)}
+  .logo span{display:block;width:26px;height:26px;border-radius:5px;
+    background:
+      linear-gradient(#22d3ee,#22d3ee) left top/11px 11px no-repeat,
+      linear-gradient(#2563eb,#2563eb) right top/11px 11px no-repeat,
+      linear-gradient(#2563eb,#2563eb) left bottom/11px 11px no-repeat,
+      linear-gradient(#22d3ee,#22d3ee) right bottom/11px 11px no-repeat}
+  header.hero h1{margin:0;font-size:30px;letter-spacing:-.02em}
+  header.hero p{margin:6px 0 0;color:#cbd5e1;font-size:15px}
+  .badges{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .badge{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);color:#e2e8f0;
+    padding:4px 11px;border-radius:999px;font-size:12.5px;font-weight:600}
+
+  .layout{display:grid;grid-template-columns:248px 1fr;gap:36px;align-items:start;margin:34px 0 60px}
+  nav.toc{position:sticky;top:18px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    padding:16px 14px;box-shadow:var(--shadow);font-size:14px;max-height:calc(100vh - 36px);overflow:auto}
+  nav.toc h4{margin:4px 8px 10px;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  nav.toc a{display:block;color:var(--ink);padding:6px 10px;border-radius:8px;border-left:3px solid transparent}
+  nav.toc a:hover{background:#f3eee2;text-decoration:none}
+  nav.toc a.active{background:var(--brand-soft);border-left-color:var(--brand);color:var(--brand);font-weight:600}
+
+  main{min-width:0}
+  section{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    padding:26px 30px;margin-bottom:22px;box-shadow:var(--shadow);scroll-margin-top:18px}
+  section h2{margin:0 0 4px;font-size:23px;letter-spacing:-.01em;display:flex;align-items:center;gap:11px}
+  section h2 .num{flex:0 0 auto;width:32px;height:32px;border-radius:9px;background:var(--brand);color:#fff;
+    font-size:15px;display:grid;place-items:center;font-weight:700}
+  section h3{margin:24px 0 8px;font-size:17px}
+  section p{margin:10px 0}
+  .lead{color:var(--muted);margin-top:2px}
+
+  ul,ol{margin:10px 0;padding-left:22px}
+  li{margin:5px 0}
+
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.5px}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:#f6f1e6;font-size:12.5px;letter-spacing:.03em;text-transform:uppercase;color:var(--muted)}
+  tr:last-child td{border-bottom:none}
+
+  .callout{border-radius:12px;padding:14px 16px;margin:16px 0;border:1px solid;display:flex;gap:11px;font-size:14.5px}
+  .callout .ic{flex:0 0 auto;font-size:18px;line-height:1.4}
+  .tip{background:#eafaf0;border-color:#bbe9cb}
+  .warn{background:#fef6e7;border-color:#f5d99a}
+  .info{background:var(--brand-soft);border-color:#c5d8fb}
+  .danger{background:#fdecec;border-color:#f5b7b7}
+
+  .steps{counter-reset:step;list-style:none;padding:0;margin:14px 0}
+  .steps>li{position:relative;padding:2px 0 16px 44px;margin:0}
+  .steps>li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:0;
+    width:30px;height:30px;border-radius:50%;background:var(--brand);color:#fff;font-weight:700;
+    display:grid;place-items:center;font-size:14px}
+  .steps>li:not(:last-child)::after{content:"";position:absolute;left:14px;top:32px;bottom:2px;width:2px;background:var(--line)}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin:14px 0}
+  .card{background:#fff;border:1px solid var(--line);border-radius:11px;padding:14px}
+  .card .t{font-weight:700;font-size:14.5px;margin-bottom:3px}
+  .card .d{color:var(--muted);font-size:13.5px}
+
+  .chip{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:600;border:1px solid}
+  .c-green{background:#e7f7ec;color:#15803d;border-color:#bbe9cb}
+  .c-amber{background:#fdf2e0;color:#b45309;border-color:#f5d99a}
+  .c-blue{background:#e7f0ff;color:#1d4ed8;border-color:#c5d8fb}
+  .c-gray{background:#f0ece2;color:#6b6557;border-color:#ddd5c5}
+
+  .pill{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--line);
+    border-radius:8px;padding:3px 9px;font-size:13.5px;font-weight:600;margin:2px 3px 2px 0}
+
+  hr{border:none;border-top:1px solid var(--line);margin:22px 0}
+  footer{color:var(--muted);font-size:13.5px;text-align:center;padding:26px 0 50px}
+  .access{background:linear-gradient(135deg,#eef4ff,#fef6e7);border:1px solid #d8e3f7;border-radius:var(--radius);
+    padding:18px 22px;margin-bottom:22px;display:flex;gap:18px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+  .access .u{font-size:14.5px}
+  .access .big{font-size:20px;font-weight:800;color:var(--brand)}
+
+  @media (max-width:880px){
+    .layout{grid-template-columns:1fr}
+    nav.toc{position:static;max-height:none;order:-1}
+    section{padding:20px}
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="logo"><span></span></div>
+    <div>
+      <h1>Hướng dẫn sử dụng ZaloCRM</h1>
+      <p>Quản lý tập trung nhiều tài khoản Zalo cá nhân — chat, khách hàng, lịch hẹn, automation &amp; AI.</p>
+      <div class="badges">
+        <span class="badge">📘 Dành cho người dùng cuối</span>
+        <span class="badge">🌐 Bản local</span>
+        <span class="badge">🆕 Org mới — bắt đầu từ đây</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="access">
+    <div class="u">
+      <div>🔗 Địa chỉ truy cập của bạn:</div>
+      <div class="big">http://localhost:5173</div>
+    </div>
+    <div class="u" style="color:var(--muted);max-width:560px">
+      Mở bằng trình duyệt (Chrome). Đăng nhập bằng email &amp; mật khẩu bạn đã tạo ở màn
+      <em>“Thiết lập ban đầu”</em>. Backend chạy ngầm ở cổng <code>3001</code> — bạn không cần quan tâm.
+    </div>
+  </div>
+
+  <div class="layout">
+    <!-- ============ TOC ============ -->
+    <nav class="toc" id="toc">
+      <h4>Mục lục</h4>
+      <a href="#start">⭐ Bắt đầu nhanh</a>
+      <a href="#nav">🧭 Thanh điều hướng</a>
+      <a href="#zalo">📱 Kết nối tài khoản Zalo</a>
+      <a href="#dashboard">📊 Dashboard</a>
+      <a href="#chat">💬 Tin nhắn (Chat)</a>
+      <a href="#friends">👥 Bạn bè</a>
+      <a href="#contacts">🗂️ Khách hàng</a>
+      <a href="#stuck">🔥 KH đình trệ &amp; Lead Score</a>
+      <a href="#appointments">📅 Lịch hẹn</a>
+      <a href="#botauto">🤖 Bot-Auto &amp; Automation</a>
+      <a href="#analytics">📈 Phân tích &amp; Báo cáo</a>
+      <a href="#ai">✨ Trợ lý AI</a>
+      <a href="#settings">⚙️ Cài đặt</a>
+      <a href="#faq">❓ Câu hỏi thường gặp</a>
+    </nav>
+
+    <!-- ============ CONTENT ============ -->
+    <main>
+
+      <section id="start">
+        <h2><span class="num">★</span> Bắt đầu nhanh</h2>
+        <p class="lead">Tài khoản của bạn là <strong>Chủ sở hữu (Owner)</strong> — toàn quyền. Org đang trống, hãy làm theo 4 bước sau để có dữ liệu thật:</p>
+        <ol class="steps">
+          <li><strong>Kết nối tài khoản Zalo</strong> — vào <span class="pill">⚙️ Cài đặt → Tài khoản Zalo</span>, bấm <em>+ Thêm Zalo</em>, quét QR bằng app Zalo trên điện thoại. <a href="#zalo">Chi tiết ↓</a></li>
+          <li><strong>Đồng bộ danh bạ</strong> — sau khi kết nối, bấm nút <em>Đồng bộ Zalo</em> để kéo bạn bè/khách về CRM.</li>
+          <li><strong>Vào Tin nhắn để chat</strong> — trả lời khách, gắn nhãn, cập nhật trạng thái. <a href="#chat">Chi tiết ↓</a></li>
+          <li><strong>Mời nhân viên (tuỳ chọn)</strong> — <span class="pill">⚙️ Cài đặt → Người dùng</span> để tạo tài khoản cho sale. <a href="#settings">Chi tiết ↓</a></li>
+        </ol>
+        <div class="callout tip"><span class="ic">💡</span><div>Mỗi khi mở app, hệ thống tự đăng nhập lại bằng phiên đã lưu. Nếu cần đăng xuất: bấm avatar góc phải trên → <em>Đăng xuất</em>.</div></div>
+      </section>
+
+      <section id="nav">
+        <h2><span class="num">1</span> Thanh điều hướng</h2>
+        <p class="lead">Thanh trên cùng là nơi chuyển giữa các khu vực chính:</p>
+        <div class="grid">
+          <div class="card"><div class="t">🏠 Dashboard</div><div class="d">Trang chủ — chỉ số &amp; biểu đồ tổng quan.</div></div>
+          <div class="card"><div class="t">💬 Tin nhắn</div><div class="d">Khu làm việc chính của sale — chat với khách.</div></div>
+          <div class="card"><div class="t">👥 Bạn bè</div><div class="d">Quản lý từng cặp <em>nick × khách hàng</em>.</div></div>
+          <div class="card"><div class="t">🗂️ Khách hàng</div><div class="d">Danh sách KH gộp theo SĐT, có lead score.</div></div>
+          <div class="card"><div class="t">🔥 KH đình trệ</div><div class="d">Khách đang “nguội” cần chăm lại.</div></div>
+          <div class="card"><div class="t">📅 Lịch hẹn</div><div class="d">Tạo &amp; theo dõi cuộc hẹn, nhắc tự động.</div></div>
+          <div class="card"><div class="t">🤖 Bot-Auto</div><div class="d">Kịch bản tự động gửi tin (Blocks/Sequences).</div></div>
+          <div class="card"><div class="t">📈 Phân tích / Báo cáo</div><div class="d">Hiệu suất sale, phễu, xuất Excel.</div></div>
+          <div class="card"><div class="t">⚡ Automation</div><div class="d">Quy tắc trigger → action tự động.</div></div>
+          <div class="card"><div class="t">⚙️ Cài đặt</div><div class="d">Zalo, AI, người dùng, webhook, bảo mật…</div></div>
+        </div>
+        <p>Góc phải có ô <strong>🔍 Tìm kiếm</strong> (tìm khách/hội thoại nhanh), 🔔 <strong>Thông báo</strong>, và avatar tài khoản.</p>
+      </section>
+
+      <section id="zalo">
+        <h2><span class="num">2</span> Kết nối tài khoản Zalo</h2>
+        <p class="lead">Đây là bước <strong>quan trọng nhất</strong> — không có nick Zalo thì chưa có gì để chat.</p>
+        <h3>Thêm nick mới</h3>
+        <ol class="steps">
+          <li>Vào <span class="pill">⚙️ Cài đặt → Tài khoản Zalo</span>, bấm <strong>+ Thêm Zalo</strong>.</li>
+          <li>Điền <strong>Tên hiển thị</strong> để dễ nhớ (VD: “Zalo Sale Hương”).</li>
+          <li><strong>Proxy URL</strong> (tuỳ chọn): để trống = kết nối thẳng internet. Chỉ điền khi cần đi qua proxy: <code>http://user:pass@host:port</code> hoặc <code>socks5://host:port</code>.</li>
+          <li>Bấm <strong>Thêm</strong> → màn hình hiện <strong>mã QR</strong>.</li>
+          <li>Mở <strong>Zalo trên điện thoại</strong> → Cài đặt → Quét QR → xác nhận đăng nhập.</li>
+          <li>Trạng thái chuyển sang <span class="chip c-green">Đã kết nối</span>. Xong!</li>
+        </ol>
+        <h3>Các nút thao tác trên mỗi nick</h3>
+        <table>
+          <tr><th>Biểu tượng</th><th>Chức năng</th></tr>
+          <tr><td>🛡️ <span style="color:#0891b2">Cyan</span></td><td>Phân quyền: nick này nhân viên nào được xem/chat (Admin).</td></tr>
+          <tr><td>🛡️ <span style="color:var(--amber)">Cam</span></td><td>Cấu hình Proxy cho nick.</td></tr>
+          <tr><td>👤 <span style="color:var(--green)">Xanh lá</span></td><td>Đồng bộ danh bạ Zalo về CRM.</td></tr>
+          <tr><td>🔄 <span style="color:var(--brand)">Xanh dương</span></td><td>Kết nối lại sau khi mất kết nối.</td></tr>
+          <tr><td>📱 QR</td><td>Đăng nhập lại bằng QR (khi chưa kết nối).</td></tr>
+          <tr><td>🗑️ <span style="color:var(--red)">Đỏ</span></td><td>Xoá nick khỏi hệ thống.</td></tr>
+        </table>
+        <div class="callout warn"><span class="ic">⚠️</span><div>Để tránh bị Zalo khoá, hệ thống giới hạn mặc định <strong>~200 tin/ngày/nick</strong>. Nếu nick hay bị ngắt, hãy bật proxy riêng cho nick đó.</div></div>
+        <div class="callout info"><span class="ic">🔒</span><div>Phiên đăng nhập Zalo (cookie) được lưu để tự kết nối lại sau khi khởi động — bạn không phải quét QR mỗi lần.</div></div>
+      </section>
+
+      <section id="dashboard">
+        <h2><span class="num">3</span> Dashboard — Tổng quan</h2>
+        <p class="lead">Trang chủ sau khi đăng nhập. Các chỉ số quan trọng hiển thị dạng thẻ + biểu đồ.</p>
+        <table>
+          <tr><th>Thẻ chỉ số</th><th>Ý nghĩa</th></tr>
+          <tr><td>💬 Tin nhắn hôm nay</td><td>Tổng tin gửi/nhận trong ngày.</td></tr>
+          <tr><td>⚠️ Chưa trả lời</td><td>Hội thoại khách đã nhắn mà chưa được phản hồi.</td></tr>
+          <tr><td>📧 Chưa đọc</td><td>Hội thoại còn tin chưa đánh dấu đã đọc.</td></tr>
+          <tr><td>📅 Lịch hẹn hôm nay</td><td>Cuộc hẹn có ngày = hôm nay.</td></tr>
+          <tr><td>👤 KH mới tuần này</td><td>Khách tạo mới trong 7 ngày.</td></tr>
+          <tr><td>👥 Tổng khách hàng</td><td>Toàn bộ khách trong hệ thống.</td></tr>
+        </table>
+        <p><strong>Biểu đồ:</strong> Tin nhắn theo ngày · Pipeline khách hàng (Mới → Đã liên hệ → Quan tâm → Chuyển đổi → Mất) · Nguồn khách hàng · Trạng thái lịch hẹn.</p>
+        <div class="callout tip"><span class="ic">💡</span><div>Org mới sẽ thấy “Không có dữ liệu” — hoàn toàn bình thường. Sau khi kết nối Zalo &amp; có tin nhắn, biểu đồ sẽ tự đầy lên.</div></div>
+      </section>
+
+      <section id="chat">
+        <h2><span class="num">4</span> Tin nhắn (Chat)</h2>
+        <p class="lead">Khu làm việc chính. Giao diện chia 3–4 cột: Bộ lọc · Danh sách hội thoại · Khung chat · Hồ sơ khách.</p>
+        <h3>Bộ lọc (cột trái)</h3>
+        <ul>
+          <li><strong>Show tin của nick</strong> — chọn xem hội thoại của nick Zalo nào (đa nick).</li>
+          <li><strong>Gom inbox</strong> — hợp nhất hội thoại từ nhiều nick về một chỗ.</li>
+          <li><strong>Loại hội thoại</strong> — nhóm / 1-1.</li>
+          <li><strong>Đọc / trả lời</strong> — chỉ chưa đọc, chưa trả lời, đưa chưa đọc lên đầu.</li>
+          <li><strong>Theo thuộc tính</strong> — lọc theo nhãn / thời gian.</li>
+        </ul>
+        <h3>Danh sách hội thoại (cột giữa)</h3>
+        <p>Có 2 tab <strong>Chính</strong> / <strong>Khác</strong> (chuột phải để chuyển). Tìm theo tên / SĐT / nội dung. Mỗi dòng có avatar, tên, preview tin cuối, thời gian và badge số tin chưa đọc.</p>
+        <h3>Khung chat (cột phải)</h3>
+        <div class="grid">
+          <div class="card"><div class="t">⌨️ Gửi text</div><div class="d">Soạn ở khung dưới, <kbd>Enter</kbd> để gửi.</div></div>
+          <div class="card"><div class="t">✍️ Rich text</div><div class="d">In đậm / nghiêng / danh sách / màu qua thanh công cụ.</div></div>
+          <div class="card"><div class="t">@ Mention</div><div class="d">Gõ <code>@</code> để nhắc thành viên nhóm.</div></div>
+          <div class="card"><div class="t">/ Template</div><div class="d">Gõ <code>/</code> chèn mẫu tin có biến (tên KH, ngày…).</div></div>
+          <div class="card"><div class="t">📎 Đính kèm</div><div class="d">Ảnh ≤100MB · Video ≤500MB · File ≤1GB. Kéo-thả hoặc dán trực tiếp.</div></div>
+          <div class="card"><div class="t">🎬 Video inline</div><div class="d">Xem video ngay trong bong bóng, không cần tải.</div></div>
+          <div class="card"><div class="t">😀 Reaction</div><div class="d">Thả cảm xúc, đồng bộ 2 chiều với Zalo.</div></div>
+          <div class="card"><div class="t">↩️ Reply / ✏️ Sửa / 🗑️ Xoá</div><div class="d">Hover vào tin để trả lời trích dẫn; sửa/xoá tin của mình.</div></div>
+        </div>
+        <h3>Hồ sơ khách (cột thứ 4)</h3>
+        <p>Khi mở hội thoại 1-1: xem &amp; sửa trực tiếp tên CRM, SĐT, giới tính, nhãn, ghi chú, lịch sử. Có thể <strong>tạo lịch hẹn ngay từ chat</strong>.</p>
+      </section>
+
+      <section id="friends">
+        <h2><span class="num">5</span> Bạn bè</h2>
+        <p class="lead">Quản lý từng cặp <strong>(nick Zalo × khách hàng)</strong> — phù hợp khi nhiều nick cùng chăm một khách.</p>
+        <p>Bộ lọc tab nhanh: <span class="chip c-green">Đã kết bạn</span> <span class="chip c-amber">Đã gửi mời</span> <span class="chip c-blue">Đang nhắn (lạ)</span> <span class="chip c-gray">Đã ngắt</span> · Tất cả.</p>
+        <p>Cột chính: nick sale, tên KH, trạng thái kết bạn, trạng thái KH, nhãn CRM, tin nhắn cuối (KH/sale), số tin in/out, ngày kết bạn.</p>
+        <ul>
+          <li>Bấm <strong>Đồng bộ Zalo</strong> (góc phải) để cập nhật danh bạ mới nhất.</li>
+          <li><strong>Xuất CSV</strong> để mang sang Excel/Google Sheets.</li>
+        </ul>
+      </section>
+
+      <section id="contacts">
+        <h2><span class="num">6</span> Khách hàng</h2>
+        <p class="lead">Tổng hợp toàn bộ khách, gộp theo <strong>SĐT</strong>. Bấm <code>▶</code> ở đầu dòng để xem các nick đang chăm khách đó.</p>
+        <p>Chip <strong>nick chăm</strong> 4 màu: <span class="chip c-green">đã kết bạn</span> <span class="chip c-amber">đã mời</span> <span class="chip c-blue">đang nhắn lạ</span> <span class="chip c-gray">đã ngắt</span>.</p>
+        <table>
+          <tr><th>Thao tác</th><th>Mô tả</th></tr>
+          <tr><td>+ Thêm KH</td><td>Tạo khách thủ công (không cần Zalo).</td></tr>
+          <tr><td>Xuất</td><td>Tải danh sách ra Excel.</td></tr>
+          <tr><td>Trùng lặp</td><td>Phát hiện khách bị trùng (cùng SĐT / Zalo UID) để gộp.</td></tr>
+        </table>
+        <div class="callout tip"><span class="ic">📥</span><div>Có thể <strong>import danh sách khách từ file CSV/Excel</strong> (tính năng “Tệp khách hàng”) — ánh xạ cột, sửa inline, hoàn tác khi xoá nhầm.</div></div>
+      </section>
+
+      <section id="stuck">
+        <h2><span class="num">7</span> KH đình trệ &amp; Lead Score</h2>
+        <p class="lead">Hệ thống tự chấm <strong>điểm tiềm năng (0–100)</strong> cho mỗi khách dựa trên hành vi (tần suất nhắn, mức độ quan tâm…). Điểm tự “giảm dần” theo thời gian nếu khách nguội.</p>
+        <ul>
+          <li><strong>KH đình trệ</strong> — danh sách khách lâu chưa tương tác, cần chăm lại để không mất.</li>
+          <li>7 nhãn tự động được gắn theo tín hiệu (cold / warm / hot lead…).</li>
+          <li>Tuỳ chỉnh cách tính điểm tại <span class="pill">⚙️ Cài đặt → Lead Scoring</span>.</li>
+        </ul>
+      </section>
+
+      <section id="appointments">
+        <h2><span class="num">8</span> Lịch hẹn</h2>
+        <p class="lead">Tạo, theo dõi và được nhắc tự động.</p>
+        <p>Tab: <strong>Hôm nay / Sắp tới / Tất cả</strong>. Lọc nguồn: tất cả · Zalo (đồng bộ từ nhắc hẹn Zalo) · Thủ công.</p>
+        <table>
+          <tr><th>Tự động</th><th>Khi nào</th></tr>
+          <tr><td>Nhắc trong app</td><td>1 giờ trước giờ hẹn.</td></tr>
+          <tr><td>Email / thông báo đẩy</td><td>24 giờ trước.</td></tr>
+          <tr><td>Tự chuyển “Quá hạn”</td><td>Khi qua giờ mà chưa đánh dấu hoàn thành.</td></tr>
+        </table>
+        <p>Tạo nhanh từ khung chat (cột hồ sơ khách) hoặc bấm <strong>+ Tạo lịch hẹn</strong>.</p>
+      </section>
+
+      <section id="botauto">
+        <h2><span class="num">9</span> Bot-Auto &amp; Automation</h2>
+        <p class="lead">Hai cơ chế tự động hoá — bổ trợ nhau.</p>
+        <h3>🤖 Bot-Auto (kịch bản gửi tin)</h3>
+        <p>Xây luồng gửi tin tự động bằng các khối: <strong>Blocks</strong> (mảnh nội dung) → <strong>Sequences</strong> (chuỗi tin theo thời gian) → <strong>Triggers</strong> (điều kiện kích hoạt) → <strong>Broadcasts</strong> (gửi hàng loạt) → <strong>Lists</strong> (nhóm khách nhận). Engine gửi bằng SDK Zalo thật.</p>
+        <h3>⚡ Automation (quy tắc trigger → action)</h3>
+        <p>Tạo rule dạng <em>“Khi… thì…”</em>:</p>
+        <ul>
+          <li>Khách mới chat lần đầu → tự gửi tin chào + giao cho sale phụ trách.</li>
+          <li>Không trả lời &gt; 2 giờ → nhắc sale.</li>
+          <li>Hết lịch hẹn → tự cập nhật trạng thái + ghi nhật ký.</li>
+        </ul>
+        <p>Mỗi rule có: tên, trigger, mức ưu tiên (1–10), số lần đã chạy, lần chạy gần nhất, bật/tắt. Có sẵn tab <strong>Templates</strong> với rule mẫu.</p>
+        <div class="callout warn"><span class="ic">⚠️</span><div>Gửi tự động hàng loạt dễ chạm giới hạn Zalo. Hãy đặt tốc độ hợp lý và theo dõi trạng thái nick.</div></div>
+      </section>
+
+      <section id="analytics">
+        <h2><span class="num">10</span> Phân tích &amp; Báo cáo</h2>
+        <h3>📈 Phân tích nâng cao</h3>
+        <p>5 tab: <strong>Tổng quan</strong> (phễu + thời gian phản hồi TB) · <strong>Phễu khách hàng</strong> · <strong>Đội nhóm</strong> (hiệu suất từng nhân viên) · <strong>Thời gian trả lời</strong> (heatmap) · <strong>Báo cáo tuỳ chỉnh</strong>. Chọn khoảng “Từ ngày → Đến ngày” để lọc.</p>
+        <h3>📊 Báo cáo</h3>
+        <p>Báo cáo thô theo ngày, hợp để gửi cấp trên. Tab: Tin nhắn / Khách hàng / Lịch hẹn. Bấm <strong>Xuất Excel</strong> để tải <code>.xlsx</code>.</p>
+      </section>
+
+      <section id="ai">
+        <h2><span class="num">11</span> Trợ lý AI</h2>
+        <p class="lead">Tích hợp AI hỗ trợ sale ngay trong chat (cần bật &amp; cấu hình ở Cài đặt → AI).</p>
+        <div class="grid">
+          <div class="card"><div class="t">💡 Gợi ý trả lời</div><div class="d">AI soạn sẵn câu trả lời cho tin của khách.</div></div>
+          <div class="card"><div class="t">📝 Tóm tắt hội thoại</div><div class="d">Tóm lược nội dung trao đổi dài.</div></div>
+          <div class="card"><div class="t">🙂 Phân tích cảm xúc</div><div class="d">Đánh giá thái độ khách (tích cực / tiêu cực).</div></div>
+          <div class="card"><div class="t">📅 Trích lịch hẹn</div><div class="d">Tự nhận diện lịch hẹn từ tin nhắn.</div></div>
+        </div>
+        <p>Hỗ trợ nhiều nhà cung cấp: <strong>Anthropic (Claude)</strong>, Gemini, OpenAI, Qwen, Kimi. Mỗi tổ chức tự chọn provider + nhập API key, có <strong>hạn mức/ngày</strong> để kiểm soát chi phí.</p>
+        <div class="callout info"><span class="ic">⚙️</span><div>Cấu hình tại <span class="pill">⚙️ Cài đặt → AI</span>: chọn provider, model, dán API key, đặt hạn mức.</div></div>
+      </section>
+
+      <section id="settings">
+        <h2><span class="num">12</span> Cài đặt</h2>
+        <p class="lead">Trung tâm cấu hình toàn hệ thống.</p>
+        <table>
+          <tr><th>Mục</th><th>Dùng để</th></tr>
+          <tr><td>Tài khoản Zalo</td><td>Thêm/kết nối/proxy/phân quyền nick Zalo. <a href="#zalo">Xem mục 2</a></td></tr>
+          <tr><td>Người dùng</td><td>Tạo tài khoản nhân viên, gán vai trò.</td></tr>
+          <tr><td>Đội nhóm / Phòng ban (RBAC)</td><td>Phân quyền theo phòng ban, nhóm.</td></tr>
+          <tr><td>AI</td><td>Provider, model, API key, hạn mức.</td></tr>
+          <tr><td>Tích hợp</td><td>Facebook Lead, Telegram, Google Sheets, Zapier…</td></tr>
+          <tr><td>Nhãn CRM (CrmTag)</td><td>Tạo/sửa bộ nhãn riêng cho khách.</td></tr>
+          <tr><td>Lead Scoring</td><td>Cấu hình cách chấm điểm tiềm năng.</td></tr>
+          <tr><td>Webhook &amp; API Key</td><td>Kết nối hệ thống ngoài (xem dưới).</td></tr>
+          <tr><td>Bảo mật / PIN riêng tư</td><td>Khoá thông tin nhạy cảm bằng mã PIN.</td></tr>
+        </table>
+        <h3>Vai trò người dùng</h3>
+        <p><span class="chip c-blue">Owner</span> toàn quyền · <span class="chip c-green">Admin</span> quản trị · <span class="chip c-amber">Member/Sale</span> chỉ thao tác trên nick được phân quyền.</p>
+        <h3>Webhook &amp; API</h3>
+        <p>Tạo <strong>API Key</strong> để hệ thống ngoài gọi vào, và đặt <strong>Webhook URL</strong> để nhận sự kiện (khách mới, tin mới…). URL webhook do bạn tự đặt và được kiểm tra an toàn (chặn địa chỉ nội bộ).</p>
+        <div class="callout info"><span class="ic">📡</span><div>Tích hợp <strong>Facebook Lead</strong>: kết nối Meta OAuth → webhook tự nhận lead từ form quảng cáo → tự tạo “Tệp khách hàng” theo page/form.</div></div>
+      </section>
+
+      <section id="faq">
+        <h2><span class="num">?</span> Câu hỏi thường gặp</h2>
+
+        <h3>Gửi ảnh/video bị lỗi?</h3>
+        <ul>
+          <li>Kiểm tra dung lượng: ảnh ≤100MB, video ≤500MB, file ≤1GB.</li>
+          <li>Định dạng phải nằm trong danh sách cho phép (JPG/PNG/WebP/GIF, MP4/MOV/WebM, PDF/Word/Excel/PPT/ZIP/RAR).</li>
+        </ul>
+
+        <h3>Khách có nhận được file không?</h3>
+        <p>✅ Có. File gửi trực tiếp qua Zalo CDN, độc lập với lưu trữ nội bộ (MinIO). MinIO chỉ để CRM hiển thị lại.</p>
+
+        <h3>Nick Zalo hay bị ngắt kết nối?</h3>
+        <p>Có thể do gửi quá nhanh → Zalo tạm khoá. Hãy bật <strong>proxy riêng</strong> cho nick và giữ tốc độ gửi hợp lý (mặc định ~200 tin/ngày/nick).</p>
+
+        <h3>Khách thấy ảnh hỏng trong CRM dù gửi thành công?</h3>
+        <p>Trình duyệt người xem không truy cập được kho ảnh nội bộ. Admin cần chỉnh <code>S3_PUBLIC_URL</code> trong <code>.env</code> thành địa chỉ mà trình duyệt truy cập được, rồi khởi động lại app.</p>
+
+        <h3>Quên mật khẩu quản trị?</h3>
+        <p>Admin reset trực tiếp trong cơ sở dữ liệu, hoặc tạo lại tài khoản. Liên hệ người quản trị server của bạn.</p>
+
+        <h3>Bị kẹt ở màn “Thiết lập ban đầu”?</h3>
+        <p>Nhấn <kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd> để tải lại trang. Nếu org đã tạo, hệ thống sẽ tự đưa bạn sang trang đăng nhập.</p>
+      </section>
+
+      <footer>
+        ZaloCRM — Hướng dẫn sử dụng • Tài liệu này là bản tĩnh, mở được offline bằng trình duyệt.<br/>
+        Truy cập hệ thống tại <strong>http://localhost:5173</strong>
+      </footer>
+
+    </main>
+  </div>
+</div>
+
+<script>
+  // Scroll-spy: tô sáng mục đang xem trong mục lục
+  (function(){
+    var links = Array.prototype.slice.call(document.querySelectorAll('nav.toc a'));
+    var map = {};
+    links.forEach(function(a){ var id=a.getAttribute('href').slice(1); var s=document.getElementById(id); if(s) map[id]=a; });
+    var obs = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){
+          links.forEach(function(l){ l.classList.remove('active'); });
+          var a = map[e.target.id]; if(a){ a.classList.add('active'); }
+        }
+      });
+    }, { rootMargin:'-20% 0px -70% 0px', threshold:0 });
+    Object.keys(map).forEach(function(id){ obs.observe(document.getElementById(id)); });
+  })();
+</script>
+</body>
+</html>
