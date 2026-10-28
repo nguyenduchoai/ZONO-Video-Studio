@@ -12,12 +12,16 @@ const ANIM_TEMPLATES = [
   ["health-beauty", "Y tế, Dược phẩm, Nha khoa, Spa & Mỹ phẩm"],
   ["education-explainer", "Giáo dục, Khóa học, AI & Kiến thức (Motion Canvas / Kurzgesagt)"],
   ["finance-realestate", "Tài chính, Bất động sản, Đầu tư & B2B SaaS"],
-  ["stickman-story", "Hoạt hình Người Que (Stickman) Kể chuyện & So sánh"],
+  ["stickman-story", "Kể chuyện Người Que (Stickman Nền Sáng / Nền Đen)"],
+  ["moral-story", "Truyện Nhân Quả & Đời Thường 2D (Giàu cảm xúc)"],
+  ["vietnamese-folk", "Truyện Dân Gian Việt Nam (Hoa văn & Làng quê truyền thống)"],
 ] as const;
 const ANIM_STYLES = [
-  ["2d-mascot", "Nhân vật Mascot 2D + Vector động (Rive / Lottie / SVG + GSAP)"],
-  ["3d-stage", "Sân khấu 3D + Vật lý (Three.js / React Three Fiber / Drei / Rapier)"],
-  ["stickman", "Hoạt hình Người Que khớp chuyển động (Stickman Rig + ShotCraft)"],
+  ["2d-mascot", "Nhân vật 2D Đời Thường Việt Nam (Quần áo & bối cảnh đồng nhất)"],
+  ["3d-stage", "Hoạt hình 3D Pixar & Sân khấu 3D (Three.js / Pixar Rendering)"],
+  ["stickman", "Người Que Tối Giản (Stickman Nền Sáng / Nền Đen)"],
+  ["moral-cinematic", "2D Điện Ảnh Truyện Nhân Quả & Dân Gian Việt Nam"],
+  ["ghibli-watercolor", "Tranh Vẽ Màu Nước Chữa Lành (Ghibli) & Đất Sét (Claymation)"],
   ["kinetic-motion", "Motion Graphics & Kinetic Typography (Remotion + Motion + Satori)"],
 ] as const;
 const PACKAGED_21_TOOLS = [
@@ -71,6 +75,20 @@ const ANIM_SAMPLE_PRESETS: Record<string, { title: string; product: string; hook
     hookTitle: "Tại sao bạn làm việc 14 tiếng mỗi ngày mà vẫn quá tải?",
     cta: "Chuyển sang làm việc thông minh cùng ZONO AI ngay hôm nay!",
     brief: "Anh A thức khuya dậy sớm tự cắt ghép từng đoạn video và trả lời từng tin nhắn khách hàng. Trong khi đó anh B bật hệ thống ZONO AI trên máy cá nhân để tự động sản xuất hàng loạt video hoạt hình hấp dẫn. Chỉ sau một tháng, anh B tăng gấp ba lượng khách hàng mà vẫn có thời gian nghỉ ngơi bên gia đình.",
+  },
+  "moral-story": {
+    title: "Truyện Nhân Quả 2D: Chữ Tín Của Người Làm Nghề Chân Chính",
+    product: "Thương Hiệu Tâm Huyết Gia Truyền",
+    hookTitle: "Một lần giữ trọn chữ tín, vạn lần khách nhớ quay về!",
+    cta: "Hãy để lại bình luận và theo dõi kênh để đón xem những câu chuyện ý nghĩa tiếp theo!",
+    brief: "Giữa khu phố sầm uất, tiệm nhỏ vẫn kiên trì chọn từng nguyên liệu sạch nhất dù chi phí cao hơn. Nhiều người bảo làm vậy sao có lời nhanh, nhưng người chủ chỉ mỉm cười giữ trọn cái tâm với khách. Năm năm sau, khi các tiệm làm ẩu lần lượt đóng cửa, tiệm nhỏ ngày nào đã trở thành thương hiệu uy tín được hàng ngàn gia đình tin yêu.",
+  },
+  "vietnamese-folk": {
+    title: "Truyện Dân Gian Việt Nam: Sự Tích Nghề Thủ Công Truyền Thống",
+    product: "Tinh Hoa Quà Việt Truyền Thống",
+    hookTitle: "Bí mật ngàn năm ẩn sau nét vẽ dân gian Việt Nam!",
+    cta: "Khám phá ngay bộ sưu tập quà tặng văn hóa Việt tại cửa hàng!",
+    brief: "Ngày xưa nơi làng quê Bắc Bộ yên bình bên gốc đa bến nước, các nghệ nhân đã gửi gắm ước vọng sum vầy vào từng đường nét thủ công tinh xảo. Qua bao thế hệ, sắc màu ấm áp của đất trời và bàn tay khéo léo ấy vẫn vẹn nguyên giá trị trong từng món quà trao tay dịp lễ Tết.",
   },
 };
 const STATUS: Record<string, [string, any]> = {

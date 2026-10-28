@@ -24,6 +24,7 @@ import { DnaDraft, blankDna, documentText, dnaSourceText } from "./dna-intake.ts
 import { startVideoJob } from "./creative.ts";
 import { createPostImage } from "./post-image.ts";
 import { executeMuseRpc } from "./muse-local.ts";
+import { buildFrameWeaverProductionPlan, FRAMEWEAVER_STORY_STYLES } from "./frameweaver-core.ts";
 
 export interface PlanTierDef {
   id: "starter" | "growth" | "pro" | "enterprise";
@@ -217,6 +218,63 @@ function ensureDefaultSampleUsers(bizId: string) {
       version: 1,
       status: "active",
     });
+  }
+
+  // Đảm bảo bộ 3 kỹ năng từ FrameWeaver (`fk-pipeline`, `fk-camera-guide`, `fk-youtube-seo`) luôn có sẵn trong Core
+  const fwSkills = [
+    {
+      key: "fk-pipeline",
+      name: "Dựng Video Đa Phong Cách (Người Que · Nhân Quả 2D · Dân Gian · 3D Pixar)",
+      grp: "creative",
+      description: "Quy trình 5 bước chuẩn FrameWeaver: Entity Reference Bible → 10 Phong cách trực quan (Stickman, Truyện nhân quả, Dân gian VN, 3D Pixar) → Multi-Angle Breakdown → Narrator-Fit 48kHz.",
+      body: [
+        "# Quy Trình Sản Xuất Video Đa Cảnh & Đa Phong Cách (FrameWeaver Core)",
+        "1. **Entity Reference Bible**: Khai báo `character`, `location`, `prop` độc lập để khóa tạo hình xuyên suốt mọi cảnh.",
+        "2. **Thư viện 10 Phong cách Trực quan**: Điện ảnh thực tế (Canon EOS R5), Kể chuyện Người Que (Stickman nền sáng/đen), Truyện Nhân Quả 2D, Truyện Dân Gian Việt Nam, Gia đình 2D Việt Nam, Hoạt hình 3D Pixar, Ghibli Màu Nước, Chibi, Đất Sét Stop-Motion.",
+        "3. **Multi-Angle Breakdown (T2) + Pattern B Anchor**: Bung 1 khoảnh khắc cao trào thành nhiều góc máy (Wide establishing ➔ Macro close-up 85mm) và neo khung cuối (`endFrame`) về góc trung cảnh để không bao giờ bị biến dạng mặt nhân vật.",
+        "4. **Narrator-Fit Concat (`48kHz stereo`)**: Cắt từng cảnh khớp `TTS_Duration + 0.5s buffer`, trộn `SFX volume=0.3` + `Voice volume=1.5`.",
+      ].join("\n"),
+    },
+    {
+      key: "fk-camera-guide",
+      name: "Cẩm Nang Góc Máy Điện Ảnh 5 Thành Phần & 3 Lớp Âm Thanh",
+      grp: "creative",
+      description: "Chuẩn hóa cú pháp Prompt Video: [Camera viết câu riêng] + [Subject] + [Action] + [Setting] + [3 Lớp Audio: Dialogue / SFX / Ambient].",
+      body: [
+        "# Cẩm Nang Góc Máy Điện Ảnh (5-Component Camera Guide)",
+        "- **Cấu trúc 5 thành phần**: `[Camera/Shot] + [Subject] + [Action] + [Setting] + [Style & Audio]`.",
+        "- **Quy tắc vàng**: Chuyển động máy quay (`The camera slowly dollies in.`, `35mm tracking shot`) LUÔN viết thành 1 câu riêng biệt.",
+        "- **3 Lớp Âm thanh cuối Prompt**: `Dialogue` (ngắn gọn <8s, không phụ đề) + `SFX` (tiếng động vật lý) + `Audio` (âm thanh môi trường nền).",
+      ].join("\n"),
+    },
+    {
+      key: "fk-youtube-seo",
+      name: "Tối Ưu SEO YouTube/TikTok & 6 Công Thức Thumbnail CTR Cao",
+      grp: "marketing",
+      description: "Tạo tiêu đề Hook <65 ký tự, mô tả 3 vùng (Zone 1/2/3 + Timestamps), 15 Hashtags 3 tầng và Prompt Thumbnail theo 6 công thức tâm lý học.",
+      body: [
+        "# Tối Ưu SEO Video & 6 Công Thức Thumbnail CTR Cao",
+        "1. **Hook Title (<65 ký tự)**: Từ khóa chính trong 5 chữ đầu + Từ kích thích tò mò (Curiosity Gap) + Con số cụ thể.",
+        "2. **Mô tả 3 Vùng (3-Zone Description)**: Zone 1 (150 ký tự đầu trước 'Xem thêm') + Zone 2 (Tóm tắt & Chapter Timestamps `00:00`) + Zone 3 (15 Hashtags 3 tầng).",
+        "3. **6 Công thức Thumbnail**: (1) Reaction Face 45% khung hình, (2) Before/After chia đôi, (3) Contrast/Clash đối lập, (4) Mystery/Reveal ẩn một phần, (5) Stakes Frame cao trào, (6) Number Punch con số khổng lồ.",
+      ].join("\n"),
+    },
+  ];
+  for (const sk of fwSkills) {
+    const exists = q.get<Row>("SELECT id FROM skill WHERE biz_id = ? AND key = ?", bizId, sk.key);
+    if (!exists) {
+      insert("skill", {
+        biz_id: bizId,
+        key: sk.key,
+        name: sk.name,
+        grp: sk.grp,
+        description: sk.description,
+        body: sk.body,
+        size: sk.body.length,
+        version: 1,
+        status: "active",
+      });
+    }
   }
 
   // Đảm bảo mỗi phân hệ có sẵn ĐÚNG 1 Sample (Ví dụ mẫu) để người dùng mở lên là thấy cách hoạt động ngay
@@ -1711,12 +1769,21 @@ export async function runUserRagAction(
       }
     } else if (/\b(chuẩn seo|bài seo|từ khoá|từ khóa|website|landing page|blog)\b/i.test(lowerPrompt)) {
       detectedAgentKey = "seo_web";
-    } else if (/\b(kịch bản video|kịch bản tiktok|kịch bản reels|storyboard|lời bình video|phân cảnh|scene lock|đồng nhất nhân vật)\b/i.test(lowerPrompt)) {
+    } else if (/\b(youtube seo|seo youtube|thumbnail|ảnh thu nhỏ|tiêu đề youtube)\b/i.test(lowerPrompt)) {
+      detectedAgentKey = "video_script";
+      if (!detectedSkillKey) detectedSkillKey = "fk-youtube-seo";
+    } else if (/\b(kịch bản video|kịch bản tiktok|kịch bản reels|storyboard|lời bình video|phân cảnh|scene lock|đồng nhất nhân vật|người que|stickman|nhân quả|dân gian|3d pixar|góc máy|multi-angle|frameweaver)\b/i.test(lowerPrompt)) {
       detectedAgentKey = "video_script";
       if (!detectedSkillKey) {
-        detectedSkillKey = /\b(phân cảnh|scene lock|đồng nhất nhân vật|khung đầu|khung cuối)\b/i.test(lowerPrompt)
-          ? "scene-lock-video"
-          : "viral-ai-script";
+        if (/\b(góc máy|camera|multi-angle|cận cảnh|dolly)\b/i.test(lowerPrompt)) {
+          detectedSkillKey = "fk-camera-guide";
+        } else if (/\b(người que|stickman|nhân quả|dân gian|3d pixar|ghibli|chibi|đất sét|frameweaver)\b/i.test(lowerPrompt)) {
+          detectedSkillKey = "fk-pipeline";
+        } else if (/\b(phân cảnh|scene lock|đồng nhất nhân vật|khung đầu|khung cuối)\b/i.test(lowerPrompt)) {
+          detectedSkillKey = "scene-lock-video";
+        } else {
+          detectedSkillKey = "viral-ai-script";
+        }
       }
     } else if (/\b(doanh thu|báo cáo|thống kê|chỉ số|kpi|roas|hiệu quả)\b/i.test(lowerPrompt)) {
       detectedAgentKey = "analytics";
@@ -1907,76 +1974,20 @@ export async function runUserRagAction(
     createdRefId = ci.id;
     meta.postsUsed += 1;
   } else if (effectiveMode === "video") {
-    // Core Scene-Lock & Frame Continuity Engine (learned from 26Flow / museflow):
-    // 1. Auto-detect refusal/sensitive terms and rewrite into a safe commercial equivalent
-    const safeTopic = topic
-      .replace(/\b(máu|bạo lực|vũ khí|chữa khỏi 100%|cam kết tuyệt đối)\b/gi, "hiệu quả an toàn đã kiểm chứng")
-      .trim();
-    const productHighlight = meta.productsSummary || safeTopic;
-    const brandLabel = meta.brandName && meta.brandName !== "Cửa hàng của tôi" ? meta.brandName : "Thương hiệu Việt";
-
-    const sceneLockBlocks = [
-      `[STYLE LOCK]: 9:16 vertical 1080x1920, 24fps, commercial lifestyle cinematography, warm natural daylight, crisp 85mm depth of field, smooth gimbal motion.`,
-      `[CHAR LOCK]: Nhân vật đại diện thương hiệu Việt Nam 26 tuổi, gương mặt rạng rỡ thân thiện, trang phục lịch sự đồng nhất xuyên suốt 5 cảnh.`,
-      `[SET LOCK]: Không gian cửa hàng/studio sáng ấm của ${brandLabel}, bày trí gọn gàng tinh tế, ánh sáng tự nhiên đồng nhất.`,
-      `[VIDEO SUFFIX]: high visual continuity, natural motion, photorealistic commercial quality.`,
-      `[NEGATIVE]: text overlay, subtitles, watermark, logo distortion, extra fingers, morphing face, abrupt jump cut.`,
-    ];
-
-    const scenes = [
-      {
-        index: 1,
-        time: "0:00–0:05",
-        voice: `Bạn có biết vì sao nhiều người tìm kiếm ${safeTopic} nhưng vẫn chưa chọn được giải pháp ưng ý?`,
-        startFrame: `Nhân vật đứng tại quầy chính của ${brandLabel}, ánh mắt nhìn thẳng máy quay, tay cầm sản phẩm.`,
-        endFrame: `Máy dolly-in nhẹ 15%, nhân vật mỉm cười tự tin và nâng sản phẩm lên ngang ngực.`,
-      },
-      {
-        index: 2,
-        time: "0:05–0:10",
-        voice: `Tại ${brandLabel}, bên mình mang đến ${productHighlight.slice(0, 110)} được chọn lọc kỹ lưỡng từng chi tiết.`,
-        startFrame: `Khớp chính xác Khung cuối Cảnh 1: nhân vật đang nâng sản phẩm ngang ngực, góc máy chuyển cận cảnh (close-up).`,
-        endFrame: `Ánh sáng lướt nhẹ qua bề mặt sản phẩm làm nổi bật chất lượng thực tế, tay nhân vật giữ cố định góc 45 độ.`,
-      },
-      {
-        index: 3,
-        time: "0:10–0:15",
-        voice: `Điểm khác biệt nằm ở trải nghiệm thực tế êm ái, chuẩn chỉnh và tiết kiệm thời gian tối đa cho bạn.`,
-        startFrame: `Khớp chính xác Khung cuối Cảnh 2: từ góc cận sản phẩm, máy pan mượt theo tay nhân vật thao tác sử dụng thực tế.`,
-        endFrame: `Nhân vật gật đầu hài lòng, sản phẩm đặt gọn trên bàn gỗ sáng màu.`,
-      },
-      {
-        index: 4,
-        time: "0:15–0:20",
-        voice: `${meta.ragKnowledgeText ? meta.ragKnowledgeText.slice(0, 110) : "Đội ngũ luôn sẵn sàng hỗ trợ tận tâm và bảo hành chu đáo tận nơi."}`,
-        startFrame: `Khớp chính xác Khung cuối Cảnh 3: sản phẩm trên bàn gỗ, nhân vật đóng gói chỉn chu vào hộp quà thương hiệu.`,
-        endFrame: `Hộp sản phẩm hoàn thiện đặt giữa khung hình, nhân vật đặt tay lên hộp và nhìn lên ống kính.`,
-      },
-      {
-        index: 5,
-        time: "0:20–0:25",
-        voice: `Nhắn ngay cho ${brandLabel} hôm nay để nhận ưu đãi dùng thử tốt nhất nhé!`,
-        startFrame: `Khớp chính xác Khung cuối Cảnh 4: nhân vật đặt tay trên hộp sản phẩm, góc máy trung cảnh ấm áp.`,
-        endFrame: `Nhân vật vẫy tay chào thân thiện, khung hình giữ ổn định 1.5 giây để kết video mượt mà.`,
-      },
-    ];
-
-    const fullVoiceoverVi = scenes.map((s) => s.voice).join(" ");
-    const expandedPromptForEngine = [
-      ...sceneLockBlocks,
-      "",
-      ...scenes.map(
-        (s) =>
-          `CẢNH ${s.index} (${s.time}) | Voice: "${s.voice}" | Khung đầu: ${s.startFrame} | Khung cuối: ${s.endFrame}`,
-      ),
-    ].join("\n");
+    const fwPlan = buildFrameWeaverProductionPlan({
+      topic,
+      rawPrompt,
+      brandName: meta.brandName,
+      productsSummary: meta.productsSummary,
+      ragKnowledgeText: meta.ragKnowledgeText,
+    });
 
     const mediaRes: any = await executeMuseRpc(
       bizId,
       "hatch.message.agent_media_generation",
       {
-        prompt: expandedPromptForEngine,
-        voiceText: fullVoiceoverVi,
+        prompt: fwPlan.expandedEnginePrompt,
+        voiceText: fwPlan.fullVoiceoverVi,
         voice: "Binh (nam miền Bắc)",
       },
       actor,
@@ -1988,8 +1999,8 @@ export async function runUserRagAction(
         bizId,
         {
           tool: "anim-video",
-          title: safeTopic.slice(0, 55),
-          brief: `${expandedPromptForEngine}${ragBlock}`,
+          title: fwPlan.seoTitle.slice(0, 55),
+          brief: `${fwPlan.expandedEnginePrompt}${ragBlock}`,
           images: [],
           channels: ["tiktok", "facebook"],
           durationSec: 25,
@@ -2002,17 +2013,26 @@ export async function runUserRagAction(
     audioUrl = mediaRes?.artifact?.audioUrl;
     meta.videosUsed += 1;
     outputMarkdown = [
-      `🎬 **Đã dựng Video AI Đa Phân Cảnh (Khóa Đồng Nhất Nhân Vật & Nối Khung Mượt Mà): "${safeTopic}"**`,
-      `- **Mã Video**: \`#${job.id.slice(0, 8)}\` · Định dạng dọc \`9:16 (1080×1920)\` · 5 phân cảnh liên hoàn (25 giây) + Giọng đọc tiếng Việt 48kHz`,
+      `🎬 **Đã dựng Video AI Đa Phân Cảnh Chuẩn Điện Ảnh: "${fwPlan.seoTitle}"**`,
+      `- **Mã Video**: \`#${job.id.slice(0, 8)}\` · Phong cách: **${fwPlan.style.name}** (\`${fwPlan.style.id}\`) · Định dạng dọc \`9:16 (1080×1920)\` · 5 phân cảnh (\`Narrator-Fit 48kHz Stereo\`)`,
       ``,
-      `### 🔒 Khóa Đồng Nhất Toàn Cục (Scene-Lock Continuity)`,
-      ...sceneLockBlocks.map((b) => `- \`${b}\``),
+      `### 🎨 1. Hồ Sơ Tham Chiếu Thực Thể & Phong Cách (Entity Reference Bible)`,
+      ...fwPlan.entities.map((e) => `- **${e.name}** (\`${e.entityType}\`): ${e.description}`),
       ``,
-      `### 🎞️ Kịch Bản 5 Phân Cảnh Nối Khung (\`Khung cuối → Khung đầu\`)`,
-      ...scenes.map(
+      `### 🎞️ 2. Kịch Bản 5 Cảnh Đa Góc Máy (\`ROOT\` · \`CONTINUATION\` · \`INSERT [EDIT←2]\`)`,
+      ...fwPlan.scenes.map(
         (s) =>
-          `**CẢNH ${s.index} (${s.time})**\n- 🎙️ **Voice (tiếng Việt)**: _"${s.voice}"_\n- 🖼️ **Nối khung hình**: ${s.startFrame} ➔ ${s.endFrame}`,
+          `**${s.code}** (\`${s.timeRange}\` · Cắt khớp giọng đọc \`${s.cutDurationSec}s\` · Chữ nổi: \`[${s.overlayStyle.toUpperCase()}] ${s.overlayText}\`)\n` +
+          `- 🎙️ **Voice (tiếng Việt)**: _"${s.voiceVi}"_\n` +
+          `- 🎥 **Camera (Câu độc lập)**: \`${s.cameraSentence}\`\n` +
+          `- 🖼️ **Nối khung hình**: ${s.startFrame} ➔ ${s.endFrame}\n` +
+          `- 🔊 **3 Lớp Âm thanh**: \`${s.audioLayers}\``,
       ),
+      ``,
+      `### 🚀 3. Bộ SEO YouTube Shorts / TikTok & Thumbnail CTR Cao`,
+      `- **Tiêu đề Hook (<65 ký tự)**: **${fwPlan.seoTitle}**`,
+      `- **Hashtags**: \`${fwPlan.hashtags.join(" ")}\``,
+      `- **Prompt Thumbnail (6 Công thức)**: \`${fwPlan.thumbnailPrompt}\``,
     ].filter(Boolean).join("\n\n");
   } else {
     // zalo_sale mode: Personal Zalo & Messenger CRM response + POS order readiness
