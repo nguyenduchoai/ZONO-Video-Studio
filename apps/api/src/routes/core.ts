@@ -5,7 +5,17 @@ import { AgentConfigUpdate } from "@dotaka/contracts";
 import { activeDna, audit, bizSettings, bus, byId, emit, insert, ownerProfile, q, update, type Row } from "@dotaka/db";
 import { JEV_MODEL, jevEnabled } from "@dotaka/jev";
 import { DEFAULT_LLM, DEFAULT_CODEX_MODELS, DEFAULT_GEMINI_MODELS, MODEL_CATALOG, TASK_CATEGORIES, allProvidersStatus, autoConfigureSystemClis, cancelAiLogin, checkAiAccount, codexInfo, createAiAccount, disconnectAiAccount, geminiInfo, listAiAccounts, mustAiAccount, removeAiAccount, scanSystemAiClis, selectedAiAccount, startAiLogin, cliInfo, effectiveProvider, llmSettings, modelCatalog, modelMatchesProvider, modelFor, testModel, tokensUsedToday, type Tier } from "@dotaka/llm-gateway";
-import { latestDaily, sumMetrics, today } from "@dotaka/orchestrator";
+import {
+  FRAMEWEAVER_STORY_STYLES,
+  MOONREEL_NICHES,
+  buildFrameWeaverProductionPlan,
+  checkMuse2ApiHealth,
+  executeMuseRpc,
+  latestDaily,
+  startVideoJob,
+  sumMetrics,
+  today,
+} from "@dotaka/orchestrator";
 import { AppError, sha256 } from "@dotaka/shared";
 import { currentBizId, routes } from "../http.ts";
 import { publicProfile } from "./account.ts";
@@ -267,6 +277,85 @@ export function coreRoutes(app: FastifyInstance) {
     tasksDone: q.scalar("SELECT COUNT(*) FROM task WHERE biz_id = ? AND status = 'done'", bizId),
     avgTaskMinutes: q.scalar("SELECT AVG((julianday(ended_at) - julianday(started_at)) * 1440) FROM task_run WHERE biz_id = ? AND ended_at IS NOT NULL", bizId),
   }));
+
+  // ---------------- ReelWeaver & MoonReel Studio API ----------------
+  r.get("/v1/studio/reelweaver-catalog", async ({ bizId }) => {
+    const gatewayHealth = await checkMuse2ApiHealth();
+    const dna = activeDna(bizId)?.data;
+    return {
+      styles: FRAMEWEAVER_STORY_STYLES,
+      niches: MOONREEL_NICHES,
+      gateway: {
+        ...gatewayHealth,
+        adminUrl: "http://127.0.0.1:18610/admin?key=zono-local-studio-key-2026",
+        cookieGuide: ["hatch_sess", "hatch_native_auth_device", "__Host-hatch_*"],
+      },
+      brandName: dna?.company?.brand || "ZONO Thực Phẩm & Đặc Sản Sạch",
+      productsSummary: (dna?.products ?? []).map((p: any) => p.name).join(", ") || "Yến Sào Chưng Tươi, Mật Ong Hoa Nhãn, Trà Thảo Mộc",
+    };
+  });
+
+  r.post("/v1/studio/reelweaver-plan", async ({ bizId, body, actor }) => {
+    const p = z
+      .object({
+        topic: z.string().min(1),
+        styleId: z.string().optional(),
+        nicheSlug: z.string().optional(),
+        brandName: z.string().optional(),
+        productsSummary: z.string().optional(),
+        voice: z.string().optional(),
+        aspectRatio: z.enum(["9:16", "16:9"]).optional(),
+      })
+      .parse(body);
+
+    const plan = buildFrameWeaverProductionPlan({
+      topic: p.topic,
+      rawPrompt: `${p.nicheSlug || ""} ${p.styleId || ""} ${p.topic}`,
+      brandName: p.brandName,
+      productsSummary: p.productsSummary,
+      styleId: p.styleId,
+    });
+
+    if (p.nicheSlug) {
+      const matchedNiche = MOONREEL_NICHES.find((n) => n.slug === p.nicheSlug);
+      if (matchedNiche) (plan as any).niche = matchedNiche;
+    }
+
+    const mediaRes: any = await executeMuseRpc(
+      bizId,
+      "hatch.message.agent_media_generation",
+      {
+        prompt: plan.expandedEnginePrompt,
+        voiceText: plan.fullVoiceoverVi,
+        voice: p.voice || "Binh (nam miền Bắc)",
+      },
+      actor,
+    ).catch(() => null);
+
+    const job =
+      (mediaRes?.data?.jobId ? byId<Row>("creative_job", String(mediaRes.data.jobId)) : null) ??
+      startVideoJob(
+        bizId,
+        {
+          tool: "anim-video",
+          title: plan.seoTitle.slice(0, 55),
+          brief: plan.expandedEnginePrompt,
+          images: [],
+          channels: ["tiktok", "facebook"],
+          durationSec: 25,
+          video: { voice: p.voice || "Binh (nam miền Bắc)", aspectRatio: p.aspectRatio || "9:16" },
+        },
+        `${actor} · Studio Phim AI`,
+      )!;
+
+    return {
+      ok: true,
+      jobId: job.id,
+      videoUrl: mediaRes?.artifact?.videoUrl ?? "/muse/HatchMaking.mp4",
+      audioUrl: mediaRes?.artifact?.audioUrl,
+      plan,
+    };
+  });
 
   // ---------------- Realtime (SSE) ----------------
   app.get("/v1/stream", (req, reply) => {

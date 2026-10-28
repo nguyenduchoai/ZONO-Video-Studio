@@ -30,6 +30,7 @@ import { Nurture } from "./pages/Nurture";
 import { Autopilot } from "./pages/Autopilot";
 import { Muse } from "./pages/Muse";
 import { UsersQuota } from "./pages/UsersQuota";
+import { ReelWeaverStudio } from "./pages/ReelWeaverStudio";
 
 /** Redirect keeping the query string (e.g. ?type=…, ?p=…). */
 function Keep({ to }: { to: string }) {
@@ -50,6 +51,8 @@ export function App() {
       <Shell>
         <Routes>
           <Route path="/" element={<Overview />} />
+          <Route path="/studio" element={<ReelWeaverStudio />} />
+          <Route path="/reelweaver" element={<ReelWeaverStudio />} />
           <Route path="/muse" element={<Muse />} />
           <Route path="/users-quota" element={<UsersQuota />} />
           <Route path="/brain" element={<Brain />} />

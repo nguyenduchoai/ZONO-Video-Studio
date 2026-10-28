@@ -71,6 +71,7 @@ export * from "./video-ai.ts";
 export * from "./pro-edit.ts"; // dựng video chuyên nghiệp từ video thô (cắt cảnh, chuyển cảnh, zoom, chữ động, hiệu ứng âm thanh)
 export * from "./muse-local.ts"; // Muse.app (Hatch v9.0) Connectors & Local Mac Automation
 export * from "./user-quota.ts"; // Multi-User AI + DNA RAG + Centralized Token & Quota Hub
+export * from "./frameweaver-core.ts"; // FrameWeaver + MoonReel + 26Flow Video & Story Studio Core
 
 export async function dailyReport(bizId: string) {
   const text = quickReport(bizId).replace(/^Báo cáo nhanh/, "Báo cáo sáng");

@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, BarChart3, Clapperboard, Eye, FileText, MessageSquareText, MessagesSquare, Store } from "lucide-react";
+import { ArrowRight, BarChart3, Clapperboard, Eye, FileText, MessageSquareText, MessagesSquare, Sparkles, Store } from "lucide-react";
 import { api, useApi } from "../lib/api";
 import { CONV_STATE, LEAD, num, timeAgo, vnd } from "../lib/format";
 import { Avatar, Badge, Button, Card, Empty, Loading, PlatformIcon, Stat, useToast } from "../components/ui";
@@ -35,12 +35,47 @@ export function Overview() {
             Xem nhanh tình hình bán hàng, tin nhắn khách Zalo và các bài đăng trong tuần.
           </p>
         </div>
-        <Link to="/users-quota">
-          <Button variant="primary">
-            <Store className="mr-1.5 h-4 w-4" /> Sửa Bảng giá & Cửa hàng
-          </Button>
-        </Link>
+        <div className="flex flex-wrap items-center gap-2.5">
+          <Link to="/studio">
+            <Button variant="primary" className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700">
+              <Sparkles className="mr-1.5 h-4 w-4" /> 🎬 Mở Studio Phim AI (MoonReel × FrameWeaver)
+            </Button>
+          </Link>
+          <Link to="/users-quota">
+            <Button variant="secondary">
+              <Store className="mr-1.5 h-4 w-4" /> Sửa Bảng giá & Cửa hàng
+            </Button>
+          </Link>
+        </div>
       </div>
+
+      {/* Banner Studio Phim AI mới */}
+      <Link
+        to="/studio"
+        className="group flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-violet-500/30 bg-gradient-to-r from-violet-600/10 via-indigo-600/10 to-blue-600/10 p-5 shadow-xs transition hover:border-violet-500 hover:shadow-md"
+      >
+        <div className="flex items-center gap-4">
+          <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 text-white shadow-sm">
+            <Sparkles className="h-6 w-6" />
+          </div>
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-base font-extrabold text-ink group-hover:text-violet-600">
+                ✨ Studio Phim AI · MoonReel × FrameWeaver × 26Flow × Muse2API
+              </h2>
+              <span className="rounded-full bg-violet-600 px-2.5 py-0.5 text-[11px] font-bold text-white">
+                MỚI TÍCH HỢP
+              </span>
+            </div>
+            <p className="mt-0.5 text-xs text-muted">
+              6 Ngách Video (Bán hàng, Tài chính, Bí ẩn, Đêm khuya...) · 10 Phong cách (Photorealistic, Pixar 3D, Ghibli, Stickman, Cổ tích...) · Khóa nhân vật đồng nhất & xuất Caption 4 kênh.
+            </p>
+          </div>
+        </div>
+        <span className="inline-flex items-center gap-1.5 rounded-xl bg-violet-600 px-4 py-2 text-xs font-bold text-white shadow-xs group-hover:bg-violet-700">
+          Vào Studio ngay <ArrowRight className="h-3.5 w-3.5" />
+        </span>
+      </Link>
 
       {/* 3 Con số quan trọng nhất */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

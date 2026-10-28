@@ -14,17 +14,19 @@ import { MuseBasicWorkspace } from "./MuseBasicWorkspace";
 
 type NavItem = { to: string; label: string; icon: any; badge?: "unread" | "approvals"; special?: boolean; children?: { to: string; label: string; icon: any }[] };
 
-/** Menu Quản trị Tinh gọn: Chỉ 5 mục cốt lõi, rõ ràng, không rừng rậm */
+/** Menu Quản trị Tinh gọn: Rõ ràng, có Studio Phim AI (MoonReel × FrameWeaver × 26Flow) nổi bật */
 const CORE_NAV: { title: string; items: NavItem[] }[] = [
   {
     title: "Quản lý Cửa hàng",
     items: [
-      { to: "/", label: "🏠 Bảng điều khiển", icon: Home },
-      { to: "/users-quota", label: "🏪 Cửa hàng & Bảng giá", icon: Users },
-      { to: "/zalo", label: "📱 Zalo & Khách hàng", icon: MessagesSquare, badge: "unread" },
-      { to: "/content", label: "✍️ Bài viết bán hàng", icon: FileText },
-      { to: "/video-flow", label: "🎬 Xưởng làm Video", icon: Clapperboard },
-      { to: "/settings", label: "⚙️ Cài đặt hệ thống", icon: Settings },
+      { to: "/", label: "Bảng điều khiển", icon: Home },
+      { to: "/studio", label: "Studio Phim AI (Mới)", icon: Sparkles, special: true },
+      { to: "/users-quota", label: "Cửa hàng & Bảng giá", icon: Users },
+      { to: "/zalo", label: "Zalo & Khách hàng", icon: MessagesSquare, badge: "unread" },
+      { to: "/content", label: "Bài viết bán hàng", icon: FileText },
+      { to: "/video-flow", label: "Xưởng làm Video", icon: Clapperboard },
+      { to: "/skills", label: "Kho Kỹ Năng AI", icon: BookOpen },
+      { to: "/settings", label: "Cài đặt hệ thống", icon: Settings },
     ],
   },
 ];
@@ -33,9 +35,9 @@ const EXTRA_NAV: { title: string; items: NavItem[] }[] = [];
 /** Bottom bar on phones: the four things checked most often + "Menu" for everything else. */
 const TABBAR: { to: string; label: string; icon: any; badge?: "unread" | "approvals" }[] = [
   { to: "/", label: "Tổng quan", icon: Home },
+  { to: "/studio", label: "Studio AI", icon: Sparkles },
   { to: "/content", label: "Nội dung", icon: FileText },
-  { to: "/chat", label: "Chat", icon: MessageCircle, badge: "unread" },
-  { to: "/approvals", label: "Duyệt", icon: CheckCircle2, badge: "approvals" },
+  { to: "/zalo", label: "Zalo", icon: MessagesSquare, badge: "unread" },
 ];
 
 const railStore = {
@@ -144,8 +146,12 @@ export function Layout({ children }: { children: ReactNode }) {
                 "group relative flex min-h-11 items-center rounded-2xl text-sm font-bold transition-colors",
                 compact ? "justify-center px-0" : "gap-3 px-3.5",
                 isActive
-                  ? "bg-blue-600 text-white shadow-xs"
-                  : "text-ink/85 hover:bg-soft hover:text-ink",
+                  ? n.special
+                    ? "bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-sm"
+                    : "bg-blue-600 text-white shadow-xs"
+                  : n.special
+                    ? "border border-violet-500/30 bg-violet-500/10 text-violet-700 hover:bg-violet-500/20 dark:text-violet-300"
+                    : "text-ink/85 hover:bg-soft hover:text-ink",
               )
             }
           >
@@ -184,11 +190,13 @@ export function Layout({ children }: { children: ReactNode }) {
   );
   const pendingTotal = (sys?.counts?.approvals ?? 0) + (sys?.counts?.unread ?? 0);
 
+  const showAdvanced = workspaceMode === "advanced" || loc.pathname !== "/";
+
   return (
     <div className="flex h-full">
       <a href="#main" className="sr-only z-[100] rounded-lg bg-card px-3 py-2 text-sm font-medium text-ink shadow-pop focus:not-sr-only focus:fixed focus:left-3 focus:top-3">Bỏ qua điều hướng</a>
-      {/* Tablet / desktop: only show full orchestration sidebar in "advanced" mode */}
-      {workspaceMode === "advanced" && (
+      {/* Tablet / desktop: show full orchestration sidebar in "advanced" mode or on any deep route */}
+      {showAdvanced && (
         <aside className={cx("hidden shrink-0 flex-col border-r border-line bg-card transition-[width] duration-200 md:flex", rail ? "w-[68px]" : "w-60")}>
           <Brand compact={rail} />
           {sidebar(rail)}
@@ -196,7 +204,7 @@ export function Layout({ children }: { children: ReactNode }) {
         </aside>
       )}
       {/* Phones: slide-in drawer */}
-      {open && workspaceMode === "advanced" && (
+      {open && showAdvanced && (
         <div className="fixed inset-0 z-[60] bg-slate-950/50 animate-fade-in md:hidden" onClick={() => setOpen(false)}>
           <aside role="dialog" aria-modal="true" aria-label="Menu" className="flex h-full w-[min(20rem,86vw)] flex-col bg-card shadow-sheet" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between pr-2"><Brand /><button onClick={() => setOpen(false)} aria-label="Đóng menu" className="grid h-10 w-10 place-items-center rounded-lg text-muted hover:bg-soft"><X className="h-5 w-5" /></button></div>
@@ -207,7 +215,7 @@ export function Layout({ children }: { children: ReactNode }) {
       )}
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="relative z-20 flex h-14 shrink-0 items-center gap-2 border-b border-line bg-card/90 px-4 backdrop-blur-md md:px-6">
-          {workspaceMode === "advanced" ? (
+          {showAdvanced ? (
             <>
               <button className="grid h-10 w-10 shrink-0 place-items-center rounded-lg text-muted hover:bg-soft hover:text-ink md:hidden" onClick={() => setOpen(true)} aria-label="Mở menu"><Menu className="h-5 w-5" /></button>
               <button className="hidden h-10 w-10 shrink-0 place-items-center rounded-lg text-muted hover:bg-soft hover:text-ink md:grid" onClick={toggleRail} aria-label={rail ? "Mở rộng thanh bên" : "Thu gọn thanh bên"} title={rail ? "Mở rộng thanh bên" : "Thu gọn thanh bên"}>{rail ? <PanelLeftOpen className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}</button>
@@ -229,14 +237,14 @@ export function Layout({ children }: { children: ReactNode }) {
             </div>
           )}
 
-          {/* Nút chuyển đổi Giao diện Đơn giản <-> Giao diện Chuyên sâu */}
+          {/* Nút chuyển đổi Giao diện Đơn giản <-> Studio Phim AI <-> Quản trị Chuyên sâu */}
           <div className="flex items-center rounded-2xl border border-line bg-soft p-1 text-xs">
             <button
               type="button"
-              onClick={() => switchWorkspaceMode("basic")}
+              onClick={() => switchWorkspaceMode("basic", "/")}
               className={cx(
                 "flex items-center gap-1.5 rounded-xl px-3 py-1.5 font-bold transition",
-                workspaceMode === "basic"
+                !showAdvanced
                   ? "bg-blue-600 text-white shadow-xs"
                   : "text-muted hover:text-ink",
               )}
@@ -246,10 +254,23 @@ export function Layout({ children }: { children: ReactNode }) {
             </button>
             <button
               type="button"
-              onClick={() => switchWorkspaceMode("advanced")}
+              onClick={() => switchWorkspaceMode("advanced", "/studio")}
               className={cx(
                 "flex items-center gap-1.5 rounded-xl px-3 py-1.5 font-bold transition",
-                workspaceMode === "advanced"
+                showAdvanced && loc.pathname.startsWith("/studio")
+                  ? "bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-xs"
+                  : "text-violet-700 hover:bg-violet-500/10 dark:text-violet-300",
+              )}
+            >
+              <Clapperboard className="h-3.5 w-3.5" />
+              <span>🎬 Studio Phim AI</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => switchWorkspaceMode("advanced", loc.pathname.startsWith("/studio") ? "/" : undefined)}
+              className={cx(
+                "flex items-center gap-1.5 rounded-xl px-3 py-1.5 font-bold transition",
+                showAdvanced && !loc.pathname.startsWith("/studio")
                   ? "bg-violet-600 text-white shadow-xs"
                   : "text-muted hover:text-ink",
               )}
@@ -280,7 +301,7 @@ export function Layout({ children }: { children: ReactNode }) {
           </div>
           <AccountMenu profile={sys?.profile} canLogout={false} onLogout={() => {}} />
         </header>
-        {workspaceMode === "basic" ? (
+        {!showAdvanced ? (
           <main id="main" tabIndex={-1} className="flex-1 overflow-hidden outline-none">
             <MuseBasicWorkspace onEnterAdvanced={(targetPath) => switchWorkspaceMode("advanced", targetPath)} />
           </main>
