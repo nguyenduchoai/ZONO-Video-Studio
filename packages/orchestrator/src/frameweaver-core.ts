@@ -185,6 +185,155 @@ export function detectStoryStyleFromPrompt(prompt: string): StoryStylePreset {
   return FRAMEWEAVER_STORY_STYLES[0];
 }
 
+export interface MoonReelNichePreset {
+  slug: string;
+  icon: string;
+  name: string;
+  description: string;
+  format: "story" | "ambient";
+  thumbnailStyle: "boxed" | "impact" | "cinematic";
+  thumbnailAccent: string;
+  tone: string;
+  visualStyle: string;
+  scriptInstructions: string[];
+}
+
+export const MOONREEL_NICHES: MoonReelNichePreset[] = [
+  {
+    slug: "commercial-brand",
+    icon: "🛍️",
+    name: "Bán Hàng & Thương Hiệu Thực Chiến",
+    description: "Video giới thiệu sản phẩm, cửa hàng, dịch vụ chuyển đổi đơn hàng cao.",
+    format: "story",
+    thumbnailStyle: "impact",
+    thumbnailAccent: "#FFD23F",
+    tone: "Thân thiện, thuyết phục, rõ ràng, đáng tin cậy",
+    visualStyle: "clean commercial lifestyle cinematography, warm natural daylight, crisp focus",
+    scriptInstructions: [
+      "Mở đầu bằng nỗi đau hoặc nhu cầu thực tế trong 2 giây đầu.",
+      "Mỗi cảnh 1 lợi ích cốt lõi ( <= 25 từ tiếng Việt/cảnh để khớp nhịp đọc).",
+      "Cảnh cuối kêu gọi hành động (CTA) rõ ràng.",
+    ],
+  },
+  {
+    slug: "personal-finance",
+    icon: "💰",
+    name: "Tài Chính Cá Nhân & Kinh Doanh",
+    description: "Kiến thức tiền bạc, quản trị dòng tiền thực tế cho người đi làm & chủ shop.",
+    format: "story",
+    thumbnailStyle: "boxed",
+    thumbnailAccent: "#34D399",
+    tone: "Thân thiện, rõ ràng, như người đi trước chia sẻ thực tế",
+    visualStyle: "clean modern 3D animation, soft warm lighting, pastel colors",
+    scriptInstructions: [
+      "Mở đầu bằng một con số hoặc sai lầm phổ biến gây giật mình.",
+      "Mỗi cảnh một ý duy nhất, có ví dụ bằng tiền Việt Nam cụ thể.",
+      "Kết thúc kêu gọi lưu video và theo dõi kênh.",
+    ],
+  },
+  {
+    slug: "did-you-know",
+    icon: "🔭",
+    name: "Sự Thật Thú Vị (Bạn Có Biết?)",
+    description: "Những sự thật bất ngờ về khoa học, lịch sử, ngành hàng và thế giới.",
+    format: "story",
+    thumbnailStyle: "impact",
+    thumbnailAccent: "#FFD23F",
+    tone: "Tò mò, hào hứng, cuốn hút",
+    visualStyle: "vibrant stylized 3D, cinematic lighting, rich detail",
+    scriptInstructions: [
+      "Câu đầu tiên dạng 'Bạn có biết…?' với một sự thật khó tin.",
+      "Giải thích ngắn gọn vì sao điều đó đúng bằng thông tin kiểm chứng.",
+      "Cảnh cuối đặt câu hỏi kích thích bình luận.",
+    ],
+  },
+  {
+    slug: "night-stories",
+    icon: "🌙",
+    name: "Truyện Kể Đêm Khuya & Tâm Sự",
+    description: "Truyện tâm lý, nhân quả hoặc bí ẩn nhẹ kể theo ngôi thứ nhất.",
+    format: "story",
+    thumbnailStyle: "cinematic",
+    thumbnailAccent: "#9DB8FF",
+    tone: "Trầm ấm, chậm rãi, sâu lắng",
+    visualStyle: "moody cinematic, low key lighting, blue and amber tones, light atmosphere",
+    scriptInstructions: [
+      "Kể theo mạch: bối cảnh → điều bất ngờ → cao trào → bài học sâu sắc.",
+      "Không máu me, không bạo lực chi tiết.",
+      "Cảnh cuối mời người xem chia sẻ góc nhìn dưới phần bình luận.",
+    ],
+  },
+  {
+    slug: "ai-tech-tips",
+    icon: "🤖",
+    name: "Mẹo Công Nghệ & Tự Động Hóa AI",
+    description: "Hướng dẫn nhanh công cụ AI và mẹo tăng năng suất dùng ngay được.",
+    format: "story",
+    thumbnailStyle: "boxed",
+    thumbnailAccent: "#FFC23D",
+    tone: "Năng động, tự tin, súc tích",
+    visualStyle: "sleek futuristic studio, neon accent lighting, crisp render",
+    scriptInstructions: [
+      "Mở đầu bằng lợi ích cụ thể (tiết kiệm bao nhiêu giờ/chi phí).",
+      "Các bước làm theo thứ tự rõ ràng, mỗi cảnh một bước.",
+      "Kết thúc kêu gọi lưu lại áp dụng ngay.",
+    ],
+  },
+  {
+    slug: "ambient-loop",
+    icon: "☕",
+    name: "Ambient Loop (Nhạc Học Bài · Thư Giãn · Quán Cafe)",
+    description: "Video khung cảnh tĩnh lặng lặp vô tận (xfade 2.5s + stream_loop) ghép với nhạc nền dài hàng giờ.",
+    format: "ambient",
+    thumbnailStyle: "cinematic",
+    thumbnailAccent: "#FBBF24",
+    tone: "Bình yên, thư thái, ấm cúng (Lo-fi / Study / Chill)",
+    visualStyle: "cozy atmospheric environment, gentle continuous motion (steam rising, soft rain, warm lamp glow), locked-off tripod camera",
+    scriptInstructions: [
+      "Máy quay cố định trên chân máy (locked-off static shot, SSIM ổn định).",
+      "Chỉ có chuyển động nhẹ nhàng lặp lại (khói trà bay, mưa rơi nhẹ ngoài khung cửa, ánh đèn ấm).",
+      "Ghép vòng lặp không vết nối bằng xfade smoothstep 2.5s + FFmpeg -stream_loop.",
+    ],
+  },
+];
+
+export function detectNicheFromPrompt(prompt: string): MoonReelNichePreset {
+  const lower = (prompt || "").toLowerCase();
+  if (/\b(ambient|loop|lofi|lo-fi|nhạc học bài|nhạc ngủ|thư giãn|tiếng mưa)\b/i.test(lower)) {
+    return MOONREEL_NICHES.find((n) => n.slug === "ambient-loop")!;
+  }
+  if (/\b(tài chính|tiền bạc|đầu tư|tiết kiệm|dòng tiền|lương)\b/i.test(lower)) {
+    return MOONREEL_NICHES.find((n) => n.slug === "personal-finance")!;
+  }
+  if (/\b(bạn có biết|sự thật|kỳ lạ|khoa học|bí ẩn)\b/i.test(lower)) {
+    return MOONREEL_NICHES.find((n) => n.slug === "did-you-know")!;
+  }
+  if (/\b(đêm khuya|kể chuyện đêm|tâm sự|nhân quả|câu chuyện)\b/i.test(lower)) {
+    return MOONREEL_NICHES.find((n) => n.slug === "night-stories")!;
+  }
+  if (/\b(mẹo ai|công nghệ|tự động hóa|automation|tool ai)\b/i.test(lower)) {
+    return MOONREEL_NICHES.find((n) => n.slug === "ai-tech-tips")!;
+  }
+  return MOONREEL_NICHES[0];
+}
+
+export async function checkMuse2ApiHealth(baseUrl = process.env.MUSE2API_BASE_URL || "http://127.0.0.1:18610") {
+  try {
+    const cleanBase = baseUrl.replace(/\/+$/, "");
+    const res = await fetch(`${cleanBase}/readyz`, { signal: AbortSignal.timeout(1800) });
+    if (!res.ok) return { online: false, baseUrl: cleanBase, accounts: 0, browserRunning: false };
+    const data = (await res.json()) as { status?: string; accounts?: number; browser_running?: boolean };
+    return {
+      online: data.status === "ok" || (data.accounts ?? 0) > 0,
+      baseUrl: cleanBase,
+      accounts: data.accounts ?? 0,
+      browserRunning: Boolean(data.browser_running),
+    };
+  } catch {
+    return { online: false, baseUrl, accounts: 0, browserRunning: false };
+  }
+}
+
 export interface FrameWeaverScenePlan {
   index: number;
   code: string;
@@ -323,7 +472,8 @@ export function buildFrameWeaverProductionPlan(input: {
     },
   ];
 
-  // 3. YouTube Shorts / TikTok / Reels SEO + 6-Formula Thumbnail Spec
+  // 3. MoonReel Niche-First + 4-Platform Captions + Satori Thumbnail + Auto Shorts Cut Plan
+  const niche = detectNicheFromPrompt(`${input.rawPrompt} ${input.topic}`);
   const seoTitle = `Bí Quyết ${safeTopic.slice(0, 38)} Tại ${brandLabel} [Chuẩn Thực Tế]`.slice(0, 65);
   const hashtags = [
     `#${brandLabel.replace(/\s+/g, "")}`,
@@ -332,11 +482,24 @@ export function buildFrameWeaverProductionPlan(input: {
     "#VideoNgan",
     "#KinhDoanhThucChien",
   ];
-  const thumbnailPrompt = `Formula 1 (Reaction Face + Curiosity Gap): Tight medium close-up of Main Host (45% of frame) with expressive delighted look pointing toward ${safeTopic.slice(0, 40)}, high-contrast dramatic rim lighting, vivid complementary orange and teal palette, clean upper-left safe zone for 3 bold yellow words "${safeTopic.slice(0, 18).toUpperCase()}". ${style.styleInstruction}`;
+  const satoriHeadline = `BÍ QUYẾT *${safeTopic.slice(0, 18).toUpperCase()}*`;
+  const thumbnailPrompt = `Formula 1 (Reaction Face + Curiosity Gap) · Style [${niche.thumbnailStyle.toUpperCase()} / Accent ${niche.thumbnailAccent}]: Tight medium close-up of Main Host (45% of frame) with expressive delighted look pointing toward ${safeTopic.slice(0, 40)}, high-contrast dramatic rim lighting, clean safe zone for Satori headline "${satoriHeadline}". ${style.styleInstruction}`;
+
+  const multiPlatformCaptions = {
+    youtube: {
+      title: seoTitle,
+      chapters: ["00:00 — Mở đầu & Nỗi đau thực tế", "00:05 — Giải pháp & Điểm khác biệt", "00:15 — Cam kết & Ưu đãi hôm nay"],
+    },
+    tiktok: `🔥 ${seoTitle} — Xem hết 25s để không bỏ lỡ ưu đãi từ ${brandLabel}! ${hashtags.join(" ")}`,
+    instagram: `✨ ${safeTopic} sao cho chuẩn chỉnh nhất?\n👉 Cùng khám phá quy trình thực tế tại ${brandLabel} trong 25 giây ngắn gọn!\nBạn ấn tượng nhất ở điểm nào? Bình luận bên dưới nhé! 👇\n${hashtags.join(" ")}`,
+    facebook: `Nhiều anh/chị hỏi ${brandLabel} về ${safeTopic}. Video ngắn 25 giây dưới đây tóm gọn toàn bộ trải nghiệm thực tế và cam kết chuẩn chỉnh nhất bên mình. Mời cả nhà cùng xem và nhắn ngay khi cần tư vấn nhé! ❤️`,
+  };
 
   const fullVoiceoverVi = scenes.map((s) => s.voiceVi).join(" ");
   const expandedEnginePrompt = [
+    `[NICHE CHANNEL]: ${niche.icon} ${niche.name} (${niche.slug}) — Tone: ${niche.tone}`,
     `[STYLE PRESET]: ${style.name} (${style.id}) — ${style.styleInstruction}`,
+    `[KEYFRAME-FIRST CAST SHEET]: Vẽ Keyframe nhân vật trong bối cảnh trước (tối đa 3 nhân vật ghép ngang trên Cast Sheet xám), dùng Keyframe làm First-Frame cho Video.`,
     `[CHAR LOCK]: ${style.characterDesign}`,
     `[SET LOCK]: Không gian ${brandLabel} đồng nhất xuyên suốt.`,
     `[NEGATIVE]: ${style.negativePrompt}`,
@@ -348,12 +511,15 @@ export function buildFrameWeaverProductionPlan(input: {
   ].join("\n");
 
   return {
+    niche,
     style,
     entities,
     scenes,
     seoTitle,
     hashtags,
+    satoriHeadline,
     thumbnailPrompt,
+    multiPlatformCaptions,
     fullVoiceoverVi,
     expandedEnginePrompt,
   };

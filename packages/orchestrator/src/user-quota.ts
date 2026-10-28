@@ -259,6 +259,19 @@ function ensureDefaultSampleUsers(bizId: string) {
         "3. **6 Công thức Thumbnail**: (1) Reaction Face 45% khung hình, (2) Before/After chia đôi, (3) Contrast/Clash đối lập, (4) Mystery/Reveal ẩn một phần, (5) Stakes Frame cao trào, (6) Number Punch con số khổng lồ.",
       ].join("\n"),
     },
+    {
+      key: "moonreel-studio",
+      name: "Sản Xuất Video Theo Ngách Kênh (Niche-First · Keyframe Cast Sheet · 4-Platform Captions)",
+      grp: "creative",
+      description: "Tích hợp MoonReel Studio: 6 Ngách kênh chuyên biệt (Tài chính, Sự thật thú vị, Đêm khuya, Mẹo AI, Ambient Loop), Keyframe-First Cast Sheet, Satori Thumbnail & Caption 4 nền tảng.",
+      body: [
+        "# Quy Trình Sản Xuất Video Theo Ngách Kênh (MoonReel Studio Core)",
+        "1. **Niche-First Channel Rules**: Tự động áp dụng luật kịch bản, giọng điệu và bảng màu Thumbnail riêng cho từng ngách kênh (`personal-finance`, `did-you-know`, `night-stories`, `ai-tech-tips`, `ambient-loop`, `commercial-brand`).",
+        "2. **Keyframe-First Cast Sheet**: Luôn dựng ảnh Keyframe đưa nhân vật vào bối cảnh trước (nếu có 2-3 nhân vật thì ghép chung lên 1 tấm Cast Sheet nền xám trái-sang-phải), sau đó dùng Keyframe làm First-Frame cho Video để tránh đứng hình chân dung.",
+        "3. **Ambient Loop (`xfade` 2.5s + `-stream_loop`)**: Với ngách nhạc học bài/thư giãn, cố định máy quay (`locked-off static shot`), nối vòng lặp không vết cắt bằng `xfade` smoothstep 2.5s và lặp tới hết file nhạc.",
+        "4. **3-Style Satori Thumbnail (`Boxed` / `Impact` / `Cinematic`) & 4-Platform Captions**: Tự động xuất Caption chuẩn cho YouTube (Chapters + Tags), TikTok, Instagram và Facebook.",
+      ].join("\n"),
+    },
   ];
   for (const sk of fwSkills) {
     const exists = q.get<Row>("SELECT id FROM skill WHERE biz_id = ? AND key = ?", bizId, sk.key);
@@ -2014,9 +2027,9 @@ export async function runUserRagAction(
     meta.videosUsed += 1;
     outputMarkdown = [
       `🎬 **Đã dựng Video AI Đa Phân Cảnh Chuẩn Điện Ảnh: "${fwPlan.seoTitle}"**`,
-      `- **Mã Video**: \`#${job.id.slice(0, 8)}\` · Phong cách: **${fwPlan.style.name}** (\`${fwPlan.style.id}\`) · Định dạng dọc \`9:16 (1080×1920)\` · 5 phân cảnh (\`Narrator-Fit 48kHz Stereo\`)`,
+      `- **Mã Video**: \`#${job.id.slice(0, 8)}\` · Ngách kênh: **${fwPlan.niche.icon} ${fwPlan.niche.name}** · Phong cách: **${fwPlan.style.name}** (\`${fwPlan.style.id}\`) · Định dạng dọc \`9:16 (1080×1920)\``,
       ``,
-      `### 🎨 1. Hồ Sơ Tham Chiếu Thực Thể & Phong Cách (Entity Reference Bible)`,
+      `### 🎨 1. Hồ Sơ Tham Chiếu Thực Thể & Keyframe Cast Sheet`,
       ...fwPlan.entities.map((e) => `- **${e.name}** (\`${e.entityType}\`): ${e.description}`),
       ``,
       `### 🎞️ 2. Kịch Bản 5 Cảnh Đa Góc Máy (\`ROOT\` · \`CONTINUATION\` · \`INSERT [EDIT←2]\`)`,
@@ -2025,14 +2038,17 @@ export async function runUserRagAction(
           `**${s.code}** (\`${s.timeRange}\` · Cắt khớp giọng đọc \`${s.cutDurationSec}s\` · Chữ nổi: \`[${s.overlayStyle.toUpperCase()}] ${s.overlayText}\`)\n` +
           `- 🎙️ **Voice (tiếng Việt)**: _"${s.voiceVi}"_\n` +
           `- 🎥 **Camera (Câu độc lập)**: \`${s.cameraSentence}\`\n` +
-          `- 🖼️ **Nối khung hình**: ${s.startFrame} ➔ ${s.endFrame}\n` +
+          `- 🖼️ **Keyframe ➔ Nối khung hình**: ${s.startFrame} ➔ ${s.endFrame}\n` +
           `- 🔊 **3 Lớp Âm thanh**: \`${s.audioLayers}\``,
       ),
       ``,
-      `### 🚀 3. Bộ SEO YouTube Shorts / TikTok & Thumbnail CTR Cao`,
-      `- **Tiêu đề Hook (<65 ký tự)**: **${fwPlan.seoTitle}**`,
-      `- **Hashtags**: \`${fwPlan.hashtags.join(" ")}\``,
-      `- **Prompt Thumbnail (6 Công thức)**: \`${fwPlan.thumbnailPrompt}\``,
+      `### 🚀 3. Bộ Caption Đa Nền Tảng & Satori Thumbnail (${fwPlan.niche.thumbnailStyle.toUpperCase()})`,
+      `- **Tiêu đề YouTube / Shorts (<65 ký tự)**: **${fwPlan.seoTitle}**`,
+      `- **Chữ nổi Thumbnail (Satori \`${fwPlan.niche.thumbnailStyle}\` · Màu nhấn \`${fwPlan.niche.thumbnailAccent}\`)**: \`${fwPlan.satoriHeadline}\``,
+      `- **Prompt Thumbnail**: \`${fwPlan.thumbnailPrompt}\``,
+      `- **Caption TikTok**: ${fwPlan.multiPlatformCaptions.tiktok}`,
+      `- **Caption Facebook**: ${fwPlan.multiPlatformCaptions.facebook}`,
+      `- **Caption Instagram**: ${fwPlan.multiPlatformCaptions.instagram.replace(/\n/g, " · ")}`,
     ].filter(Boolean).join("\n\n");
   } else {
     // zalo_sale mode: Personal Zalo & Messenger CRM response + POS order readiness

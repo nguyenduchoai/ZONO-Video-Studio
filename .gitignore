@@ -14,6 +14,10 @@ services/zl-crm/.env
 data/*
 !data/.gitkeep
 services/zl-crm/data/
+services/muse2api/.env
+services/muse2api/.venv/
+services/muse2api/data/*
+!services/muse2api/data/accounts.example.json
 
 # Machine-local tooling
 tools/video/.venv/
