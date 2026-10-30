@@ -333,9 +333,24 @@ export function coreRoutes(app: FastifyInstance) {
         product: z.string().optional(),
         brandName: z.string().optional(),
         voiceName: z.string().optional(),
+        audioMode: z.enum(["voiceover", "keep_audio"]).optional(),
+        aspectRatio: z.enum(["9:16", "16:9"]).optional(),
         editStyle: z.enum(["dynamic", "smooth", "clean"]).optional(),
         renderMp4: z.boolean().optional(),
         useClaude: z.boolean().optional(),
+        customScenes: z
+          .array(
+            z.object({
+              sceneNumber: z.number().int().min(1),
+              newVoiceover: z.string(),
+              newOnScreenText: z.string(),
+              zoom: z.string().optional(),
+              rawSourceIndex: z.number().int().min(0).optional(),
+              rawStartSec: z.number().min(0).optional(),
+              rawEndSec: z.number().min(0).optional(),
+            }),
+          )
+          .optional(),
       })
       .parse(body);
     const result = await produceFromDecodedBlueprint({
@@ -346,9 +361,12 @@ export function coreRoutes(app: FastifyInstance) {
       product: p.product,
       brandName: p.brandName,
       voiceName: p.voiceName,
+      audioMode: p.audioMode,
+      aspectRatio: p.aspectRatio,
       editStyle: p.editStyle,
       renderMp4: p.renderMp4 ?? false,
       useClaude: p.useClaude ?? false,
+      customScenes: p.customScenes,
     });
     return { ok: true, result };
   });

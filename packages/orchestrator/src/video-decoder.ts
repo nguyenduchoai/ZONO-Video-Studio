@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
 import { z } from "zod";
@@ -199,10 +200,93 @@ function ensurePublicUploadCopy(srcPath: string, prefix: string): { publicPath: 
     return { publicPath: srcPath, publicUrl: `/v1/uploads/${encodeURIComponent(fileName)}` };
   }
   const ext = srcPath.toLowerCase().endsWith(".png") ? ".png" : ".mp4";
-  const safeName = `${prefix}_${Date.now()}${ext}`;
+  const st = existsSync(srcPath) ? statSync(srcPath) : null;
+  const sig = st ? createHash("sha1").update(`${srcPath}:${st.size}:${Math.floor(st.mtimeMs)}`).digest("hex").slice(0, 10) : String(Date.now());
+  const safeName = `${prefix}_${sig}${ext}`;
   const dest = join(uploadsDir, safeName);
-  copyFileSync(srcPath, dest);
+  if (!existsSync(dest)) copyFileSync(srcPath, dest);
   return { publicPath: dest, publicUrl: `/v1/uploads/${encodeURIComponent(safeName)}` };
+}
+
+function fileSignature(filePath: string): string {
+  try {
+    const st = statSync(filePath);
+    return createHash("sha1")
+      .update(`${resolve(filePath)}:${st.size}:${Math.floor(st.mtimeMs)}`)
+      .digest("hex")
+      .slice(0, 16);
+  } catch {
+    return createHash("sha1").update(filePath).digest("hex").slice(0, 16);
+  }
+}
+
+async function analyzeVideosWithCache(
+  bin: string,
+  videoPaths: string[],
+): Promise<{ sources: SourceInfo[]; sheets: string[] } | null> {
+  const cacheRoot = resolve("data/creative/decoded/_cache");
+  const sig = createHash("sha1")
+    .update(videoPaths.map((p) => `${p}:${fileSignature(p)}`).join("|"))
+    .digest("hex")
+    .slice(0, 18);
+  const cacheDir = join(cacheRoot, `an_${sig}`);
+  const metaFile = join(cacheDir, "cached_analysis.json");
+
+  if (existsSync(metaFile)) {
+    try {
+      const parsed = JSON.parse(readFileSync(metaFile, "utf8"));
+      if (parsed?.sources?.length) return parsed;
+    } catch {
+      // recompute
+    }
+  }
+
+  mkdirSync(cacheDir, { recursive: true });
+  const anRun = await runProcess(bin, [join(TOOLS_DIR, "pro_edit.py"), "analyze", cacheDir, ...videoPaths], {
+    timeoutMs: 120_000,
+  });
+  const anJson = jsonLine(anRun.out);
+  if (anRun.code === 0 && anJson?.sources?.length) {
+    const payload = { sources: anJson.sources as SourceInfo[], sheets: (anJson.sheets ?? []) as string[] };
+    writeFileSync(metaFile, JSON.stringify(payload));
+    return payload;
+  }
+  return null;
+}
+
+async function transcribeWordsWithCache(bin: string, videoPath: string): Promise<Word[]> {
+  const cacheRoot = resolve("data/creative/decoded/_cache");
+  mkdirSync(cacheRoot, { recursive: true });
+  const wordsFile = join(cacheRoot, `words_${fileSignature(videoPath)}.json`);
+  if (existsSync(wordsFile)) {
+    try {
+      const parsed = JSON.parse(readFileSync(wordsFile, "utf8")) as { file: string; words: Word[] }[];
+      if (Array.isArray(parsed)) return parsed[0]?.words ?? [];
+    } catch {
+      // recompute
+    }
+  }
+  const wRun = await runProcess(bin, [join(TOOLS_DIR, "pro_edit.py"), "words", wordsFile, videoPath], {
+    timeoutMs: 90_000,
+  });
+  if (wRun.code === 0 && existsSync(wordsFile)) {
+    const parsed = JSON.parse(readFileSync(wordsFile, "utf8")) as { file: string; words: Word[] }[];
+    return parsed[0]?.words ?? [];
+  }
+  return [];
+}
+
+const voiceCacheMem = new Map<string, { mp3: string; duration: number }>();
+async function cachedVoiceOver(opts: { text: string; voice: string; rate: number }): Promise<{ mp3: string; duration: number }> {
+  const key = createHash("sha1")
+    .update(`${opts.voice}|${opts.rate}|${opts.text.trim()}`)
+    .digest("hex")
+    .slice(0, 20);
+  const hit = voiceCacheMem.get(key);
+  if (hit && existsSync(videoAiFile(hit.mp3))) return hit;
+  const res = await voiceOver(opts);
+  voiceCacheMem.set(key, res);
+  return res;
 }
 
 /**
@@ -227,22 +311,15 @@ export async function decodeVideoBlueprint(opts: {
   }
 
   const decodeId = `dec_${Date.now()}`;
-  const workdir = resolve("data/creative/decoded", decodeId);
-  mkdirSync(workdir, { recursive: true });
-
   const bin = toolsPython();
   if (!existsSync(bin)) {
     throw new AppError("NOT_INSTALLED", "Chưa tìm thấy môi trường Python xử lý video (tools/video/.venv)");
   }
 
-  // 1. Chạy pro_edit.py analyze để tách phân cảnh (shots) + tạo ảnh Contact Sheet bằng FFmpeg
-  const analysisDir = join(workdir, "analysis");
-  const anRun = await runProcess(bin, [join(TOOLS_DIR, "pro_edit.py"), "analyze", analysisDir, resolvedPath], {
-    timeoutMs: 120_000,
-  });
-  const anJson = jsonLine(anRun.out);
-  if (anRun.code !== 0 || !anJson || !anJson.sources?.length) {
-    throw new AppError("DECODE_FAILED", `Không thể phân tích kỹ thuật video: ${anJson?.error ?? anRun.out.slice(-300)}`);
+  // 1. Chạy pro_edit.py analyze (có Cache SHA1 theo file) để tách phân cảnh (shots) + tạo ảnh Contact Sheet bằng FFmpeg
+  const anJson = await analyzeVideosWithCache(bin, [resolvedPath]);
+  if (!anJson || !anJson.sources?.length) {
+    throw new AppError("DECODE_FAILED", "Không thể phân tích kỹ thuật video mẫu.");
   }
 
   const srcInfo = anJson.sources[0] as SourceInfo;
@@ -250,12 +327,12 @@ export async function decodeVideoBlueprint(opts: {
   let contactSheetUrl: string | null = null;
   let contactSheetPath: string | null = null;
   if (rawSheets[0] && existsSync(rawSheets[0])) {
-    const copied = ensurePublicUploadCopy(rawSheets[0], `sheet_${decodeId}`);
+    const copied = ensurePublicUploadCopy(rawSheets[0], "sheet");
     contactSheetPath = copied.publicPath;
     contactSheetUrl = copied.publicUrl;
   }
 
-  const { publicUrl: sourceVideoUrl } = ensurePublicUploadCopy(resolvedPath, `ref_${decodeId}`);
+  const { publicUrl: sourceVideoUrl } = ensurePublicUploadCopy(resolvedPath, "ref");
 
   // Chuẩn hóa danh sách phân cảnh (nếu video quá ngắn chỉ có 1 shot dài, tự chia thành 3-5 nhịp phân tích)
   let rawShots = srcInfo.shots && srcInfo.shots.length > 0 ? [...srcInfo.shots] : [{ id: "0.0", start: 0, end: srcInfo.duration }];
@@ -269,18 +346,11 @@ export async function decodeVideoBlueprint(opts: {
     }));
   }
 
-  // 2. Bóc lời thoại bằng Faster-Whisper Local (nếu bật useWhisper và video có âm thanh)
+  // 2. Bóc lời thoại bằng Faster-Whisper Local (có Cache SHA1 theo file)
   let words: Word[] = [];
   if (opts.useWhisper !== false && srcInfo.hasAudio) {
     try {
-      const wordsOut = join(workdir, "words.json");
-      const wRun = await runProcess(bin, [join(TOOLS_DIR, "pro_edit.py"), "words", wordsOut, resolvedPath], {
-        timeoutMs: 90_000,
-      });
-      if (wRun.code === 0 && existsSync(wordsOut)) {
-        const parsed = JSON.parse(readFileSync(wordsOut, "utf8")) as { file: string; words: Word[] }[];
-        words = parsed[0]?.words ?? [];
-      }
+      words = await transcribeWordsWithCache(bin, resolvedPath);
     } catch (e) {
       logger.warn("video_decode.whisper_skipped", { error: String(e).slice(0, 200) });
     }
@@ -465,9 +535,20 @@ export async function produceFromDecodedBlueprint(opts: {
   product?: string;
   brandName?: string;
   voiceName?: string;
+  audioMode?: "voiceover" | "keep_audio";
+  aspectRatio?: "9:16" | "16:9";
   editStyle?: EditStyle;
   renderMp4?: boolean;
   useClaude?: boolean;
+  customScenes?: {
+    sceneNumber: number;
+    newVoiceover: string;
+    newOnScreenText: string;
+    zoom?: string;
+    rawSourceIndex?: number;
+    rawStartSec?: number;
+    rawEndSec?: number;
+  }[];
 }): Promise<ClonedVideoProductionResult> {
   const prodId = `clone_${Date.now()}`;
   const workdir = resolve("data/creative/decoded", prodId);
@@ -489,11 +570,7 @@ export async function produceFromDecodedBlueprint(opts: {
   }
 
   const bin = toolsPython();
-  const analysisDir = join(workdir, "raw_analysis");
-  const anRun = await runProcess(bin, [join(TOOLS_DIR, "pro_edit.py"), "analyze", analysisDir, ...finalRawPaths], {
-    timeoutMs: 120_000,
-  });
-  const anJson = jsonLine(anRun.out);
+  const anJson = await analyzeVideosWithCache(bin, finalRawPaths);
   const sources: SourceInfo[] = anJson?.sources?.length
     ? (anJson.sources as SourceInfo[])
     : finalRawPaths.map((p, idx) => ({
@@ -510,6 +587,8 @@ export async function produceFromDecodedBlueprint(opts: {
   const brand = opts.brandName?.trim() || "ZONO";
   const product = opts.product?.trim() || opts.topic.trim();
   const style: EditStyle = opts.editStyle ?? opts.blueprint.recommendedEditStyle ?? "dynamic";
+  const audioMode = opts.audioMode ?? "voiceover";
+  const aspect = opts.aspectRatio ?? "9:16";
   const targetShots = opts.blueprint.decodedShots;
 
   // Xây dựng bản kế hoạch mặc định bám sát từng cảnh của Video Mẫu đã Decode
@@ -559,10 +638,10 @@ export async function produceFromDecodedBlueprint(opts: {
   });
 
   let clonePlan = buildDefaultClonePlan();
-  let providerUsed = "local_template_matcher";
+  let providerUsed = opts.customScenes?.length ? "user_edited_timeline" : "local_template_matcher";
 
   const prov = effectiveProvider(opts.bizId);
-  if (opts.useClaude !== false && prov.ready && prov.provider !== "sandbox") {
+  if (!opts.customScenes?.length && opts.useClaude !== false && prov.ready && prov.provider !== "sandbox") {
     try {
       const g = await generate({
         bizId: opts.bizId,
@@ -606,24 +685,29 @@ export async function produceFromDecodedBlueprint(opts: {
 
   const outScenes: ClonedProductionScene[] = targetShots.map((dShot, idx) => {
     const cScene = clonePlan.scenes[idx] ?? clonePlan.scenes[clonePlan.scenes.length - 1];
-    const srcIdx = sources[cScene?.rawSourceIndex ?? 0] ? (cScene?.rawSourceIndex ?? 0) : 0;
+    const custom = opts.customScenes?.find((cs) => cs.sceneNumber === idx + 1) ?? opts.customScenes?.[idx];
+    const desiredSrcIdx = custom?.rawSourceIndex ?? cScene?.rawSourceIndex ?? 0;
+    const srcIdx = sources[desiredSrcIdx] ? desiredSrcIdx : 0;
     const srcDur = sources[srcIdx].duration || 15;
-    const startSec = Math.max(0, Math.min(srcDur - 0.8, cScene?.rawStartSec ?? 0));
-    const endSec = Math.max(startSec + 0.8, Math.min(srcDur, cScene?.rawEndSec ?? startSec + dShot.durationSec));
+    const startSec = Math.max(0, Math.min(srcDur - 0.8, custom?.rawStartSec ?? cScene?.rawStartSec ?? 0));
+    const endSec = Math.max(
+      startSec + 0.8,
+      Math.min(srcDur, custom?.rawEndSec ?? cScene?.rawEndSec ?? startSec + dShot.durationSec),
+    );
     return {
       sceneNumber: idx + 1,
       templateTiming: `${dShot.startSec.toFixed(1)}s – ${dShot.endSec.toFixed(1)}s (${dShot.durationSec.toFixed(1)}s)`,
       durationSec: dShot.durationSec,
       originalShotSummary: `${dShot.cameraAngle} · ${dShot.visualDescription}`,
-      newVoiceover: cScene?.newVoiceover ?? `Phân cảnh ${idx + 1} giới thiệu ${product}.`,
-      newOnScreenText: (cScene?.newOnScreenText ?? dShot.onScreenText).slice(0, 60),
+      newVoiceover: (custom?.newVoiceover ?? cScene?.newVoiceover ?? `Phân cảnh ${idx + 1} giới thiệu ${product}.`).trim(),
+      newOnScreenText: (custom?.newOnScreenText ?? cScene?.newOnScreenText ?? dShot.onScreenText).slice(0, 60),
       selectedRawCut: {
         sourceIndex: srcIdx,
         sourceFileName: basename(sources[srcIdx].path),
         startSec: Math.round(startSec * 10) / 10,
         endSec: Math.round(endSec * 10) / 10,
       },
-      zoom: cScene?.zoom ?? dShot.recommendedZoom,
+      zoom: custom?.zoom ?? cScene?.zoom ?? dShot.recommendedZoom,
       transition: cScene?.transition ?? dShot.recommendedTransition,
       directorNote:
         cScene?.directorNote ??
@@ -631,7 +715,7 @@ export async function produceFromDecodedBlueprint(opts: {
     };
   });
 
-  // 3. Nếu renderMp4 !== false, dựng luôn file MP4 thật trên máy Local bằng pro_edit.py render + VieNeu-TTS
+  // 3. Nếu renderMp4 !== false, dựng luôn file MP4 thật trên máy Local bằng pro_edit.py render + VieNeu-TTS (chạy song song & có Cache)
   let renderedVideoUrl: string | null = opts.blueprint.sourceVideoUrl;
   let renderedDurationSec = opts.blueprint.durationSec;
   let renderNotes = `Đã lập bảng phân cảnh học theo Video Mẫu (${outScenes.length} cảnh · ${opts.blueprint.pacingLabel}).`;
@@ -639,13 +723,20 @@ export async function produceFromDecodedBlueprint(opts: {
   if (opts.renderMp4 !== false) {
     try {
       const voiceId = opts.voiceName && VI_VOICES.some((v) => v.id === opts.voiceName) ? opts.voiceName : VI_VOICES[0].id;
-      const voices: { text: string; file: string; duration: number; heard: Word[] }[] = [];
-      for (let i = 0; i < outScenes.length; i++) {
-        const text = outScenes[i].newVoiceover.trim();
-        const vo = await voiceOver({ text, voice: voiceId, rate: style === "dynamic" ? 1.06 : 1.0 });
-        voices.push({ text, file: videoAiFile(vo.mp3), duration: vo.duration, heard: [] });
-      }
+      const rate = style === "dynamic" ? 1.06 : 1.0;
 
+      const voices: { text: string; file: string; duration: number; heard: Word[] }[] =
+        audioMode === "keep_audio"
+          ? []
+          : await Promise.all(
+              outScenes.map(async (s) => {
+                const text = s.newVoiceover.trim();
+                const vo = await cachedVoiceOver({ text, voice: voiceId, rate });
+                return { text, file: videoAiFile(vo.mp3), duration: vo.duration, heard: [] };
+              }),
+            );
+
+      const proEditMode = audioMode === "keep_audio" ? ("speech" as const) : ("voiceover" as const);
       const editPlanInput: EditPlan = sanitizePlan(
         {
           hook: clonePlan.hookTitle.slice(0, 90),
@@ -665,15 +756,15 @@ export async function produceFromDecodedBlueprint(opts: {
             transition: s.transition || "slideleft",
           })),
         },
-        { mode: "voiceover", sources },
+        { mode: proEditMode, sources },
       );
 
       const songs = bgmFiles();
       const music = songs.length ? songs[0] : null;
       const resolvedPlan = resolveEditPlan({
-        mode: "voiceover",
+        mode: proEditMode,
         style,
-        aspect: "9:16",
+        aspect,
         sources,
         plan: editPlanInput,
         voices,
@@ -691,7 +782,9 @@ export async function produceFromDecodedBlueprint(opts: {
         const pub = ensurePublicUploadCopy(finalMp4, `cloned_${prodId}`);
         renderedVideoUrl = pub.publicUrl;
         renderedDurationSec = Math.round((mediaDuration(finalMp4) || resolvedPlan.total) * 10) / 10;
-        renderNotes = `Đã dựng thành công Video MP4 mới (${renderedDurationSec}s) từ ${finalRawPaths.length} video quay sẵn theo đúng công thức của Video Mẫu (${outScenes.length} cảnh · giọng đọc VieNeu-TTS ${voiceId} · chuẩn âm -14 LUFS).`;
+        const audioDesc =
+          audioMode === "keep_audio" ? "giữ âm thanh gốc + nhạc nền nhẹ" : `giọng đọc VieNeu-TTS (${voiceId})`;
+        renderNotes = `Đã dựng thành công Video MP4 mới (${renderedDurationSec}s · ${aspect}) từ ${finalRawPaths.length} video quay sẵn theo đúng công thức của Video Mẫu (${outScenes.length} cảnh · ${audioDesc} · chuẩn âm -14 LUFS).`;
       }
     } catch (e) {
       logger.warn("video_decode.render_fallback", { error: String(e).slice(0, 250) });
