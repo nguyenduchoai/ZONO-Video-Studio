@@ -19,7 +19,7 @@ import {
   type Provider,
   type Tier,
 } from "@dotaka/llm-gateway";
-import { AppError, nowIso } from "@dotaka/shared";
+import { AppError, nowIso, sha256 } from "@dotaka/shared";
 import { DnaDraft, blankDna, documentText, dnaSourceText } from "./dna-intake.ts";
 import { startVideoJob } from "./creative.ts";
 import { createPostImage } from "./post-image.ts";
@@ -109,6 +109,24 @@ function getManagedUsersStore(bizId: string): Record<string, UserQuotaMeta> {
 function saveManagedUsersStore(bizId: string, map: Record<string, UserQuotaMeta>) {
   const cur = bizSettings(bizId) as any;
   update("biz", bizId, { settings: { ...cur, userQuotas: map } });
+}
+
+/** Kỹ năng dựng sẵn trong Core (không đọc từ file): điền đủ các cột bắt buộc của bảng skill. */
+function insertBuiltinSkill(bizId: string, s: { key: string; name: string; grp: string; description: string; body: string }) {
+  insert("skill", {
+    biz_id: bizId,
+    key: s.key,
+    kind: "skill",
+    name: s.name,
+    grp: s.grp,
+    description: s.description,
+    body: s.body,
+    source_path: `builtin:${s.key}`,
+    hash: sha256(s.body + JSON.stringify([])),
+    size: s.body.length,
+    version: 1,
+    status: "active",
+  });
 }
 
 function ensureDefaultSampleUsers(bizId: string) {
@@ -207,16 +225,12 @@ function ensureDefaultSampleUsers(bizId: string) {
       "5. **Tách bạch `Voice (tiếng Việt)` & `Prompt video`**: Lời đọc tiếng Việt được tách riêng để tổng hợp âm thanh `VieNeu-TTS 48kHz`, trong khi `Prompt video` tự động bung toàn bộ `[STYLE LOCK] + [CHAR LOCK] + [SET LOCK]` vào từng cảnh.",
       "6. **Auto-Refusal Safe Rewrite**: Tự động phát hiện từ khóa nhạy cảm/bị từ chối và viết lại sang mô tả thương mại an toàn tương đương mà không làm đứt chuỗi dựng video.",
     ].join("\n");
-    insert("skill", {
-      biz_id: bizId,
+    insertBuiltinSkill(bizId, {
       key: "scene-lock-video",
       name: "Kịch Bản Video Khóa Đồng Nhất (STYLE/CHAR/SET LOCK)",
       grp: "creative",
       description: "Giữ đồng nhất 100% nhân vật, trang phục, bối cảnh giữa các cảnh video (5s/cảnh), tự nối Frame cuối cảnh trước sang Frame đầu cảnh sau và tách Voice tiếng Việt.",
       body: sceneLockBody,
-      size: sceneLockBody.length,
-      version: 1,
-      status: "active",
     });
   }
 
@@ -275,19 +289,7 @@ function ensureDefaultSampleUsers(bizId: string) {
   ];
   for (const sk of fwSkills) {
     const exists = q.get<Row>("SELECT id FROM skill WHERE biz_id = ? AND key = ?", bizId, sk.key);
-    if (!exists) {
-      insert("skill", {
-        biz_id: bizId,
-        key: sk.key,
-        name: sk.name,
-        grp: sk.grp,
-        description: sk.description,
-        body: sk.body,
-        size: sk.body.length,
-        version: 1,
-        status: "active",
-      });
-    }
+    if (!exists) insertBuiltinSkill(bizId, sk);
   }
 
   // Đảm bảo mỗi phân hệ có sẵn ĐÚNG 1 Sample (Ví dụ mẫu) để người dùng mở lên là thấy cách hoạt động ngay
@@ -445,12 +447,11 @@ function ensureDefaultSampleUsers(bizId: string) {
           channels: ["tiktok", "facebook"],
           video: { voice: "Ngọc Huyền", aspect: "9:16", animTemplate: "ecommerce-promo", animStyle: "2d-mascot" },
         },
-        output: {
+        result: {
           videoUrl: "/muse/HatchMaking.mp4",
           durationSec: 25,
           resolution: "1080x1920",
         },
-        created_by: "sample_seed",
       });
     }
 
