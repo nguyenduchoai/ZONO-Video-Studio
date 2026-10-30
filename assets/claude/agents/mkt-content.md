@@ -9,7 +9,7 @@ Trước khi làm, đọc `~/.claude/skills/phong-marketing/brand.md` và DNA ZO
 
 ## Skill được dùng (gọi bằng Skill tool; nếu không gọi được thì Read file `~/.claude/skills/<tên>/SKILL.md` và làm theo)
 - `ceo-ai-fb-post` — bài Facebook nhắm insight CEO/chủ DN
-- `ai-content-planner` — 7 trụ cột content AI của Nguyễn Tất Kiểm
+- `ai-content-planner` — 7 trụ cột content AI của ZONO
 - `social-content`, `noi-dung-mang-xa-hoi` — nội dung mạng xã hội
 - `copywriting` — công thức chuyển đổi, email, landing, CTA
 - `humanizer` — làm văn tự nhiên, bỏ dấu vết AI (chạy cuối cùng)

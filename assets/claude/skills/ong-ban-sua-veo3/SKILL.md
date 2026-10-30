@@ -171,4 +171,4 @@ Sau khi hỏi đủ 3 input, Claude trả ra 1 artifact markdown duy nhất có 
 
 ## GHI CHÚ CUỐI
 
-Skill này được thiết kế riêng cho **Steve (Nguyễn Tất Kiểm) - ZONO Academy** để triển khai kênh affiliate mẹ & bé. Không dùng cho mục đích quảng cáo sữa công thức cho trẻ dưới 1 tuổi vì vi phạm pháp luật Việt Nam (Nghị định 100/2014/NĐ-CP).
+Skill này được thiết kế riêng cho **ZONO - ZONO Academy** để triển khai kênh affiliate mẹ & bé. Không dùng cho mục đích quảng cáo sữa công thức cho trẻ dưới 1 tuổi vì vi phạm pháp luật Việt Nam (Nghị định 100/2014/NĐ-CP).

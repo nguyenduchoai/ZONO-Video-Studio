@@ -21,7 +21,7 @@ import { applyWorkspace } from "./workspace.ts";
 export const ZONO_DNA: Dna = {
   company: {
     name: "ZONO Group", brand: "ZONO Academy", website: "zono.vn", industry: "Đào tạo kinh doanh & ứng dụng AI thực chiến",
-    ceo: "Nguyễn Tất Kiểm", scale: "320.000+ học viên (⚠️ chờ chốt số công bố) · thành lập 2016",
+    ceo: "ZONO", scale: "320.000+ học viên (⚠️ chờ chốt số công bố) · thành lập 2016",
     legal: "CÔNG TY TNHH CÔNG NGHỆ VÀ GIÁO DỤC ZONO", hotline: "0989.493.588", slogan: "Thắp lửa hoài bão",
   },
   positioning: "Hệ sinh thái đào tạo và ứng dụng AI thực chiến cho chủ doanh nghiệp và người kinh doanh Việt, biến AI thành doanh thu và hệ thống vận hành thật (⚠️ bản nháp, chờ chốt).",
@@ -33,15 +33,15 @@ export const ZONO_DNA: Dna = {
   ],
   products: [
     { key: "ai-business-system", name: "AI Business System", aliases: ["ABS", "AI Business", "khóa CEO", "chương trình 3 ngày"], summary: "Chương trình offline giúp CEO đưa AI vào vận hành, marketing, bán hàng", format: "Offline", price: 12_000_000, audience: "Chủ DN, CEO, founder", link: "aibusinesssystem.zono.vn", verified: true },
-    { key: "scale-camp", name: "Scale Camp", aliases: ["scale camp", "scale"], summary: "Chương trình tăng trưởng, scale doanh nghiệp", format: "Offline", price: 10_000_000, audience: "Chủ DN đang muốn mở rộng", link: "scalecamp.nguyentatkiem.com", verified: true },
+    { key: "scale-camp", name: "Scale Camp", aliases: ["scale camp", "scale"], summary: "Chương trình tăng trưởng, scale doanh nghiệp", format: "Offline", price: 10_000_000, audience: "Chủ DN đang muốn mở rộng", link: "scalecamp.zono.vn", verified: true },
     { key: "sieu-tro-ly-nhan-hieu", name: "Siêu Trợ Lý Nhân Hiệu", aliases: ["trợ lý nhân hiệu", "nhân hiệu"], summary: "Xây trợ lý AI cho nhân hiệu cá nhân", format: "Khóa học", price: 5_000_000, audience: "Người xây personal brand", verified: true },
-    { key: "ai-plus", name: "AI Plus (miễn phí 5 buổi)", aliases: ["AI Plus", "miễn phí", "5 buổi", "khóa free"], summary: "Khóa AI miễn phí dẫn dắt cho người mới", format: "Online 5 buổi", price: 0, audience: "Người mới, top phễu", link: "nguyentatkiem.com.vn/aiplusntk", verified: true },
+    { key: "ai-plus", name: "AI Plus (miễn phí 5 buổi)", aliases: ["AI Plus", "miễn phí", "5 buổi", "khóa free"], summary: "Khóa AI miễn phí dẫn dắt cho người mới", format: "Online 5 buổi", price: 0, audience: "Người mới, top phễu", link: "zono.vn/aiplus", verified: true },
     { key: "ai-super-traffic", name: "AI Super Traffic", aliases: ["super traffic", "traffic"], summary: "Kéo traffic đa nền tảng bằng AI", format: "Khóa học", price: null, audience: "Người làm content, traffic", link: "aisupertraffic.zono.vn", verified: false },
     { key: "ai-affiliate-systems", name: "AI Affiliate Systems", aliases: ["affiliate"], summary: "Hệ thống kiếm tiền affiliate bằng AI", format: "Khóa học", price: null, audience: "Người làm affiliate", link: "affiliate.zono.vn", verified: false },
     { key: "ai-super-builder", name: "AI Super Builder", aliases: ["super builder", "builder"], summary: "Dựng sản phẩm, website, app bằng AI", format: "Khóa học", price: null, audience: "Builder, người tự làm sản phẩm", link: "aisuperbuilder.zono.vn", verified: false },
     { key: "ai-scale-up-coaching", name: "AI Scale Up Coaching", aliases: ["coaching"], summary: "Coaching đồng hành ứng dụng AI", format: "Coaching", price: null, audience: "Chủ DN", verified: false },
-    { key: "ai-for-ceo", name: "AI For CEO", aliases: ["AI for CEO"], summary: "Đào tạo AI cho CEO", format: "Khóa học", price: null, audience: "CEO", link: "aiforceo.nguyentatkiem.com", verified: false },
-    { key: "scale-up-business", name: "Scale Up Business", aliases: ["cộng đồng 52 tuần", "scale up"], summary: "Cộng đồng 52 tuần về scale doanh nghiệp", format: "Cộng đồng 52 tuần", price: null, audience: "CEO/founder doanh thu 3 đến 100 tỷ", link: "scaleup.nguyentatkiem.com.vn", verified: false },
+    { key: "ai-for-ceo", name: "AI For CEO", aliases: ["AI for CEO"], summary: "Đào tạo AI cho CEO", format: "Khóa học", price: null, audience: "CEO", link: "aiforceo.zono.vn", verified: false },
+    { key: "scale-up-business", name: "Scale Up Business", aliases: ["cộng đồng 52 tuần", "scale up"], summary: "Cộng đồng 52 tuần về scale doanh nghiệp", format: "Cộng đồng 52 tuần", price: null, audience: "CEO/founder doanh thu 3 đến 100 tỷ", link: "scaleup.zono.vn", verified: false },
     { key: "autovis", name: "Autovis.ai", aliases: ["autovis", "video AI"], summary: "Tạo video AI: AI KOL, AI review, Viral Dance Copy", format: "SaaS", price: null, audience: "Content creator, affiliate, người bán hàng", link: "autovis.ai", verified: false },
     { key: "remin", name: "Remin.ai", aliases: ["remin", "ghi âm AI"], summary: "Ghi âm AI, chuyển giọng nói thành văn bản và insight", format: "SaaS", price: null, audience: "Người đi làm, đội họp nhiều", link: "remin.ai", verified: false },
   ],
@@ -63,7 +63,7 @@ export const ZONO_DNA: Dna = {
     "Danh sách đối thủ trực tiếp",
     "Thứ tự ưu tiên các phân khúc khách hàng",
   ],
-  channels: ["Facebook (ZONO Academy + nhân hiệu Nguyễn Tất Kiểm)", "TikTok", "YouTube", "Zalo OA", "Website zono.vn"],
+  channels: ["Facebook (ZONO Academy + nhân hiệu ZONO)", "TikTok", "YouTube", "Zalo OA", "Website zono.vn"],
   goals: { yearTarget: 0, currentRunRate: 0, painPoint: "Làm việc như trâu mà doanh nghiệp đứng im", competitors: [] },
 };
 
@@ -74,7 +74,7 @@ function knowledgeDocs(): { title: string; kind: string; source: string; tags: s
     ["khach-hang.md", "Chân dung khách hàng ZONO", "doc", ["Khách hàng"]],
     ["giong-thuong-hieu.md", "Giọng thương hiệu ZONO / Minh Trí", "doc", ["Giọng", "Brand"]],
     ["bang-chung-doi-thu.md", "Bằng chứng, số liệu & đối thủ", "doc", ["Số liệu", "Social proof"]],
-    ["ceo-nhan-hieu.md", "CEO & nhân hiệu Nguyễn Tất Kiểm", "doc", ["CEO", "Nhân hiệu"]],
+    ["ceo-nhan-hieu.md", "CEO & nhân hiệu ZONO", "doc", ["CEO", "Nhân hiệu"]],
     ["he-sinh-thai.md", "Hệ sinh thái ZONO", "doc", ["Hệ sinh thái"]],
   ] as const;
   type Doc = { title: string; kind: string; source: string; tags: string[]; body: string };
@@ -134,7 +134,7 @@ export async function seed(opts: { reset?: boolean; blank?: boolean; fresh?: boo
   const biz = insert("biz", { name: opts.fresh ? process.env.BUSINESS_NAME || "Doanh nghiệp của tôi" : "ZONO Group", timezone: "Asia/Ho_Chi_Minh", currency: "VND", settings: { ...DEFAULT_SETTINGS, llm: { ...DEFAULT_LLM, provider: "sandbox" } } });
   const B = biz.id;
   const users = opts.fresh ? [{ name: "Chủ doanh nghiệp", email: process.env.OWNER_EMAIL || "owner@example.com", role: "owner" }] : [
-    { name: "Nguyễn Tất Kiểm (Steve)", email: "ceo@zonogroup.vn", role: "owner" },
+    { name: "ZONO Founder", email: "ceo@zonogroup.vn", role: "owner" },
     { name: "Phòng Marketing ZONO", email: "mkt@zonogroup.vn", role: "buyer" },
     { name: "Đội Sales tư vấn", email: "sales@zonogroup.vn", role: "sales" },
     { name: "Kế toán", email: "ketoan@zonogroup.vn", role: "viewer" },
@@ -168,7 +168,7 @@ export async function seed(opts: { reset?: boolean; blank?: boolean; fresh?: boo
   }
   const channels: Record<string, Row> = {};
   // fresh (doanh nghiệp mới): không tạo sẵn kênh của ZONO — chủ doanh nghiệp tự thêm ở "Kênh đăng".
-  for (const [platform, kind, name] of opts.fresh ? [] : [["facebook", "page", "ZONO Academy"], ["instagram", "business", "@zonoacademy"], ["tiktok", "business", "@nguyentatkiem"], ["zalo", "oa", "Zalo OA ZONO Academy"], ["website", "blog", "zono.vn/blog"]] as const) {
+  for (const [platform, kind, name] of opts.fresh ? [] : [["facebook", "page", "ZONO Academy"], ["instagram", "business", "@zonoacademy"], ["tiktok", "business", "@zono"], ["zalo", "oa", "Zalo OA ZONO Academy"], ["website", "blog", "zono.vn/blog"]] as const) {
     channels[platform] = insert("channel", { biz_id: B, platform, kind, name, external_id: `ch_${platform}`, connection_id: conns[platform === "website" ? "cms" : platform === "facebook" || platform === "instagram" ? "meta" : platform]?.id ?? null, enabled: 1 });
   }
 

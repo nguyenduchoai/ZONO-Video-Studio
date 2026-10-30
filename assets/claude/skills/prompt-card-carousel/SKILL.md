@@ -1,13 +1,13 @@
 ---
 name: prompt-card-carousel
 description: >-
-  Tạo bộ ảnh carousel "thẻ prompt AI" theo phong cách thương hiệu Nguyễn Tất Kiểm / Scale Mentor —
+  Tạo bộ ảnh carousel "thẻ prompt AI" theo phong cách thương hiệu ZONO / Scale Mentor —
   1 ảnh bìa hook (nền navy, viền vàng, chữ trắng-vàng xen kẽ) + N ảnh thẻ prompt (nền kem caro,
   badge số đỏ, thanh PROMPT đỏ, nội dung prompt in nghiêng, footer thương hiệu). Render ra file PNG
   1080x1350 (4:5) dùng ngay để đăng Facebook/Instagram/TikTok. DÙNG SKILL NÀY BẤT CỨ KHI NÀO người dùng
   muốn: tạo content ảnh prompt, content ảnh text prompt, bộ thẻ prompt, carousel prompt AI, ảnh chia sẻ
   prompt, infographic prompt, "N prompts giúp...", biến danh sách prompt thành ảnh đăng bài, tạo ảnh
-  prompt theo mẫu Nguyễn Tất Kiểm / Minh Trí / Scale Mentor. Kích hoạt khi nghe "tạo ảnh prompt",
+  prompt theo mẫu ZONO / Minh Trí / Scale Mentor. Kích hoạt khi nghe "tạo ảnh prompt",
   "content ảnh prompt", "thẻ prompt", "carousel prompt", "5 prompts về [chủ đề]", "ảnh prompt AI",
   "làm ảnh chia sẻ prompt", "infographic prompt", "bộ ảnh prompt đăng bài", kể cả khi người dùng chỉ
   dán 1 danh sách prompt và nói "làm thành ảnh giúp anh".
@@ -16,7 +16,7 @@ description: >-
 # Prompt Card Carousel
 
 Tạo bộ ảnh carousel chia sẻ prompt AI, render thẳng ra PNG sắc nét theo đúng bộ nhận diện
-Nguyễn Tất Kiểm / Scale Mentor (đỏ – vàng – kem). Đầu vào là một chủ đề + tool + số lượng prompt,
+ZONO / Scale Mentor (đỏ – vàng – kem). Đầu vào là một chủ đề + tool + số lượng prompt,
 HOẶC một danh sách prompt người dùng đưa sẵn. Đầu ra là N+1 file PNG 1080×1350 sẵn sàng đăng.
 
 ## Khi nào dùng
@@ -81,7 +81,7 @@ Tạo file JSON theo schema dưới. Xem `reference/slides.example.json` để c
   "config": {
     "width": 1080, "height": 1350, "scale": 2,
     "theme": "ntk",
-    "brand_name": "NGUYEN TAT KIEM.COM",
+    "brand_name": "ZONO.VN",
     "brand_tagline": "SCALE MENTOR"
   },
   "slides": [

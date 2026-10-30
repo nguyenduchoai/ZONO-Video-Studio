@@ -5,7 +5,7 @@
 ## 1. Thương hiệu
 - Tên thương hiệu đào tạo: ZONO Academy
 - Website: zono.vn
-- Thương hiệu cá nhân người sáng lập: Minh Trí Kinh Doanh / Mentor Nguyễn Tất Kiểm (nguyentatkiem.com)
+- Thương hiệu cá nhân người sáng lập: Minh Trí Kinh Doanh / Mentor ZONO (zono.vn)
 - Định vị một câu: nền tảng giáo dục AI và digital marketing thực chiến cho chủ doanh nghiệp Việt Nam.
 
 ## 2. Proof point của thương hiệu (dùng tạo niềm tin ở mở đầu/ xử lý từ chối)

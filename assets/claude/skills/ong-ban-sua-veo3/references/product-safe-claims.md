@@ -141,7 +141,7 @@ Các rủi ro thường gặp khi chạy video sữa công thức:
 
 ## LỜI KHUYÊN CHIẾN LƯỢC
 
-Với Steve (Nguyễn Tất Kiểm - ZONO Academy), để **tối ưu rủi ro vs reach**:
+Với ZONO Academy, để **tối ưu rủi ro vs reach**:
 
 1. **Khởi động kênh bằng sản phẩm an toàn tuyệt đối**:
    - Sữa mẹ bầu (Similac Mom, Enfamama)

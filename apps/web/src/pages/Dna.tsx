@@ -625,7 +625,7 @@ function DnaIntake({ open, onClose, onSaved }: { open: boolean; onClose: () => v
             <div className="space-y-5">
               <Alert tone="info">AI chỉ ghi những gì có trong website / tài liệu. Chỗ chưa chắc được đưa vào “Điều chờ xác nhận”. Soạn xong Sếp được xem bản nháp trước khi lưu.</Alert>
               <Field label="Link website doanh nghiệp" optional hint="AI tự đọc trang chủ, giới thiệu, khoá học / sản phẩm, bảng giá, liên hệ. Dùng một mình hoặc kèm tài liệu bên dưới.">
-                <div className="relative"><Globe className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" aria-hidden /><input className={cx(inputCls, "pl-9")} inputMode="url" placeholder="VD: nguyentatkiem.com" value={website} onChange={(e) => setWebsite(e.target.value)} /></div>
+                <div className="relative"><Globe className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" aria-hidden /><input className={cx(inputCls, "pl-9")} inputMode="url" placeholder="VD: zono.vn" value={website} onChange={(e) => setWebsite(e.target.value)} /></div>
               </Field>
               <Field label="Tài liệu" optional hint="Dán hồ sơ công ty, bảng sản phẩm / giá, chân dung khách hàng, quy định thương hiệu…">
                 <textarea rows={6} className={inputCls} placeholder="Dán nội dung tài liệu vào đây…" value={text} onChange={(e) => setText(e.target.value)} />

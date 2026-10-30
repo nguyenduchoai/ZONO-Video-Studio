@@ -1,10 +1,10 @@
 ---
 name: seo-blog-workflow
 description: |
-  Quy trình viết blog SEO tương tác 10 bước cho Nguyễn Tất Kiểm / Minh Trí Kinh Doanh.
+  Quy trình viết blog SEO tương tác 10 bước cho ZONO / Minh Trí Kinh Doanh.
   Người dùng DÁN TỪ KHÓA, Claude dẫn dắt: phân tích keyword → LSI → 15 tiêu đề → 5 outline → trau chuốt → chấm điểm → viết bài 1800-2500 từ → trau chuốt 2 lần → xuất HTML.
   DỪNG LẠI tại điểm quyết định để người dùng chọn (tiêu đề, outline) trước khi tiếp tục.
-  DÙNG BẤT CỨ KHI NÀO người dùng: nói "viết bài SEO theo quy trình", "SEO workflow", "quy trình viết bài", "viết blog theo bước"; dán từ khóa muốn viết blog nhiều bước; đề cập "phân tích từ khóa rồi viết", "lên outline rồi viết"; nói "bài SEO cho Minh Trí", "blog cho nguyentatkiem"; hoặc chỉ dán từ khóa kèm "viết bài" có dấu hiệu muốn quy trình tương tác.
+  DÙNG BẤT CỨ KHI NÀO người dùng: nói "viết bài SEO theo quy trình", "SEO workflow", "quy trình viết bài", "viết blog theo bước"; dán từ khóa muốn viết blog nhiều bước; đề cập "phân tích từ khóa rồi viết", "lên outline rồi viết"; nói "bài SEO cho Minh Trí", "blog cho zono"; hoặc chỉ dán từ khóa kèm "viết bài" có dấu hiệu muốn quy trình tương tác.
 ---
 
 # Quy Trình Viết Blog SEO Tương Tác — 10 Bước
@@ -34,11 +34,11 @@ Tóm tắt nhanh (chi tiết đầy đủ trong file tham chiếu):
 - Tuyệt đối tránh: câu bị động dài, giọng AI, lặp ý, kết luận chung chung, hứa hẹn quá mức, từ sáo rỗng
 
 ### Quy tắc link trong bài viết
-Bài viết phải chứa đúng 3 link trích từ trang https://nguyentatkiem.com/:
-1. **2 link bài viết** liên quan trên nguyentatkiem.com (internal link đến 2 bài blog khác nhau)
-2. **1 link trang khác** trên nguyentatkiem.com (trang giới thiệu, trang khóa học, hoặc trang chủ)
+Bài viết phải chứa đúng 3 link trích từ trang https://zono.vn/:
+1. **2 link bài viết** liên quan trên zono.vn (internal link đến 2 bài blog khác nhau)
+2. **1 link trang khác** trên zono.vn (trang giới thiệu, trang khóa học, hoặc trang chủ)
 
-Cách thực hiện: Dùng web search tìm 3 URL phù hợp từ https://nguyentatkiem.com/ theo chủ đề bài viết, rồi chèn tự nhiên vào nội dung bài viết dưới dạng anchor text có nghĩa. Không chèn link trần. Phân bổ đều link trong bài (đầu, giữa, cuối).
+Cách thực hiện: Dùng web search tìm 3 URL phù hợp từ https://zono.vn/ theo chủ đề bài viết, rồi chèn tự nhiên vào nội dung bài viết dưới dạng anchor text có nghĩa. Không chèn link trần. Phân bổ đều link trong bài (đầu, giữa, cuối).
 
 ### Quy tắc sử dụng Bullet Points
 - **CHỈ dùng** khi liệt kê 3+ mục có cấu trúc tương đương (so sánh, danh sách công cụ, các bước ngắn)
@@ -228,17 +228,17 @@ Sau đánh giá:
 - `references/writing-criteria.md` — Tiêu chí viết + checklist
 - `references/html-format-standard.md` — Chuẩn HTML inline style (ÁP DỤNG KHI XUẤT HTML)
 
-Dùng web search tìm 3 URL phù hợp từ https://nguyentatkiem.com/ để chèn vào bài (2 link bài viết + 1 link trang khác).
+Dùng web search tìm 3 URL phù hợp từ https://zono.vn/ để chèn vào bài (2 link bài viết + 1 link trang khác).
 
 Viết bài 1800-2500 từ bằng TIẾNG VIỆT CÓ DẤU theo outline đã chốt.
 
 Yêu cầu bắt buộc:
 1. Dưới Title có đoạn Sapo; trước khi viết H3 phải có đoạn nội dung cho H2
-2. Từ khóa chính xuất hiện 3-5 lần/1000 từ; thương hiệu "Nguyễn Tất Kiểm" xuất hiện trong sapo
+2. Từ khóa chính xuất hiện 3-5 lần/1000 từ; thương hiệu "ZONO" xuất hiện trong sapo
 3. Nội dung chứa semantic keyword và LSI keyword đã phân tích ở Bước 1+2
 4. Viết theo ngôi thứ nhất dạng Storytelling
 5. Giọng văn Minh Trí xuyên suốt TỪNG CÂU (xem references/giong-van-minh-tri.md)
-6. Đúng 3 link từ https://nguyentatkiem.com/ (2 link bài viết + 1 link trang khác)
+6. Đúng 3 link từ https://zono.vn/ (2 link bài viết + 1 link trang khác)
 7. Bullet points: tối đa 3-4 danh sách/bài, chỉ dùng khi liệt kê 3+ mục tương đương
 8. Footnote cho mọi số liệu trích dẫn; mục NGUỒN THAM KHẢO cuối bài
 
@@ -261,7 +261,7 @@ Rà soát và cải thiện theo:
 - Thay từ sáo rỗng bằng số liệu cụ thể
 - Kiểm tra gạch nối/gạch ngắn, tách thành câu riêng
 - Kiểm tra footnote đầy đủ
-- Kiểm tra 3 link từ nguyentatkiem.com (2 bài viết + 1 trang khác)
+- Kiểm tra 3 link từ zono.vn (2 bài viết + 1 trang khác)
 - Kiểm tra bullet points: không lạm dụng, tối đa 3-4 danh sách/bài
 
 Yêu cầu:
@@ -283,7 +283,7 @@ Trau chuốt lần cuối cùng:
 - Rà soát lại giọng văn Minh Trí từng câu
 - Kiểm tra keyword density
 - Kiểm tra heading structure
-- Kiểm tra 3 link nguyentatkiem.com (2 bài viết + 1 trang khác)
+- Kiểm tra 3 link zono.vn (2 bài viết + 1 trang khác)
 - Kiểm tra footnote và NGUỒN THAM KHẢO
 - Kiểm tra bullet points hợp lý (tối đa 3-4 danh sách/bài)
 - Đảm bảo 1800-2500 từ

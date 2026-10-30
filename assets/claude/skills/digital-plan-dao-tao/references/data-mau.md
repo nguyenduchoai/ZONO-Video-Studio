@@ -120,10 +120,10 @@
 
 | Kênh | Tuyến nội dung | Tần suất |
 |------|---------------|---------|
-| Nick Nguyễn Tất Kiểm | Chia sẻ nền đen (part auto) | 3 bài/ngày (90 bài/tháng) |
-| Nick Nguyễn Tất Kiểm | Reels công cụ | 1 video/ngày (30 video/tháng) |
-| Nick Nguyễn Tất Kiểm | Reels đạo lý - kinh doanh | 1 video/ngày (30 video/tháng) |
-| Page Nguyễn Tất Kiểm / AI Coaching | Chia sẻ nền đen (part auto) | 3 bài/ngày (90 bài/tháng) |
+| Nick ZONO | Chia sẻ nền đen (part auto) | 3 bài/ngày (90 bài/tháng) |
+| Nick ZONO | Reels công cụ | 1 video/ngày (30 video/tháng) |
+| Nick ZONO | Reels đạo lý - kinh doanh | 1 video/ngày (30 video/tháng) |
+| Page ZONO / AI Coaching | Chia sẻ nền đen (part auto) | 3 bài/ngày (90 bài/tháng) |
 | Page | Feedback học viên | 2 ngày 1 bài (15 bài/tháng) |
 | Page | Dịch Youtube | 2 ngày 1 bài (15 bài/tháng) |
 | Page | Ứng dụng AI cho doanh nghiệp | 2 ngày 1 bài (15 bài/tháng) |
@@ -148,13 +148,13 @@
 
 | Kênh | Tuyến nội dung | Số lượng/tháng |
 |------|---------------|----------------|
-| Kênh Nguyễn Tất Kiểm | Video chia sẻ AI + Feedback | 8 video |
+| Kênh ZONO | Video chia sẻ AI + Feedback | 8 video |
 
 ### Google SEO
 
 | Website | Tuyến nội dung | Tần suất |
 |---------|---------------|---------|
-| nguyentatkiem.com | Bài viết AI | 10 bài/ngày |
+| zono.vn | Bài viết AI | 10 bài/ngày |
 | Volume từ khoá | Bài viết về kinh doanh | 10 bài/ngày |
 
 ### Automation n8n (Facebook)

@@ -9,7 +9,7 @@ import { credsOf } from "./connections.ts";
 import { isZaloGroupMessageMentioningBot } from "./user-quota.ts";
 
 /**
- * Follow-up Zalo via ZL-CRM (github.com/nguyentatkiem/ZL-CRM).
+ * Follow-up Zalo via ZL-CRM (github.com/zono/ZL-CRM).
  *
  *   ZL-CRM (nhiều nick Zalo, nhân viên chat) ──Public API──▶ zalo.sync (poll, cursor)
  *     tin khách  → handleIncoming(noReply): Jev chấm lead/ý định/opt-out, bot KHÔNG tự trả lời

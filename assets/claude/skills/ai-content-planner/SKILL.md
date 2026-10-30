@@ -1,7 +1,7 @@
 ---
 name: ai-content-planner
 description: >
-  Lập kế hoạch nội dung chiến lược cho Fanpage AI theo framework 7 Trụ Cột của Nguyễn Tất Kiểm - AI Mastery Hub.
+  Lập kế hoạch nội dung chiến lược cho Fanpage AI theo framework 7 Trụ Cột của ZONO - AI Mastery Hub.
   Dùng skill này BẤT CỨ KHI NÀO người dùng muốn:
   - Lập lịch đăng bài / content calendar cho fanpage AI, trang cá nhân về AI, hoặc thương hiệu cá nhân về công nghệ
   - Tạo ý tưởng nội dung theo từng Pillar (AI News, Tips & Tricks, Video Showcase, Automation, Education, Case Study, Engagement)
@@ -12,7 +12,7 @@ description: >
     "kế hoạch nội dung", "content calendar", "caption AI", "hook viral", "seeding khóa học", "content pillar"
 ---
 
-# AI Content Planner — Nguyễn Tất Kiểm Framework
+# AI Content Planner — ZONO Framework
 
 ## Tổng Quan Chiến Lược
 

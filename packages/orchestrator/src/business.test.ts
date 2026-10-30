@@ -47,7 +47,7 @@ describe("đọc website cho Nạp DNA", () => {
     expect(r.text.match(/Học phí/g)).toHaveLength(1);
   });
   it("tự thêm https, chặn địa chỉ nội bộ", async () => {
-    expect(normalizeSiteUrl("nguyentatkiem.com").href).toBe("https://nguyentatkiem.com/");
+    expect(normalizeSiteUrl("zono.vn").href).toBe("https://zono.vn/");
     await expect(readWebsite("http://127.0.0.1:8787")).rejects.toThrow(/nội bộ/);
     await expect(readWebsite("localhost")).rejects.toThrow(/nội bộ/);
     await expect(readWebsite("http://192.168.1.10")).rejects.toThrow(/nội bộ/);

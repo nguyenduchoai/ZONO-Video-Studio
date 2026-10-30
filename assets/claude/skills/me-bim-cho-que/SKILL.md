@@ -5,7 +5,7 @@ description: Tạo prompt Veo3 cho kênh affiliate mẹ & bé "Mẹ Bỉm Chợ 
 
 # Mẹ Bỉm Chợ Quê - Veo3 Viral Prompt Generator
 
-Skill này tạo bộ prompt Veo3 hoàn chỉnh cho kênh affiliate mẹ & bé **"Mẹ Bỉm Chợ Quê"** của Steve (Nguyễn Tất Kiểm - ZONO Academy), áp dụng công thức viral đã phân tích từ video 1M+ view:
+Skill này tạo bộ prompt Veo3 hoàn chỉnh cho kênh affiliate mẹ & bé **"Mẹ Bỉm Chợ Quê"** của ZONO Academy, áp dụng công thức viral đã phân tích từ video 1M+ view:
 
 > **Nhân vật quê mùa + Prop overload + Bối cảnh thật + Power-up moment + CTA xưng hô thân thuộc**
 

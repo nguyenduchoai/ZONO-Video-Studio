@@ -126,7 +126,7 @@ Nguồn: `~/.claude/skills` (skill) và `~/.claude/agents/mkt-*.md` (nhân viên
 | mkt-chien-luoc | Brief, Strategy | marketing-plan, digital-plan-dao-tao, chien-luoc-content-doanh-nghiep, content-marketing-planner, kpi-okr-master, mkt-workflow |
 | mkt-content | Content | ceo-ai-fb-post, ai-content-planner, social-content, copywriting, humanizer |
 | mkt-video | Video | fb-reels-topic-generator, viral-ai-script, hook-3-kenh-ai, phan-tich-video-viral |
-| mkt-seo | SEO | ntk-seo-writer, zono-seo-workflow, seo-content-evaluator, seo-blog-workflow |
+| mkt-seo | SEO | zono-seo-writer, zono-seo-workflow, seo-content-evaluator, seo-blog-workflow |
 | mkt-ads | Ads (báo cáo & đề xuất tuần) | facebook-ads-expert, toiuuquangcao, copywriting |
 | mkt-phan-tich | Analytics | lead-scoring-system, business-dashboard, fb-post-stats |
 | mkt-kiem-duyet | Review (lớp chấm thứ 3) | content-scorer-social, ai-script-scorer, viral-content-scorer, humanizer, remove-ai-marks |
@@ -237,7 +237,7 @@ evals/                Bộ tình huống chuẩn + runner
 
 ## ZL-CRM (Zalo nhiều nick) chạy kèm trên local
 
-- Mã nguồn: `services/zl-crm` (clone từ github.com/nguyentatkiem/ZL-CRM, nhánh `feat/public-api-conversation-account`).
+- Mã nguồn: `services/zl-crm` (clone từ github.com/zono/ZL-CRM, nhánh `feat/public-api-conversation-account`).
 - `pnpm dev` tự chạy thêm ZL-CRM: backend http://localhost:3000, giao diện http://localhost:5174 (log ở `services/zl-crm/data/`).
 - Không cần Docker: dùng PostgreSQL local (database `zalocrm`, user `zlcrm`), Redis ở chế độ in-memory. Chưa cài MinIO nên gửi/nhận **ảnh/video** trong ZL-CRM chưa hoạt động; tin chữ hoạt động bình thường.
 - Cấu hình + tài khoản quản trị ZL-CRM: `services/zl-crm/backend/.env` (`BOOTSTRAP_ADMIN_PHONE` / `BOOTSTRAP_ADMIN_PASSWORD`, đổi mật khẩu sau khi đăng nhập).

@@ -542,7 +542,7 @@ export async function nhanhOrders(c: NhanhCreds, limit = 30) {
 }
 
 // =====================================================================================
-// ZL-CRM (github.com/nguyentatkiem/ZL-CRM) — Public API, header X-Api-Key
+// ZL-CRM (github.com/zono/ZL-CRM) — Public API, header X-Api-Key
 // =====================================================================================
 export type ZlCreds = { base_url: string; api_key: string };
 async function zl(c: ZlCreds, path: string, init: RequestInit & { classify?: (text: string, status: number) => ConnectorError | undefined } = {}) {
