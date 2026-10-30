@@ -18,7 +18,6 @@ const ANIM_TEMPLATES = [
 ] as const;
 const ANIM_STYLES = [
   ["2d-mascot", "Nhân vật 2D Đời Thường Việt Nam (Quần áo & bối cảnh đồng nhất)"],
-  ["3d-stage", "Hoạt hình 3D Pixar & Sân khấu 3D (Three.js / Pixar Rendering)"],
   ["stickman", "Người Que Tối Giản (Stickman Nền Sáng / Nền Đen)"],
   ["moral-cinematic", "2D Điện Ảnh Truyện Nhân Quả & Dân Gian Việt Nam"],
   ["ghibli-watercolor", "Tranh Vẽ Màu Nước Chữa Lành (Ghibli) & Đất Sét (Claymation)"],
@@ -27,9 +26,9 @@ const ANIM_STYLES = [
 const PACKAGED_21_TOOLS = [
   { group: "1. Agent Skills & Đạo diễn", items: ["remotion-dev/skills", "motiondivision/ai-kit", "greensock/gsap-skills", "Vincentwei1021/video-shotcraft"] },
   { group: "2. Design & Vector", items: ["svg/svgo", "vercel/satori"] },
-  { group: "3. Animation 2D", items: ["greensock/GSAP", "juliangarnier/anime", "motiondivision/motion", "rive-app/rive-wasm", "LottieFiles/dotlottie-web"] },
+  { group: "3. Animation 2D & Motion", items: ["greensock/GSAP", "juliangarnier/anime", "motiondivision/motion", "rive-app/rive-wasm", "LottieFiles/dotlottie-web"] },
   { group: "4. Video Engine", items: ["remotion-dev/remotion", "motion-canvas/motion-canvas"] },
-  { group: "5. 3D & Vật lý", items: ["mrdoob/three.js", "pmndrs/react-three-fiber", "pmndrs/drei", "pmndrs/react-three-rapier", "pmndrs/react-postprocessing"] },
+  { group: "5. Giải mã Video & Dựng Footage Quay Sẵn", items: ["FFprobe Scene-Cut Decoder", "Faster-Whisper Word-Timing", "Contact-Sheet Vision Analyzer", "Claude CLI Shot-Matcher", "FFmpeg Zoompan & Xfade"] },
   { group: "6. Âm thanh & Xuất bản", items: ["VieNeu-TTS (Bắt buộc · Bước 2)", "goldfire/howler.js", "Vanilagy/mediabunny", "FFmpeg/FFmpeg"] },
 ] as const;
 const ALL_21_TOOL_NAMES = PACKAGED_21_TOOLS.flatMap((g) => [...g.items]);
@@ -39,7 +38,7 @@ const ANIM_SAMPLE_PRESETS: Record<string, { title: string; product: string; hook
     product: "Nền tảng Tự động hóa ZONO AI",
     hookTitle: "Tiết kiệm 80% chi phí vận hành chỉ với 1 chạm!",
     cta: "Bấm vào giỏ hàng hoặc nhắn tin nhận ưu đãi 50% ngay hôm nay!",
-    brief: "Bạn đang tốn quá nhiều thời gian để làm video và chăm sóc khách hàng mỗi ngày? Nền tảng ZONO AI giúp doanh nghiệp tự động sản xuất video hoạt hình 2D 3D chuyên nghiệp ngay trên máy tính. Tích hợp sẵn 21 công cụ đồ họa đỉnh cao cùng giọng đọc VieNeu-TTS 3 miền tự nhiên như người thật. Hàng ngàn chủ shop đã tăng gấp đôi doanh số mà không tốn một đồng chi phí quảng cáo dư thừa.",
+    brief: "Bạn đang tốn quá nhiều thời gian để làm video và chăm sóc khách hàng mỗi ngày? Nền tảng ZONO AI giúp doanh nghiệp tự động giải mã video mẫu và dựng phim thương mại từ các cảnh quay sẵn ngay trên máy tính. Tích hợp sẵn công cụ đồ họa cùng giọng đọc VieNeu-TTS 3 miền tự nhiên như người thật. Hàng ngàn chủ shop đã tăng gấp đôi doanh số mà không tốn một đồng chi phí quảng cáo dư thừa.",
   },
   "fnb-cartoon": {
     title: "Review Combo Trà Sữa Nướng Kem Trứng Khè",
@@ -127,8 +126,8 @@ export function VideoFlow() {
   const toast = useToast();
 
   const [form, setForm] = useState<any>({
-    tool: "anim-video",
-    title: ANIM_SAMPLE_PRESETS["ecommerce-promo"].title,
+    tool: "edit-source",
+    title: "Phim Thương Hiệu Dựng Từ Video Quay Sẵn (Học Theo Video Decode)",
     brand: "other",
     product: ANIM_SAMPLE_PRESETS["ecommerce-promo"].product,
     brief: ANIM_SAMPLE_PRESETS["ecommerce-promo"].brief,
@@ -139,9 +138,35 @@ export function VideoFlow() {
     cta: ANIM_SAMPLE_PRESETS["ecommerce-promo"].cta,
     channels: ["tiktok"],
     images: [] as { path: string; role: string; name: string }[],
-    // ảnh theo ô (vai trò) + ảnh tham khảo khác; local engines (Video tự động / Ảnh cử động / Hoạt hình đa ngành)
+    // ảnh theo ô (vai trò) + ảnh tham khảo khác; local engines (Decode & Dựng từ video quay sẵn / Video tự động / Motion 2D)
     video: { source: "flow", flowJobId: "", scriptReady: false, terms: "", voiceName: "Ngọc Huyền", voiceRate: 1, bgm: "random", aspect: "9:16", clipDuration: 4, driving: "d12.mp4", drivingPath: "", drivingName: "", voiceText: "", seconds: 6, animTemplate: "ecommerce-promo", animStyle: "2d-mascot", materials: [] as { path: string; name: string }[] },
   });
+  const [decodeBusy, setDecodeBusy] = useState(false);
+  const [decodedBlueprint, setDecodedBlueprint] = useState<any>(null);
+  const decodeReferenceVideo = async (videoPath?: string) => {
+    setDecodeBusy(true);
+    try {
+      const res = await api.post<any>("studio/decode-video", {
+        videoPath,
+        referenceNotes: form.brief,
+        useWhisper: true,
+        useClaude: true,
+      });
+      setDecodedBlueprint(res.blueprint);
+      setV({ style: res.blueprint.recommendedEditStyle ?? "dynamic" });
+      set((f: any) => ({
+        ...f,
+        durationSec: Math.round(res.blueprint.durationSec || 25),
+        hookTitle: res.blueprint.hookFormula?.onScreenHookTitle || f.hookTitle,
+        brief: `[CÔNG THỨC HỌC TỪ VIDEO MẪU ĐÃ DECODE (${res.blueprint.shotCount} cảnh · nhịp ${res.blueprint.avgShotSec}s/cảnh)]:\n${res.blueprint.reusablePromptTemplate}\n\nChi tiết phân cảnh mẫu:\n${(res.blueprint.decodedShots ?? []).map((s: any) => `- Cảnh ${s.sceneNumber} (${s.durationSec}s · ${s.cameraAngle} · zoom=${s.recommendedZoom}): ${s.howToShootOrSelect}`).join("\n")}\n\nNội dung sản phẩm của mình: ${f.product || f.title}`,
+      }));
+      toast(`Đã Decode xong Video Mẫu (${res.blueprint.shotCount} phân cảnh · nhịp ${res.blueprint.avgShotSec}s/cảnh) và nạp công thức dựng vào ô yêu cầu!`, "ok");
+    } catch (e: any) {
+      toast(e?.message ?? "Lỗi khi giải mã video mẫu", "err");
+    } finally {
+      setDecodeBusy(false);
+    }
+  };
   const [enabled21Tools, setEnabled21Tools] = useState<string[]>(() => [...ALL_21_TOOL_NAMES]);
   const toggle21Tool = (name: string) => {
     if (name.includes("VieNeu-TTS")) return; // VieNeu-TTS is mandatory
@@ -335,7 +360,7 @@ export function VideoFlow() {
                   ? (tool.generator
                     ? <p>Làm thẳng trong một project Google Flow (trình tạo video thường), không cần Tool riêng.</p>
                     : <ToolLink tool={tool} onSaved={tools.reload} />)
-                  : <p>{engine === "edit" ? "Claude CLI + whisper (nghe lời) + ffmpeg (cắt ghép) + phụ đề tiếng Việt" : engine === "anim" ? "Skill zono-animated-video: Tổ hợp 21 công cụ Hoạt hình 2D/3D (Remotion + GSAP + Motion + Three.js/R3F + Lottie/Rive + Satori/SVGO + ShotCraft) + VieNeu-TTS 48kHz (bắt buộc) + Whisper + FFmpeg" : engine === "moneyprinter" ? "MoneyPrinterTurbo (MIT) + Claude CLI viết lời + VieNeu-TTS giọng Việt" : engine === "news" ? "Skill news-to-video: Claude CLI + VieNeu-TTS + whisper + Remotion (phụ đề karaoke, đồ hoạ động)" : "LivePortrait (MIT, dò mặt MediaPipe — dùng thương mại được)"} · chạy trên máy Sếp{vai.data && engine !== "edit" && !(engine === "moneyprinter" ? vai.data.moneyprinter.installed : (engine === "news" || engine === "anim") ? vai.data.remotion?.installed : vai.data.liveportrait.installed) ? " · CHƯA CÀI — chạy pnpm video-ai:install" : ""}</p>}
+                  : <p>{engine === "edit" ? "Claude CLI + Local FFmpeg (tách phân cảnh & dựng phim) + Faster-Whisper (bóc băng từng từ) + phụ đề tiếng Việt" : engine === "anim" ? "Skill zono-animated-video: Tổ hợp Motion Graphics & 2D (Remotion + GSAP + Motion + Lottie/Rive + Satori/SVGO + ShotCraft) + VieNeu-TTS 48kHz (bắt buộc) + Whisper + FFmpeg" : engine === "moneyprinter" ? "MoneyPrinterTurbo (MIT) + Claude CLI viết lời + VieNeu-TTS giọng Việt" : engine === "news" ? "Skill news-to-video: Claude CLI + VieNeu-TTS + whisper + Remotion (phụ đề karaoke, đồ hoạ động)" : "LivePortrait (MIT, dò mặt MediaPipe — dùng thương mại được)"} · chạy trên máy Sếp{vai.data && engine !== "edit" && !(engine === "moneyprinter" ? vai.data.moneyprinter.installed : (engine === "news" || engine === "anim") ? vai.data.remotion?.installed : vai.data.liveportrait.installed) ? " · CHƯA CÀI — chạy pnpm video-ai:install" : ""}</p>}
               </div>
             )}
             <div className="grid gap-3 sm:grid-cols-2">
@@ -352,10 +377,10 @@ export function VideoFlow() {
             {engine === "anim" && (
               <div className="space-y-3 rounded-xl border border-indigo-500/30 bg-indigo-500/5 p-3.5">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-xs font-semibold text-ink">Cấu hình Video Hoạt hình Đa Ngành Nghề (21 Công cụ + Bắt buộc VieNeu-TTS)</p>
+                  <p className="text-xs font-semibold text-ink">Cấu hình Video Motion Graphics & 2D Đa Ngành Nghề (Bắt buộc VieNeu-TTS)</p>
                   <div className="flex flex-wrap items-center gap-2">
                     <Button size="sm" variant="soft" onClick={() => applyPreset(form.video.animTemplate ?? "ecommerce-promo")}>✨ Nạp kịch bản mẫu theo ngành</Button>
-                    <Button size="sm" variant="primary" icon={Play} loading={busy} disabled={!ready} onClick={start}>▶ Chạy tạo Video Hoạt hình ngay</Button>
+                    <Button size="sm" variant="primary" icon={Play} loading={busy} disabled={!ready} onClick={start}>▶ Chạy tạo Video Motion 2D ngay</Button>
                   </div>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
@@ -364,7 +389,7 @@ export function VideoFlow() {
                       {ANIM_TEMPLATES.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
                     </select>
                   </Field>
-                  <Field label="Phong cách Hoạt hình (Animation Stack)" hint="Tổ hợp thư viện đồ họa Remotion 2D/3D sẽ dựng">
+                  <Field label="Phong cách Motion & 2D (Animation Stack)" hint="Tổ hợp thư viện đồ họa Remotion 2D sẽ dựng">
                     <select className={inputCls} value={form.video.animStyle ?? "2d-mascot"} onChange={(e) => setV({ animStyle: e.target.value })}>
                       {ANIM_STYLES.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
                     </select>
@@ -378,7 +403,7 @@ export function VideoFlow() {
                 <div className="space-y-2 rounded-xl border border-indigo-500/20 bg-surface p-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="text-[11px] font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-300">
-                      21 Công cụ Hoạt hình 2D/3D, Thiết kế & Âm thanh (Đang bật {enabled21Tools.length}/21 công cụ — bấm để bật/tắt):
+                      21 Công cụ Motion 2D, Giải mã Video & Âm thanh (Đang bật {enabled21Tools.length}/21 công cụ — bấm để bật/tắt):
                     </p>
                     <button type="button" onClick={() => setEnabled21Tools([...ALL_21_TOOL_NAMES])} className="text-[11px] font-semibold text-indigo-600 hover:underline">
                       Bật tất cả 21 công cụ
@@ -438,11 +463,71 @@ export function VideoFlow() {
               </div>
             )}
             {engine === "edit" && (
-              <div className="space-y-3 rounded-xl border border-line p-3">
-                <p className="text-xs font-medium text-ink">Video gốc của Sếp <span className="font-normal text-muted">(cảnh quay, livestream, bài giảng, quay sản phẩm… — tải nhiều file được, tối đa 4 GB/file). Có lời nói: giữ nguyên lời và cắt câu hay. Không có lời nói: AI viết lời đọc theo yêu cầu</span></p>
-                <div className="flex flex-wrap gap-2 text-xs">
-                  {form.video.materials.map((m: any, i: number) => <span key={m.path} className="flex items-center gap-1 rounded-lg border border-line px-2 py-1">{m.name}<button onClick={() => setV({ materials: form.video.materials.filter((_: any, j: number) => j !== i) })}><Trash2 className="h-3 w-3 text-muted" /></button></span>)}
-                  <label className={cx("flex cursor-pointer items-center gap-1.5 rounded-lg border border-dashed border-line px-3 py-1 text-muted hover:bg-soft", upPct !== null && "pointer-events-none opacity-60")}>{upPct !== null ? <><Loader2 className="h-3.5 w-3.5 animate-spin" />Đang tải {upPct}%</> : <><Film className="h-3.5 w-3.5" />Tải video gốc</>}<input type="file" accept="video/*,audio/*" multiple className="hidden" onChange={(e) => void uploadSources(e.target.files)} /></label>
+              <div className="space-y-3 rounded-xl border border-blue-500/30 bg-blue-500/[0.04] p-3.5">
+                <div className="rounded-xl border border-blue-500/25 bg-card p-3 space-y-2.5">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <p className="text-xs font-extrabold text-blue-700 dark:text-blue-300">
+                        🔍 Bước 1: Giải mã Video Mẫu (Video Decode · Local FFmpeg + Whisper + Claude AI)
+                      </p>
+                      <p className="text-[11px] text-muted">
+                        Tải lên 1 video mẫu cần học hỏi (hoặc bấm giải mã video mẫu có sẵn) để AI bóc tách nhịp cắt cảnh, góc quay, Hook 3s đầu và áp vào phim mới.
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <label className={cx("inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-blue-500/40 bg-blue-500/10 px-3 py-1.5 text-xs font-bold text-blue-700 hover:bg-blue-500/20 dark:text-blue-300", (decodeBusy || upPct !== null) && "pointer-events-none opacity-60")}>
+                        <Film className="h-3.5 w-3.5" />
+                        <span>Tải Video Mẫu để Decode</span>
+                        <input
+                          type="file"
+                          accept="video/*"
+                          className="hidden"
+                          onChange={async (e) => {
+                            const f = e.target.files?.[0];
+                            if (!f) return;
+                            try {
+                              const r = await putVideoStream(f, setUpPct);
+                              await decodeReferenceVideo(r.path);
+                            } catch (err: any) {
+                              toast(err?.message ?? "Lỗi tải video mẫu", "err");
+                            }
+                          }}
+                        />
+                      </label>
+                      <Button size="sm" variant="soft" loading={decodeBusy} onClick={() => void decodeReferenceVideo()}>
+                        ⚡ Decode Thử Video Mẫu Có Sẵn
+                      </Button>
+                    </div>
+                  </div>
+                  {decodedBlueprint && (
+                    <div className="mt-2 rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3 text-xs space-y-2">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="font-bold text-emerald-700 dark:text-emerald-300">
+                          ✅ Đã giải mã: {decodedBlueprint.sourceFileName} ({decodedBlueprint.durationSec}s · {decodedBlueprint.shotCount} phân cảnh · trung bình {decodedBlueprint.avgShotSec}s/cảnh)
+                        </span>
+                        <Badge tone="green">{decodedBlueprint.pacingLabel}</Badge>
+                      </div>
+                      <p className="text-[11px] text-ink">
+                        <b>Hook 3s đầu:</b> {decodedBlueprint.hookFormula?.first3SecHook} ({decodedBlueprint.hookFormula?.visualHookTechnique})
+                      </p>
+                      {decodedBlueprint.contactSheetUrl && (
+                        <div className="pt-1">
+                          <p className="mb-1 text-[11px] font-semibold text-muted">Bảng khung hình phân cảnh (Contact Sheet trích xuất bởi Local FFmpeg):</p>
+                          <img src={decodedBlueprint.contactSheetUrl} alt="Decoded Contact Sheet" className="max-h-40 rounded-lg border border-line object-contain bg-black" />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-xs font-extrabold text-ink">
+                    🎬 Bước 2: Video quay sẵn của Sếp (Raw Footage) <span className="font-normal text-muted">(cảnh quay sản phẩm, cửa hàng, livestream, bài giảng… — tải nhiều file được, tối đa 4 GB/file). Claude AI sẽ chọn đoạn đẹp nhất và dựng theo đúng nhịp của Video Mẫu vừa Decode!</span>
+                  </p>
+                  <div className="flex flex-wrap gap-2 text-xs">
+                    {form.video.materials.map((m: any, i: number) => <span key={m.path} className="flex items-center gap-1 rounded-lg border border-line bg-card px-2.5 py-1 font-medium">{m.name}<button onClick={() => setV({ materials: form.video.materials.filter((_: any, j: number) => j !== i) })}><Trash2 className="h-3 w-3 text-muted" /></button></span>)}
+                    <label className={cx("flex cursor-pointer items-center gap-1.5 rounded-lg border border-dashed border-blue-500/50 bg-card px-3 py-1.5 font-semibold text-blue-700 hover:bg-blue-500/10 dark:text-blue-300", upPct !== null && "pointer-events-none opacity-60")}>{upPct !== null ? <><Loader2 className="h-3.5 w-3.5 animate-spin" />Đang tải {upPct}%</> : <><Film className="h-3.5 w-3.5" />+ Tải video quay sẵn lên máy</>}<input type="file" accept="video/*,audio/*" multiple className="hidden" onChange={(e) => void uploadSources(e.target.files)} /></label>
+                  </div>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <Field label="Phong cách dựng" hint="AI cắt cảnh, chuyển cảnh, zoom in/out, chữ động, phụ đề từng từ, hiệu ứng âm thanh và nhạc nền theo phong cách này">
@@ -452,7 +537,7 @@ export function VideoFlow() {
                     <select className={inputCls} value={["9:16", "1:1", "16:9"].includes(form.video.aspect) ? form.video.aspect : "9:16"} onChange={(e) => setV({ aspect: e.target.value })}><option value="9:16">Dọc 9:16 (TikTok/Reels/Shorts)</option><option value="1:1">Vuông 1:1</option><option value="16:9">Ngang 16:9</option></select>
                   </Field>
                 </div>
-                <label className="flex items-center gap-2 text-xs text-muted"><input type="checkbox" checked={form.video.music !== "none"} onChange={(e) => setV({ music: e.target.checked ? "auto" : "none" })} />Thêm nhạc nền (tự hạ nhỏ khi có giọng nói)</label>
+                <label className="flex items-center gap-2 text-xs text-muted"><input type="checkbox" checked={form.video.music !== "none"} onChange={(e) => setV({ music: e.target.checked ? "auto" : "none" })} />Thêm nhạc nền (tự hạ nhỏ khi có giọng nói · chuẩn -14 LUFS)</label>
               </div>
             )}
             {engine === "moneyprinter" && (

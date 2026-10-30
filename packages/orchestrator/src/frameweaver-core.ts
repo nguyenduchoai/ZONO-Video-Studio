@@ -96,18 +96,18 @@ export const FRAMEWEAVER_STORY_STYLES: StoryStylePreset[] = [
     swatch: "#c9a578",
   },
   {
-    id: "3d_pixar",
-    name: "Hoạt Hình 3D Pixar",
-    category: "3d",
-    description: "Nhân vật 3D tròn mềm đáng yêu, ánh sáng điện ảnh rực rỡ chuẩn phim hoạt hình Pixar.",
+    id: "decoded_footage",
+    name: "Phim Quay Sẵn · Học Theo Video Decode (Local + Claude)",
+    category: "realistic",
+    description: "Giải mã nhịp cắt & góc máy từ Video Mẫu, sau đó ghép các đoạn Video Quay Sẵn trên máy bằng Claude AI + Local FFmpeg.",
     characterDesign:
-      "Original fully clothed 3D Pixar-style character, soft rounded proportions, expressive cartoon eyes, smooth subsurface scattering skin.",
+      "Người thật và sản phẩm thật từ các đoạn video quay sẵn (Raw Footage) của cửa hàng/doanh nghiệp, giữ nguyên bối cảnh và ánh sáng thực tế.",
     styleInstruction:
-      "3D animated Pixar-quality rendering, global illumination, vibrant saturated colors, cinematic depth of field.",
-    scenePrefix: "3D animated Pixar-style rendering, vibrant colors, cinematic global illumination.",
+      "Authentic pre-recorded commercial footage, decoded viral pacing, dynamic zoompan and xfade transitions, word-level synchronized captions, -14 LUFS audio mastering.",
+    scenePrefix: "Authentic pre-recorded raw footage cut, matched to decoded reference rhythm, crisp commercial framing.",
     negativePrompt:
-      "NOT photorealistic live action, NOT flat 2D, NOT stick figure, no text overlay, no watermark.",
-    swatch: "#3b82f6",
+      "No 3D CGI, no cartoon, no synthetic distortion, no text covering main subject, no watermark.",
+    swatch: "#2563eb",
   },
   {
     id: "ghibli",

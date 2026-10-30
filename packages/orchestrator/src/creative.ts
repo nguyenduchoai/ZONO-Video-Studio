@@ -209,23 +209,23 @@ export const FLOW_TOOLS = {
     ],
   },
   // Local video AI (services/video-ai) — no Flow credits, no browser
-  "auto-video": { engine: "moneyprinter", skill: "", label: "Video tự động · cảnh + giọng đọc", minutes: 4, hint: "Chủ đề hoặc kịch bản có sẵn → Claude CLI viết lời đọc, MoneyPrinterTurbo ghép cảnh (Pexels/Pixabay hoặc clip của Sếp / clip Flow), giọng Việt Edge TTS, phụ đề tự động", toolUrl: null, uiMap: [] },
+  // Claude CLI + ffmpeg + whisper on this Mac: Decode reference video + edit the CEO's own raw footage → finished film (no Flow credits).
+  "edit-source": {
+    engine: "edit", skill: "", label: "Decode Video Mẫu & Dựng Phim từ Video Quay Sẵn (Claude + Local)", minutes: 10,
+    hint: "Tải lên Video Mẫu để giải mã nhịp cắt/góc máy + tải các Video Quay Sẵn (cảnh quay sản phẩm, cửa hàng, livestream, b-roll…) → Claude AI + Local FFmpeg/Whisper học theo công thức Video Decode để chọn đoạn đẹp nhất, ghép cảnh, zoom, phụ đề từng từ & nhạc nền -14 LUFS",
+    toolUrl: null, uiMap: [],
+  },
+  "auto-video": { engine: "moneyprinter", skill: "", label: "Video tự động · cảnh quay sẵn + giọng đọc", minutes: 4, hint: "Chủ đề hoặc kịch bản có sẵn → Claude CLI viết lời đọc, ghép cảnh từ kho clip quay sẵn hoặc Pexels/Pixabay, giọng Việt VieNeu-TTS, phụ đề tự động", toolUrl: null, uiMap: [] },
   // Claude CLI + Remotion on this Mac (skill news-to-video): article link → voice, word timing, karaoke subtitles, motion graphics.
   "news-video": {
     engine: "news", skill: "news-to-video", label: "Video tin tức từ link bài báo", minutes: 15,
     hint: "Dán link bài báo (kèm ghi chú nếu cần: giọng nam/nữ, nhấn mạnh ý nào) → Claude CLI đọc bài, viết lời đọc, giọng Việt, phụ đề karaoke, đồ hoạ Remotion, chuẩn âm thanh -14 LUFS",
     toolUrl: null, uiMap: [],
   },
-  // Animated Video Studio (Remotion + GSAP + Motion + Three.js/R3F + Lottie/Rive + ShotCraft): industry templates → animated 2D/3D video.
+  // Animated Video Studio (Remotion + GSAP + Motion + Lottie/Rive + ShotCraft): industry templates → animated 2D & motion graphics video.
   "anim-video": {
-    engine: "anim", skill: "zono-animated-video", label: "Video hoạt hình 2D/3D đa ngành · Remotion Studio", minutes: 15,
-    hint: "Chọn mẫu ngành nghề (E-commerce, Ẩm thực F&B, Y tế/Mỹ phẩm, Giáo dục, Tài chính/BĐS, Người que kể chuyện) + nhập nội dung/sản phẩm → CLI tự dựng hoạt hình 2D/3D bằng Remotion + GSAP + Motion + Three.js + Lottie/SVG, lồng tiếng Việt, phụ đề karaoke, xuất MP4 9:16 chuẩn -14 LUFS",
-    toolUrl: null, uiMap: [],
-  },
-  // Claude CLI + ffmpeg + whisper on this Mac: the CEO's own raw footage → edited short video (no Flow credits).
-  "edit-source": {
-    engine: "edit", skill: "", label: "AI tự edit từ video gốc", minutes: 20,
-    hint: "Tải video thô (cảnh quay, livestream, bài giảng, quay sản phẩm…) + ghi yêu cầu → AI xem và chọn đoạn đẹp nhất, dựng thành video hoàn chỉnh: cắt cảnh, chuyển cảnh, zoom in/out, chữ động, phụ đề từng từ, hiệu ứng âm thanh, nhạc nền. Có lời nói thì giữ nguyên lời; không có thì AI viết lời đọc",
+    engine: "anim", skill: "zono-animated-video", label: "Video Motion Graphics & 2D Đa Ngành · Remotion Studio", minutes: 15,
+    hint: "Chọn mẫu ngành nghề (E-commerce, Ẩm thực F&B, Y tế/Mỹ phẩm, Giáo dục, Tài chính/BĐS, Người que kể chuyện) + nhập nội dung/sản phẩm → CLI tự dựng Motion Graphics & 2D bằng Remotion + GSAP + Motion + Lottie/SVG, lồng tiếng Việt, phụ đề karaoke, xuất MP4 9:16 chuẩn -14 LUFS",
     toolUrl: null, uiMap: [],
   },
   "portrait": {
@@ -262,8 +262,8 @@ export const CreativeInput = z.object({
     scriptReady: z.boolean().optional(), terms: z.string().max(400).optional(), aspect: z.enum(["9:16", "16:9", "1:1"]).optional(), clipDuration: z.number().int().min(2).max(10).optional(),
     voiceName: z.string().max(60).optional(), voiceRate: z.number().min(0.6).max(1.6).optional(), bgm: z.enum(["random", "none"]).optional(),
     driving: z.string().max(60).optional(), drivingPath: z.string().optional(), voiceText: z.string().max(2000).optional(), seconds: z.number().int().min(3).max(20).optional(),
-    animTemplate: z.enum(["ecommerce-promo", "fnb-cartoon", "health-beauty", "education-explainer", "finance-realestate", "stickman-story"]).optional(),
-    animStyle: z.enum(["2d-mascot", "3d-stage", "stickman", "kinetic-motion"]).optional(),
+    animTemplate: z.enum(["ecommerce-promo", "fnb-cartoon", "health-beauty", "education-explainer", "finance-realestate", "stickman-story", "moral-story", "vietnamese-folk"]).optional(),
+    animStyle: z.enum(["2d-mascot", "stickman", "moral-cinematic", "ghibli-watercolor", "kinetic-motion"]).optional(),
   }).optional(),
 });
 export type CreativeInput = z.infer<typeof CreativeInput>;
@@ -1015,8 +1015,8 @@ export const ${comp}Main: React.FC = () => {
     scenes: sentences.length,
     redoneScenes: [],
     script: sentences.map((loi_thoai, idx) => ({ canh: idx + 1, loi_thoai })),
-    caption: `${title} — ${cta} #zono #videomarketing #hoathinh3d #vieneutts`.slice(0, 290),
-    notes: `Dựng trực tiếp trên máy bằng ZONO Animated Studio (21 công cụ · mẫu ${animTemplate} · phong cách ${animStyle} · giọng VieNeu-TTS ${chosenVoice} 48kHz · ${durationSec.toFixed(1)}s).`,
+    caption: `${title} — ${cta} #zono #videomarketing #motion2d #vieneutts`.slice(0, 290),
+    notes: `Dựng trực tiếp trên máy bằng ZONO Motion 2D Studio (mẫu ${animTemplate} · phong cách ${animStyle} · giọng VieNeu-TTS ${chosenVoice} 48kHz · ${durationSec.toFixed(1)}s).`,
   };
   writeFileSync(join(workdir, "result.json"), JSON.stringify(resultObj, null, 2), "utf8");
   log(`Hoàn tất Video Hoạt hình MP4 (${durationSec.toFixed(1)}s)!`, "text");
@@ -1071,7 +1071,7 @@ async function runAnimatedVideo({ job, log, signal }: { job: Row; log: (text: st
     input.cta ? `Câu kết / CTA: ${input.cta}` : "",
     input.images.length
       ? `Ảnh sản phẩm / logo / tài liệu đính kèm (hãy copy vào ${join(P, "public", slug)}/ để đưa vào sân khấu hoạt hình):\n${input.images.map((i) => `- ${i.role}: ${i.path}`).join("\n")}`
-      : "Không có ảnh đính kèm — hãy dựng hoàn toàn bằng Nhân vật Hoạt hình Vector/2D/3D, Icon SVG, Biểu đồ động và Typography.",
+      : "Không có ảnh đính kèm — hãy dựng hoàn toàn bằng Nhân vật 2D, Icon SVG, Biểu đồ động và Typography.",
     `Kênh sẽ đăng: ${input.channels.join(", ")} (dọc 9:16).`,
     `Chạy đủ 6 bước của skill zono-animated-video (bắt buộc dùng zono-vieneu-tts với giọng "${chosenVoice}" ở Bước 2) đến khi có ${join(workdir, "final.mp4")} đã master âm thanh, rồi ghi result.json.`,
   ].filter(Boolean).join("\n\n");

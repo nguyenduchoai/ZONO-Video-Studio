@@ -73,7 +73,7 @@ export function Overview() {
               </span>
             </div>
             <p className="mt-0.5 text-xs text-muted">
-              6 Ngách Video (Bán hàng, Tài chính, Bí ẩn, Đêm khuya...) · 10 Phong cách (Photorealistic, Pixar 3D, Ghibli, Stickman, Cổ tích...) · Khóa nhân vật đồng nhất & xuất Caption 4 kênh.
+              Giải mã Video Mẫu (Decode nhịp cắt, góc quay, Hook 3s đầu bằng Local FFmpeg + Whisper) · Học theo Video Decode để dựng phim mới từ Video Quay Sẵn bằng Claude AI · 6 Ngách & 10 Phong cách.
             </p>
           </div>
         </div>

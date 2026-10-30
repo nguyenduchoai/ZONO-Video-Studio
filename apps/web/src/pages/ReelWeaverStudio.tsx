@@ -1,14 +1,33 @@
 import { useEffect, useState } from "react";
-import { Check, Clapperboard, Copy, ExternalLink, Film, Layers, Loader2, Mic, Palette, Play, Sparkles, Wand2 } from "lucide-react";
-import { api, useApi } from "../lib/api";
+import { Check, Clapperboard, Copy, ExternalLink, Film, Layers, Loader2, Mic, Palette, Play, Scissors, Sparkles, Upload, Wand2 } from "lucide-react";
+import { api, apiUrl, useApi } from "../lib/api";
 import { Badge, Button, Card, cx, useToast } from "../components/ui";
+
+function uploadStreamFile(f: File, onPct: (n: number | null) => void): Promise<{ path: string }> {
+  return new Promise((res, rej) => {
+    const x = new XMLHttpRequest();
+    x.open("PUT", apiUrl(`/v1/uploads/stream?name=${encodeURIComponent(f.name)}`));
+    x.setRequestHeader("content-type", "application/octet-stream");
+    x.upload.onprogress = (e) => e.lengthComputable && onPct(Math.round((e.loaded / e.total) * 100));
+    x.onload = () => {
+      try {
+        const j = JSON.parse(x.responseText);
+        x.status < 300 ? res(j) : rej(new Error(j.message ?? `Lỗi ${x.status}`));
+      } catch {
+        rej(new Error(`Lỗi ${x.status}`));
+      }
+    };
+    x.onerror = () => rej(new Error("Mất kết nối khi tải lên"));
+    x.send(f);
+  }).finally(() => onPct(null)) as Promise<{ path: string }>;
+}
 
 export function ReelWeaverStudio() {
   const { data: catalog, reload } = useApi<any>("studio/reelweaver-catalog");
   const toast = useToast();
 
   const [selectedNiche, setSelectedNiche] = useState<string>("commercial-brand");
-  const [selectedStyle, setSelectedStyle] = useState<string>("srt_moral");
+  const [selectedStyle, setSelectedStyle] = useState<string>("decoded_footage");
   const [topic, setTopic] = useState<string>(
     "Câu chuyện giữ trọn chữ tín của cửa hàng thực phẩm sạch và bí quyết chọn Yến Sào Chưng Tươi chuẩn vị",
   );
@@ -18,12 +37,81 @@ export function ReelWeaverStudio() {
   const [result, setResult] = useState<any>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
-  // Tự động nạp 1 bản dựng mẫu (Sample) ngay khi mở trang để người dùng thấy kết quả trực quan ngay lập tức
+  // State cho Trạm Decode Video Mẫu & Dựng Phim Từ Video Quay Sẵn (Local FFmpeg + Whisper + Claude AI)
+  const [decodeBusy, setDecodeBusy] = useState<boolean>(false);
+  const [cloneBusy, setCloneBusy] = useState<boolean>(false);
+  const [uploadPct, setUploadPct] = useState<number | null>(null);
+  const [useClaudeForDecode, setUseClaudeForDecode] = useState<boolean>(false);
+  const [renderRealMp4, setRenderRealMp4] = useState<boolean>(true);
+  const [decodedBlueprint, setDecodedBlueprint] = useState<any>(null);
+  const [rawFootageList, setRawFootageList] = useState<{ path: string; name: string }[]>([]);
+  const [clonedResult, setClonedResult] = useState<any>(null);
+
+  // Tự động nạp 1 bản dựng mẫu (Sample) + Giải mã sẵn 1 Video Mẫu Local ngay khi mở trang
   useEffect(() => {
-    if (!catalog || result || busy) return;
-    void handleGenerate(true);
+    if (!catalog) return;
+    if (!result && !busy) void handleGenerate(true);
+    if (!decodedBlueprint && !decodeBusy) void handleDecodeVideo(undefined, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [catalog]);
+
+  const handleDecodeVideo = async (videoPath?: string, silent = false) => {
+    setDecodeBusy(true);
+    try {
+      const res = await api.post<any>("studio/decode-video", {
+        videoPath,
+        referenceNotes: topic,
+        useWhisper: !silent,
+        useClaude: useClaudeForDecode && !silent,
+      });
+      setDecodedBlueprint(res.blueprint);
+      if (!silent) {
+        toast(`Đã Decode xong Video Mẫu (${res.blueprint.shotCount} phân cảnh · nhịp ${res.blueprint.avgShotSec}s/cảnh)!`, "ok");
+      }
+      // Tự động dựng mẫu bảng đối chiếu từ blueprint vừa decode nếu là lần mở trang đầu tiên
+      if (silent && res.blueprint) {
+        const cloneRes = await api.post<any>("studio/clone-from-decoded", {
+          blueprint: res.blueprint,
+          rawVideoPaths: [],
+          topic,
+          product: catalog?.productsSummary,
+          brandName: catalog?.brandName,
+          renderMp4: false,
+          useClaude: false,
+        });
+        setClonedResult(cloneRes.result);
+      }
+    } catch (e: any) {
+      if (!silent) toast(e?.message ?? "Lỗi khi giải mã video mẫu", "err");
+    } finally {
+      setDecodeBusy(false);
+    }
+  };
+
+  const handleCloneFromDecoded = async () => {
+    if (!decodedBlueprint) {
+      toast("Vui lòng bấm Decode 1 Video Mẫu trước!", "err");
+      return;
+    }
+    setCloneBusy(true);
+    try {
+      const res = await api.post<any>("studio/clone-from-decoded", {
+        blueprint: decodedBlueprint,
+        rawVideoPaths: rawFootageList.map((r) => r.path),
+        topic,
+        product: catalog?.productsSummary,
+        brandName: catalog?.brandName,
+        renderMp4: renderRealMp4,
+        useClaude: true,
+      });
+      setClonedResult(res.result);
+      toast("Đã học theo Video Decode và dựng xong Phim Mới từ Video Quay Sẵn!", "ok");
+    } catch (e: any) {
+      toast(e?.message ?? "Lỗi khi dựng phim theo công thức Decode", "err");
+    } finally {
+      setCloneBusy(false);
+    }
+  };
 
   const handleGenerate = async (silent = false) => {
     if (!topic.trim()) {
@@ -68,31 +156,25 @@ export function ReelWeaverStudio() {
   return (
     <div className="space-y-6 pb-12">
       {/* Banner Header */}
-      <div className="rounded-3xl bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 p-6 text-white shadow-lg">
+      <div className="rounded-3xl bg-gradient-to-r from-indigo-600 via-violet-600 to-blue-600 p-6 text-white shadow-lg">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="space-y-1.5">
             <div className="inline-flex items-center gap-2 rounded-full bg-white/20 px-3 py-1 text-xs font-bold uppercase tracking-wider backdrop-blur-sm">
               <Sparkles className="h-3.5 w-3.5" />
-              Studio Phim AI Hợp Nhất · MoonReel × FrameWeaver × 26Flow
+              Studio Làm Phim Thực Chiến · Video Decode × Raw Footage × Claude AI Local
             </div>
             <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">
-              Xưởng Dựng Phim Đa Cảnh & Khóa Đồng Nhất Nhân Vật
+              Giải Mã Video Mẫu (Decode) & Dựng Phim Từ Video Quay Sẵn
             </h1>
             <p className="max-w-3xl text-sm text-indigo-100">
-              Chọn <b>Ngách kênh (MoonReel)</b> ➔ Chọn <b>Phong cách vẽ (FrameWeaver: Người que, Nhân quả 2D, Dân gian VN, 3D Pixar)</b> ➔ Tự động khóa nhân vật (<b>STYLE/CHAR/SET LOCK</b>), bung đa góc máy (<b>Multi-Angle 85mm</b>), tạo <b>Thumbnail Satori</b> và xuất <b>Caption 4 nền tảng</b>.
+              <b>Bước A:</b> Tải 1 <b>Video Mẫu (Viral/Reference)</b> lên để <b>Local FFmpeg + Faster-Whisper + Claude AI</b> bóc tách nhịp cắt, góc máy & công thức Hook 3s đầu ➔ <b>Bước B:</b> Đưa các <b>Video Quay Sẵn (Raw Footage)</b> của anh vào để hệ thống tự khớp cảnh, viết lời thoại mới và dựng phim MP4 hoàn chỉnh ngay trên máy.
             </p>
           </div>
           <div className="flex flex-col items-end gap-2 rounded-2xl bg-black/25 px-4 py-3 backdrop-blur-md">
             <div className="flex items-center gap-2 text-xs font-semibold">
-              <span
-                className={cx(
-                  "h-2.5 w-2.5 rounded-full",
-                  catalog?.gateway?.online ? "bg-emerald-400 animate-pulse" : "bg-amber-300",
-                )}
-              />
+              <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse" />
               <span>
-                Cầu nối muse2api (Cổng 18610):{" "}
-                <b>{catalog?.gateway?.online ? `Sẵn sàng (${catalog.gateway.accounts} TK)` : "Đang chạy nền (Chờ gắn Cookie)"}</b>
+                Bộ não hỗ trợ: <b>{catalog?.aiProvider?.label ?? "Claude CLI (Local)"} + Local FFmpeg</b>
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -116,6 +198,326 @@ export function ReelWeaverStudio() {
           </div>
         </div>
       </div>
+
+      {/* TRẠM TRỌNG TÂM: DECODE VIDEO MẪU & DỰNG PHIM TỪ VIDEO QUAY SẴN (LOCAL + CLAUDE AI) */}
+      <Card className="border-2 border-blue-500/35 bg-gradient-to-br from-blue-500/[0.04] via-indigo-500/[0.03] to-violet-500/[0.04] p-5">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-line pb-3.5">
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-600 text-sm font-extrabold text-white shadow-xs">
+              <Scissors className="h-4 w-4" />
+            </span>
+            <div>
+              <h2 className="text-base font-extrabold text-ink">
+                🔍 Trạm Decode Video Mẫu & Học Theo Để Làm Phim Từ Video Quay Sẵn (Local FFmpeg + Whisper + Claude AI)
+              </h2>
+              <p className="text-xs text-muted">
+                Chạy 100% trên máy Mac của anh: Tách phân cảnh bằng `ffprobe/scdet`, vẽ bảng Contact Sheet, bóc lời thoại từng từ bằng `faster-whisper`, và dùng `Claude CLI` chuyển hóa thành phim mới từ các clip quay sẵn.
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <label
+              className={cx(
+                "inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-blue-600 bg-blue-600 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition",
+                (decodeBusy || uploadPct !== null) && "pointer-events-none opacity-60",
+              )}
+            >
+              <Upload className="h-3.5 w-3.5" />
+              <span>{uploadPct !== null ? `Đang tải ${uploadPct}%...` : "1. Tải Video Mẫu cần Decode (.mp4/.mov)"}</span>
+              <input
+                type="file"
+                accept="video/*"
+                className="hidden"
+                onChange={async (e) => {
+                  const f = e.target.files?.[0];
+                  if (!f) return;
+                  try {
+                    const up = await uploadStreamFile(f, setUploadPct);
+                    await handleDecodeVideo(up.path, false);
+                  } catch (err: any) {
+                    toast(err?.message ?? "Lỗi tải video mẫu", "err");
+                  }
+                }}
+              />
+            </label>
+            <Button
+              size="sm"
+              variant="secondary"
+              loading={decodeBusy}
+              onClick={() => void handleDecodeVideo(undefined, false)}
+            >
+              ⚡ Giải mã lại Video Mẫu trên máy
+            </Button>
+          </div>
+        </div>
+
+        {/* Chọn nhanh từ các Video có sẵn trên máy nếu chưa muốn upload */}
+        {(catalog?.localVideos ?? []).length > 0 && (
+          <div className="mb-4 flex flex-wrap items-center gap-2 text-xs">
+            <span className="font-bold text-muted">Hoặc chọn nhanh Video có sẵn trên máy để Decode:</span>
+            {(catalog.localVideos as any[]).slice(0, 4).map((v) => (
+              <button
+                key={v.path}
+                type="button"
+                onClick={() => void handleDecodeVideo(v.path, false)}
+                className={cx(
+                  "rounded-lg border px-2.5 py-1 font-medium transition",
+                  decodedBlueprint?.sourceVideoPath === v.path
+                    ? "border-blue-600 bg-blue-500/15 text-blue-700 dark:text-blue-300 font-bold"
+                    : "border-line bg-card text-ink hover:bg-soft",
+                )}
+              >
+                🎞️ {v.name}
+              </button>
+            ))}
+            <label className="ml-auto inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-700 dark:text-indigo-300">
+              <input
+                type="checkbox"
+                checked={useClaudeForDecode}
+                onChange={(e) => setUseClaudeForDecode(e.target.checked)}
+              />
+              Gọi thêm Claude CLI phân tích sâu Contact Sheet khi Decode (~15s)
+            </label>
+          </div>
+        )}
+
+        {/* KẾT QUẢ BƯỚC A: BẢNG GIẢI MÃ CÔNG THỨC VIDEO MẪU (DECODED BLUEPRINT) */}
+        {decodedBlueprint && (
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+            {/* Cột trái: Contact Sheet + Thông số nhịp dựng + Hook 3s đầu */}
+            <div className="space-y-3 rounded-2xl border border-line bg-card p-4 lg:col-span-5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-xs font-extrabold uppercase tracking-wider text-blue-600">
+                  📊 Kết quả Giải mã Video Mẫu ({decodedBlueprint.sourceFileName})
+                </span>
+                <Badge tone="green">
+                  {decodedBlueprint.shotCount} cảnh · {decodedBlueprint.avgShotSec}s/cảnh
+                </Badge>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                <div className="rounded-xl bg-soft p-2">
+                  <div className="text-[11px] text-muted">Thời lượng / FPS</div>
+                  <div className="font-extrabold text-ink">
+                    {decodedBlueprint.durationSec}s · {decodedBlueprint.fps}fps
+                  </div>
+                </div>
+                <div className="rounded-xl bg-soft p-2">
+                  <div className="text-[11px] text-muted">Khung hình</div>
+                  <div className="font-extrabold text-ink">
+                    {decodedBlueprint.width}×{decodedBlueprint.height}
+                  </div>
+                </div>
+                <div className="rounded-xl bg-soft p-2">
+                  <div className="text-[11px] text-muted">Tốc độ lời</div>
+                  <div className="font-extrabold text-ink">{decodedBlueprint.wordsPerMinute} từ/phút</div>
+                </div>
+              </div>
+
+              {decodedBlueprint.contactSheetUrl && (
+                <div className="space-y-1">
+                  <div className="text-[11px] font-bold text-muted">
+                    Ảnh tổng hợp các phân cảnh (Contact Sheet trích xuất bởi Local FFmpeg):
+                  </div>
+                  <img
+                    src={decodedBlueprint.contactSheetUrl}
+                    alt="Decoded Contact Sheet"
+                    className="max-h-52 w-full rounded-xl border border-line bg-black object-contain"
+                  />
+                </div>
+              )}
+
+              <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs space-y-1">
+                <div className="font-extrabold text-amber-800 dark:text-amber-300">
+                  🎯 Công thức Hook 3 Giây Đầu học được:
+                </div>
+                <p className="text-ink">
+                  <b>Cách mở bài:</b> {decodedBlueprint.hookFormula?.first3SecHook}
+                </p>
+                <p className="text-muted">
+                  <b>Kỹ thuật hình ảnh:</b> {decodedBlueprint.hookFormula?.visualHookTechnique}
+                </p>
+              </div>
+
+              <div className="space-y-1 text-xs">
+                <div className="font-bold text-ink">📐 Cấu trúc Kịch bản (Narrative Arc):</div>
+                <ul className="space-y-1 pl-4 list-disc text-muted">
+                  {(decodedBlueprint.narrativeArc ?? []).map((step: string, i: number) => (
+                    <li key={i}>{step}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            {/* Cột phải: Bảng phân cảnh đã Decode + Khu vực nạp Video Quay Sẵn của mình để dựng phim mới */}
+            <div className="space-y-4 rounded-2xl border border-line bg-card p-4 lg:col-span-7">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-xs font-extrabold uppercase tracking-wider text-indigo-600">
+                  🎞️ Chi tiết từng phân cảnh đã Decode & Hướng dẫn quay/chọn cảnh
+                </span>
+                <span className="text-[11px] font-semibold text-muted">
+                  Nhịp dựng: {decodedBlueprint.pacingLabel}
+                </span>
+              </div>
+
+              <div className="max-h-60 space-y-2 overflow-y-auto pr-1 scroll-thin">
+                {(decodedBlueprint.decodedShots ?? []).map((sh: any) => (
+                  <div key={sh.sceneNumber} className="rounded-xl border border-line bg-soft/50 p-2.5 text-xs space-y-1">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="font-extrabold text-ink">
+                        Cảnh {sh.sceneNumber} ({sh.startSec}s → {sh.endSec}s · dài {sh.durationSec}s)
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <Badge tone="blue">Zoom: {sh.recommendedZoom}</Badge>
+                        <Badge tone="amber">Chuyển: {sh.recommendedTransition}</Badge>
+                      </div>
+                    </div>
+                    <p className="text-ink">
+                      <b>Góc máy & Hình ảnh:</b> {sh.cameraAngle} — {sh.visualDescription}
+                    </p>
+                    <p className="text-emerald-700 dark:text-emerald-300 font-medium">
+                      💡 <b>Cách chọn Video Quay Sẵn của anh:</b> {sh.howToShootOrSelect}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Khu vực tải Video Quay Sẵn (Raw Footage) của mình để học theo Video Decode */}
+              <div className="rounded-2xl border-2 border-indigo-500/30 bg-indigo-500/[0.05] p-3.5 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <div className="text-xs font-extrabold text-indigo-800 dark:text-indigo-200">
+                      🎬 Bước 2: Đưa các Video Quay Sẵn (Raw Footage) của anh vào để làm phim theo công thức trên
+                    </div>
+                    <div className="text-[11px] text-muted">
+                      Tải lên các clip quay sản phẩm, cửa hàng, thao tác thực tế... (Nếu để trống, hệ thống sẽ dùng ngay clip mẫu trên máy để dựng thử).
+                    </div>
+                  </div>
+                  <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-dashed border-indigo-600 bg-card px-3 py-1.5 text-xs font-bold text-indigo-700 hover:bg-indigo-500/10 dark:text-indigo-300">
+                    <Film className="h-3.5 w-3.5" />
+                    <span>+ Tải lên Video Quay Sẵn (.mp4/.mov)</span>
+                    <input
+                      type="file"
+                      accept="video/*"
+                      multiple
+                      className="hidden"
+                      onChange={async (e) => {
+                        const files = Array.from(e.target.files ?? []);
+                        for (const f of files) {
+                          try {
+                            const r = await uploadStreamFile(f, setUploadPct);
+                            setRawFootageList((prev) => [...prev, { path: r.path, name: `${f.name} (${(f.size / 1048576).toFixed(1)} MB)` }]);
+                          } catch (err: any) {
+                            toast(err?.message ?? "Lỗi tải video quay sẵn", "err");
+                          }
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+
+                {rawFootageList.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 text-xs">
+                    {rawFootageList.map((m, idx) => (
+                      <span key={m.path} className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-500/30 bg-card px-2.5 py-1 font-semibold text-ink">
+                        📹 {m.name}
+                        <button
+                          type="button"
+                          onClick={() => setRawFootageList((prev) => prev.filter((_, j) => j !== idx))}
+                          className="text-rose-600 hover:underline"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                  <label className="inline-flex items-center gap-1.5 text-xs font-medium text-ink">
+                    <input
+                      type="checkbox"
+                      checked={renderRealMp4}
+                      onChange={(e) => setRenderRealMp4(e.target.checked)}
+                    />
+                    Kết xuất luôn file Video MP4 hoàn chỉnh bằng Local FFmpeg + Giọng VieNeu-TTS
+                  </label>
+                  <Button
+                    variant="primary"
+                    loading={cloneBusy}
+                    onClick={() => void handleCloneFromDecoded()}
+                    className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                  >
+                    <Wand2 className="mr-1.5 h-4 w-4" />
+                    🎬 Học Theo Video Decode & Dựng Phim Mới Ngay (Claude + Local)
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* KẾT QUẢ BƯỚC B: BẢNG ĐỐI CHIẾU PHÂN CẢNH ĐÃ HỌC THEO VIDEO DECODE + VIDEO MP4 MỚI */}
+        {clonedResult && (
+          <div className="mt-4 rounded-2xl border border-emerald-500/35 bg-card p-4 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2.5">
+              <div>
+                <h3 className="text-sm font-extrabold text-emerald-700 dark:text-emerald-300">
+                  ✅ Phim Mới Đã Dựng Theo Công Thức Video Decode · {clonedResult.hookTitle}
+                </h3>
+                <p className="text-xs text-muted">{clonedResult.renderNotes}</p>
+              </div>
+              <Badge tone="green">Bộ não: {clonedResult.providerUsed}</Badge>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+              <div className="space-y-2 lg:col-span-8">
+                <div className="text-xs font-bold text-ink">
+                  📋 Bảng Đối Chiếu Từng Cảnh (Công Thức Gốc ↔ Cảnh Quay Sẵn Đã Ghép + Lời Thoại Mới):
+                </div>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {(clonedResult.scenes ?? []).map((sc: any) => (
+                    <div key={sc.sceneNumber} className="rounded-xl border border-line bg-soft/40 p-3 text-xs space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="font-extrabold text-indigo-700 dark:text-indigo-300">
+                          Cảnh {sc.sceneNumber} ({sc.templateTiming})
+                        </span>
+                        <Badge tone="blue">{sc.newOnScreenText}</Badge>
+                      </div>
+                      <p className="text-[11px] text-muted">
+                        <b>Gốc Decode:</b> {sc.originalShotSummary}
+                      </p>
+                      <p className="text-ink font-medium">
+                        🎙️ <b>Lời thoại mới:</b> “{sc.newVoiceover}”
+                      </p>
+                      <p className="text-[11px] text-emerald-700 dark:text-emerald-300">
+                        ✂️ <b>Ghép từ Video Quay Sẵn:</b> {sc.selectedRawCut?.sourceFileName} ({sc.selectedRawCut?.startSec}s – {sc.selectedRawCut?.endSec}s) · Zoom {sc.zoom}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2 lg:col-span-4">
+                <div className="text-xs font-bold text-ink">🎬 Bản Xem Trước Video MP4 Hoàn Chỉnh:</div>
+                {clonedResult.renderedVideoUrl && (
+                  <video
+                    key={clonedResult.renderedVideoUrl}
+                    src={clonedResult.renderedVideoUrl}
+                    controls
+                    playsInline
+                    className="mx-auto max-h-72 w-full rounded-2xl border border-line bg-black object-contain shadow-sm"
+                  />
+                )}
+                <div className="rounded-xl bg-soft p-2.5 text-xs space-y-1">
+                  <div className="font-bold text-ink">Caption gợi ý đăng kênh:</div>
+                  <p className="text-muted">{clonedResult.caption}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </Card>
 
       {/* Bước 1: Chọn Ngách Kênh (MoonReel Niche-First) */}
       <Card className="p-5">

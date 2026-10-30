@@ -10,8 +10,11 @@ import {
   MOONREEL_NICHES,
   buildFrameWeaverProductionPlan,
   checkMuse2ApiHealth,
+  decodeVideoBlueprint,
   executeMuseRpc,
   latestDaily,
+  listLocalAvailableVideos,
+  produceFromDecodedBlueprint,
   startVideoJob,
   sumMetrics,
   today,
@@ -278,13 +281,20 @@ export function coreRoutes(app: FastifyInstance) {
     avgTaskMinutes: q.scalar("SELECT AVG((julianday(ended_at) - julianday(started_at)) * 1440) FROM task_run WHERE biz_id = ? AND ended_at IS NOT NULL", bizId),
   }));
 
-  // ---------------- ReelWeaver & MoonReel Studio API ----------------
+  // ---------------- ReelWeaver & MoonReel Studio + Local Video Decoder API ----------------
   r.get("/v1/studio/reelweaver-catalog", async ({ bizId }) => {
     const gatewayHealth = await checkMuse2ApiHealth();
     const dna = activeDna(bizId)?.data;
+    const prov = effectiveProvider(bizId);
     return {
       styles: FRAMEWEAVER_STORY_STYLES,
       niches: MOONREEL_NICHES,
+      localVideos: listLocalAvailableVideos(),
+      aiProvider: {
+        provider: prov.provider,
+        ready: prov.ready,
+        label: prov.provider === "claude_cli" ? "Claude CLI (Local)" : prov.provider === "codex_cli" ? "Codex CLI (Local)" : prov.provider === "gemini_cli" ? "Gemini CLI (Local)" : "Local Studio Engine",
+      },
       gateway: {
         ...gatewayHealth,
         adminUrl: "http://127.0.0.1:18610/admin?key=zono-local-studio-key-2026",
@@ -293,6 +303,54 @@ export function coreRoutes(app: FastifyInstance) {
       brandName: dna?.company?.brand || "ZONO Thực Phẩm & Đặc Sản Sạch",
       productsSummary: (dna?.products ?? []).map((p: any) => p.name).join(", ") || "Yến Sào Chưng Tươi, Mật Ong Hoa Nhãn, Trà Thảo Mộc",
     };
+  });
+
+  r.post("/v1/studio/decode-video", async ({ bizId, body }) => {
+    const p = z
+      .object({
+        videoPath: z.string().optional(),
+        referenceNotes: z.string().optional(),
+        useWhisper: z.boolean().optional(),
+        useClaude: z.boolean().optional(),
+      })
+      .parse(body ?? {});
+    const blueprint = await decodeVideoBlueprint({
+      bizId,
+      videoPath: p.videoPath,
+      referenceNotes: p.referenceNotes,
+      useWhisper: p.useWhisper ?? false,
+      useClaude: p.useClaude ?? false,
+    });
+    return { ok: true, blueprint };
+  });
+
+  r.post("/v1/studio/clone-from-decoded", async ({ bizId, body }) => {
+    const p = z
+      .object({
+        blueprint: z.any(),
+        rawVideoPaths: z.array(z.string()).optional(),
+        topic: z.string().min(2),
+        product: z.string().optional(),
+        brandName: z.string().optional(),
+        voiceName: z.string().optional(),
+        editStyle: z.enum(["dynamic", "smooth", "clean"]).optional(),
+        renderMp4: z.boolean().optional(),
+        useClaude: z.boolean().optional(),
+      })
+      .parse(body);
+    const result = await produceFromDecodedBlueprint({
+      bizId,
+      blueprint: p.blueprint,
+      rawVideoPaths: p.rawVideoPaths,
+      topic: p.topic,
+      product: p.product,
+      brandName: p.brandName,
+      voiceName: p.voiceName,
+      editStyle: p.editStyle,
+      renderMp4: p.renderMp4 ?? false,
+      useClaude: p.useClaude ?? false,
+    });
+    return { ok: true, result };
   });
 
   r.post("/v1/studio/reelweaver-plan", async ({ bizId, body, actor }) => {
