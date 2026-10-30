@@ -91,24 +91,32 @@ export function ReelWeaverStudio() {
         setEditStyle(res.blueprint.recommendedEditStyle);
       }
       if (!silent) {
-        toast(`Đã Decode xong Video Mẫu (${res.blueprint.shotCount} phân cảnh · nhịp ${res.blueprint.avgShotSec}s/cảnh)!`, "ok");
+        toast(`Đã Decode xong (${res.blueprint.shotCount} cảnh · nhịp ${res.blueprint.avgShotSec}s) — đang tự động dựng Video MP4 mới cho anh...`, "info");
       }
-      if (silent && res.blueprint) {
-        const cloneRes = await api.post<any>("studio/clone-from-decoded", {
-          blueprint: res.blueprint,
-          rawVideoPaths: [],
-          topic,
-          product: catalog?.productsSummary,
-          brandName: catalog?.brandName,
-          voiceName: voice,
-          audioMode,
-          aspectRatio,
-          editStyle: res.blueprint.recommendedEditStyle ?? "dynamic",
-          renderMp4: false,
-          useClaude: false,
-        });
-        setClonedResult(cloneRes.result);
-        setEditableScenes(cloneRes.result?.scenes ?? []);
+      if (res.blueprint) {
+        setCloneBusy(true);
+        try {
+          const cloneRes = await api.post<any>("studio/clone-from-decoded", {
+            blueprint: res.blueprint,
+            rawVideoPaths: rawFootageList.map((r) => r.path),
+            topic,
+            product: catalog?.productsSummary,
+            brandName: catalog?.brandName,
+            voiceName: voice,
+            audioMode,
+            aspectRatio,
+            editStyle: res.blueprint.recommendedEditStyle ?? editStyle ?? "dynamic",
+            renderMp4: !silent && renderRealMp4,
+            useClaude: !silent && useClaudeForDecode,
+          });
+          setClonedResult(cloneRes.result);
+          setEditableScenes(cloneRes.result?.scenes ?? []);
+          if (!silent) {
+            toast("🎉 Đã Decode & dựng xong Video MP4 mới hoàn chỉnh!", "ok");
+          }
+        } finally {
+          setCloneBusy(false);
+        }
       }
     } catch (e: any) {
       if (!silent) toast(e?.message ?? "Lỗi khi giải mã video mẫu", "err");
@@ -374,25 +382,60 @@ export function ReelWeaverStudio() {
                   <div className="grid grid-cols-2 gap-2">
                     {decodedBlueprint.sourceVideoUrl && (
                       <div>
-                        <div className="mb-1 text-[11px] font-bold text-muted">Video Mẫu Gốc:</div>
+                        <div className="mb-1 text-[11px] font-bold text-muted">1. Video Mẫu Gốc:</div>
                         <video
                           key={decodedBlueprint.sourceVideoUrl}
                           src={decodedBlueprint.sourceVideoUrl}
                           controls
                           playsInline
-                          className="h-40 w-full rounded-xl border border-line bg-black object-contain"
+                          className="h-36 w-full rounded-xl border border-line bg-black object-contain"
                         />
                       </div>
                     )}
                     {decodedBlueprint.contactSheetUrl && (
                       <div>
-                        <div className="mb-1 text-[11px] font-bold text-muted">Bảng Contact Sheet FFmpeg:</div>
+                        <div className="mb-1 text-[11px] font-bold text-muted">2. Bảng Contact Sheet FFmpeg:</div>
                         <img
                           src={decodedBlueprint.contactSheetUrl}
                           alt="Contact Sheet"
-                          className="h-40 w-full rounded-xl border border-line bg-black object-contain"
+                          className="h-36 w-full rounded-xl border border-line bg-black object-contain"
                         />
                       </div>
+                    )}
+                  </div>
+
+                  {/* Hiển thị ngay Video MP4 Mới Đã Tạo ngay tại Bước 1 để không phải cuộn xuống */}
+                  <div className="rounded-xl border-2 border-emerald-500/40 bg-emerald-500/10 p-2.5 text-xs space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="font-extrabold text-emerald-700 dark:text-emerald-300">
+                        3. 🎬 Video MP4 Mới Đã Dựng Theo Công Thức Decode:
+                      </span>
+                      {clonedResult?.renderedVideoUrl && !cloneBusy && (
+                        <a
+                          href={clonedResult.renderedVideoUrl}
+                          download={`zono-decoded-video-${Date.now()}.mp4`}
+                          className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-emerald-700"
+                        >
+                          <Download className="h-3 w-3" />
+                          Tải MP4
+                        </a>
+                      )}
+                    </div>
+                    {cloneBusy ? (
+                      <div className="flex items-center gap-2 py-6 justify-center text-emerald-700 dark:text-emerald-300 font-semibold">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Đang lồng tiếng VieNeu-TTS & kết xuất Video MP4 mới (~5s)...
+                      </div>
+                    ) : (
+                      clonedResult?.renderedVideoUrl && (
+                        <video
+                          key={clonedResult.renderedVideoUrl}
+                          src={clonedResult.renderedVideoUrl}
+                          controls
+                          playsInline
+                          className="h-48 w-full rounded-xl border border-emerald-500/40 bg-black object-contain shadow-sm"
+                        />
+                      )
                     )}
                   </div>
 

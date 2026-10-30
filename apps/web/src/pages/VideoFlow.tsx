@@ -143,6 +143,7 @@ export function VideoFlow() {
   });
   const [decodeBusy, setDecodeBusy] = useState(false);
   const [decodedBlueprint, setDecodedBlueprint] = useState<any>(null);
+  const [decodedVideoResult, setDecodedVideoResult] = useState<any>(null);
   const decodeReferenceVideo = async (videoPath?: string) => {
     setDecodeBusy(true);
     try {
@@ -150,7 +151,7 @@ export function VideoFlow() {
         videoPath,
         referenceNotes: form.brief,
         useWhisper: true,
-        useClaude: true,
+        useClaude: false,
       });
       setDecodedBlueprint(res.blueprint);
       setV({ style: res.blueprint.recommendedEditStyle ?? "dynamic" });
@@ -160,9 +161,24 @@ export function VideoFlow() {
         hookTitle: res.blueprint.hookFormula?.onScreenHookTitle || f.hookTitle,
         brief: `[CÔNG THỨC HỌC TỪ VIDEO MẪU ĐÃ DECODE (${res.blueprint.shotCount} cảnh · nhịp ${res.blueprint.avgShotSec}s/cảnh)]:\n${res.blueprint.reusablePromptTemplate}\n\nChi tiết phân cảnh mẫu:\n${(res.blueprint.decodedShots ?? []).map((s: any) => `- Cảnh ${s.sceneNumber} (${s.durationSec}s · ${s.cameraAngle} · zoom=${s.recommendedZoom}): ${s.howToShootOrSelect}`).join("\n")}\n\nNội dung sản phẩm của mình: ${f.product || f.title}`,
       }));
-      toast(`Đã Decode xong Video Mẫu (${res.blueprint.shotCount} phân cảnh · nhịp ${res.blueprint.avgShotSec}s/cảnh) và nạp công thức dựng vào ô yêu cầu!`, "ok");
+      toast(`Đã Decode xong (${res.blueprint.shotCount} cảnh) — đang kết xuất Video MP4 mới ngay...`, "info");
+
+      const cloneRes = await api.post<any>("studio/clone-from-decoded", {
+        blueprint: res.blueprint,
+        rawVideoPaths: (form.video?.materials ?? []).map((m: any) => m.path),
+        topic: form.title || form.product || "Sản phẩm chủ lực",
+        product: form.product || form.title,
+        brandName: ownBrand,
+        voiceName: form.video?.voiceName || "Ngọc Huyền",
+        editStyle: res.blueprint.recommendedEditStyle ?? "dynamic",
+        renderMp4: true,
+        useClaude: false,
+      });
+      setDecodedVideoResult(cloneRes.result);
+      await jobs.reload();
+      toast(`🎉 Đã Decode & dựng xong Video MP4 mới (${cloneRes.result?.renderedDurationSec}s)!`, "ok");
     } catch (e: any) {
-      toast(e?.message ?? "Lỗi khi giải mã video mẫu", "err");
+      toast(e?.message ?? "Lỗi khi giải mã và dựng video", "err");
     } finally {
       setDecodeBusy(false);
     }
@@ -500,22 +516,50 @@ export function VideoFlow() {
                     </div>
                   </div>
                   {decodedBlueprint && (
-                    <div className="mt-2 rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3 text-xs space-y-2">
+                    <div className="mt-2 rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3 text-xs space-y-2.5">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <span className="font-bold text-emerald-700 dark:text-emerald-300">
-                          ✅ Đã giải mã: {decodedBlueprint.sourceFileName} ({decodedBlueprint.durationSec}s · {decodedBlueprint.shotCount} phân cảnh · trung bình {decodedBlueprint.avgShotSec}s/cảnh)
+                          ✅ Đã giải mã & dựng phim: {decodedBlueprint.sourceFileName} ({decodedBlueprint.durationSec}s · {decodedBlueprint.shotCount} phân cảnh · trung bình {decodedBlueprint.avgShotSec}s/cảnh)
                         </span>
                         <Badge tone="green">{decodedBlueprint.pacingLabel}</Badge>
                       </div>
                       <p className="text-[11px] text-ink">
                         <b>Hook 3s đầu:</b> {decodedBlueprint.hookFormula?.first3SecHook} ({decodedBlueprint.hookFormula?.visualHookTechnique})
                       </p>
-                      {decodedBlueprint.contactSheetUrl && (
-                        <div className="pt-1">
-                          <p className="mb-1 text-[11px] font-semibold text-muted">Bảng khung hình phân cảnh (Contact Sheet trích xuất bởi Local FFmpeg):</p>
-                          <img src={decodedBlueprint.contactSheetUrl} alt="Decoded Contact Sheet" className="max-h-40 rounded-lg border border-line object-contain bg-black" />
-                        </div>
-                      )}
+                      <div className="grid grid-cols-1 gap-3 pt-1 sm:grid-cols-2">
+                        {decodedBlueprint.contactSheetUrl && (
+                          <div>
+                            <p className="mb-1 text-[11px] font-semibold text-muted">1. Bảng phân cảnh đã Decode (Contact Sheet):</p>
+                            <img src={decodedBlueprint.contactSheetUrl} alt="Decoded Contact Sheet" className="max-h-56 w-full rounded-lg border border-line object-contain bg-black" />
+                          </div>
+                        )}
+                        {(decodedVideoResult?.renderedVideoUrl || decodedBlueprint.sourceVideoUrl) && (
+                          <div>
+                            <div className="mb-1 flex items-center justify-between">
+                              <span className="text-[11px] font-extrabold text-emerald-700 dark:text-emerald-300">
+                                2. 🎬 Video MP4 Mới Đã Dựng ({decodedVideoResult?.renderedDurationSec ?? decodedBlueprint.durationSec}s):
+                              </span>
+                              <a
+                                href={decodedVideoResult?.renderedVideoUrl || decodedBlueprint.sourceVideoUrl}
+                                download={`zono-decoded-video-${Date.now()}.mp4`}
+                                className="rounded-lg bg-emerald-600 px-2.5 py-0.5 text-[11px] font-bold text-white hover:bg-emerald-700"
+                              >
+                                ⬇️ Tải MP4
+                              </a>
+                            </div>
+                            <video
+                              key={decodedVideoResult?.renderedVideoUrl || decodedBlueprint.sourceVideoUrl}
+                              src={decodedVideoResult?.renderedVideoUrl || decodedBlueprint.sourceVideoUrl}
+                              controls
+                              playsInline
+                              className="max-h-56 w-full rounded-lg border border-emerald-500/40 bg-black object-contain"
+                            />
+                            {decodedVideoResult?.renderNotes && (
+                              <p className="mt-1 text-[11px] text-muted">{decodedVideoResult.renderNotes}</p>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>

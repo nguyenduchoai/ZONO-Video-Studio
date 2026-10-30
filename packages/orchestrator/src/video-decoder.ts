@@ -716,7 +716,8 @@ export async function produceFromDecodedBlueprint(opts: {
   });
 
   // 3. Nếu renderMp4 !== false, dựng luôn file MP4 thật trên máy Local bằng pro_edit.py render + VieNeu-TTS (chạy song song & có Cache)
-  let renderedVideoUrl: string | null = opts.blueprint.sourceVideoUrl;
+  const latestCloned = available.find((v) => v.url.includes("cloned_clone_"));
+  let renderedVideoUrl: string | null = latestCloned?.url ?? opts.blueprint.sourceVideoUrl;
   let renderedDurationSec = opts.blueprint.durationSec;
   let renderNotes = `Đã lập bảng phân cảnh học theo Video Mẫu (${outScenes.length} cảnh · ${opts.blueprint.pacingLabel}).`;
 
