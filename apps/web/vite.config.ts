@@ -8,7 +8,9 @@ export default defineConfig({
   root,
   plugins: [react(), tailwindcss()],
   server: {
+    host: true,
     port: 5173,
+    strictPort: true,
     proxy: { "/v1": "http://127.0.0.1:8787", "/hooks": "http://127.0.0.1:8787" },
   },
   build: { outDir: `${root}/dist`, emptyOutDir: true, chunkSizeWarningLimit: 1500 },
