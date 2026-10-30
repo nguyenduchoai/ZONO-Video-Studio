@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, BarChart3, Clapperboard, Eye, FileText, MessageSquareText, MessagesSquare, Sparkles, Store } from "lucide-react";
+import { ArrowRight, BarChart3, Clapperboard, Eye, FileText, MessageSquareText, MessagesSquare, Sparkles, Store, Target } from "lucide-react";
 import { api, useApi } from "../lib/api";
 import { CONV_STATE, LEAD, num, timeAgo, vnd } from "../lib/format";
 import { Avatar, Badge, Button, Card, Empty, Loading, PlatformIcon, Stat, useToast } from "../components/ui";
@@ -36,6 +36,11 @@ export function Overview() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2.5">
+          <Link to="/dna">
+            <Button variant="secondary" className="border-emerald-500/40 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20 dark:text-emerald-300">
+              <Target className="mr-1.5 h-4 w-4" /> 🧬 Mục tiêu & DNA Thương hiệu
+            </Button>
+          </Link>
           <Link to="/studio">
             <Button variant="primary" className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700">
               <Sparkles className="mr-1.5 h-4 w-4" /> 🎬 Mở Studio Phim AI (MoonReel × FrameWeaver)

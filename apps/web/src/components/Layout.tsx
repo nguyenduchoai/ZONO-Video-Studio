@@ -14,12 +14,13 @@ import { MuseBasicWorkspace } from "./MuseBasicWorkspace";
 
 type NavItem = { to: string; label: string; icon: any; badge?: "unread" | "approvals"; special?: boolean; children?: { to: string; label: string; icon: any }[] };
 
-/** Menu Quản trị Tinh gọn: Rõ ràng, có Studio Phim AI (MoonReel × FrameWeaver × 26Flow) nổi bật */
+/** Menu Quản trị Tinh gọn: Rõ ràng, có Studio Phim AI & Mục tiêu/DNA Thương hiệu nổi bật */
 const CORE_NAV: { title: string; items: NavItem[] }[] = [
   {
     title: "Quản lý Cửa hàng",
     items: [
       { to: "/", label: "Bảng điều khiển", icon: Home },
+      { to: "/dna", label: "Mục tiêu & DNA", icon: Target },
       { to: "/studio", label: "Studio Phim AI (Mới)", icon: Sparkles, special: true },
       { to: "/users-quota", label: "Cửa hàng & Bảng giá", icon: Users },
       { to: "/zalo", label: "Zalo & Khách hàng", icon: MessagesSquare, badge: "unread" },
@@ -31,7 +32,21 @@ const CORE_NAV: { title: string; items: NavItem[] }[] = [
   },
 ];
 
-const EXTRA_NAV: { title: string; items: NavItem[] }[] = [];
+const EXTRA_NAV: { title: string; items: NavItem[] }[] = [
+  {
+    title: "Điều phối AI Chuyên sâu",
+    items: [
+      { to: "/brain", label: "Bộ não AI (Brain)", icon: BrainCircuit },
+      { to: "/plan", label: "Kế hoạch Chiến dịch", icon: CalendarDays },
+      { to: "/agents", label: "Đội ngũ Agent AI", icon: Bot },
+      { to: "/knowledge", label: "Kho Tri thức (RAG)", icon: Library },
+      { to: "/approvals", label: "Duyệt Nội dung", icon: CheckCircle2, badge: "approvals" },
+      { to: "/channels", label: "Đa kênh & Đăng bài", icon: Send },
+      { to: "/mcp", label: "Cổng AI & MCP", icon: Network },
+      { to: "/logs", label: "Nhật ký Hệ thống", icon: FileClock },
+    ],
+  },
+];
 /** Bottom bar on phones: the four things checked most often + "Menu" for everything else. */
 const TABBAR: { to: string; label: string; icon: any; badge?: "unread" | "approvals" }[] = [
   { to: "/", label: "Tổng quan", icon: Home },
@@ -130,45 +145,66 @@ export function Layout({ children }: { children: ReactNode }) {
   const toggleRail = () => setRail((r) => { railStore.set(!r); return !r; });
 
   /** `compact` = icon-only rail (tablet); the drawer on phones always uses the full layout. */
+  const renderNavItem = (n: NavItem, compact: boolean) => {
+    const count = n.badge ? sys?.counts?.[n.badge] : 0;
+    return (
+      <NavLink
+        key={n.to}
+        to={n.to}
+        end={n.to === "/"}
+        title={compact ? n.label : undefined}
+        aria-label={compact ? n.label : undefined}
+        className={({ isActive }) =>
+          cx(
+            "group relative flex min-h-11 items-center rounded-2xl text-sm font-bold transition-colors",
+            compact ? "justify-center px-0" : "gap-3 px-3.5",
+            isActive
+              ? n.special
+                ? "bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-sm"
+                : "bg-blue-600 text-white shadow-xs"
+              : n.special
+                ? "border border-violet-500/30 bg-violet-500/10 text-violet-700 hover:bg-violet-500/20 dark:text-violet-300"
+                : "text-ink/85 hover:bg-soft hover:text-ink",
+          )
+        }
+      >
+        <n.icon className="h-5 w-5 shrink-0" aria-hidden />
+        {!compact && <span className="min-w-0 flex-1 truncate">{n.label}</span>}
+        {count ? (
+          compact ? (
+            <span className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full bg-rose-500 ring-2 ring-card" />
+          ) : (
+            <span className="grid h-5 min-w-5 place-items-center rounded-full bg-rose-600 px-1.5 text-[11px] font-bold text-white">
+              {count}
+            </span>
+          )
+        ) : null}
+      </NavLink>
+    );
+  };
+
   const sidebar = (compact: boolean) => (
     <nav aria-label="Điều hướng chính" className={cx("min-h-0 flex-1 overflow-y-auto overflow-x-hidden py-3 scroll-thin space-y-1.5", compact ? "px-2" : "px-3")}>
-      {CORE_NAV[0].items.map((n) => {
-        const count = n.badge ? sys?.counts?.[n.badge] : 0;
-        return (
-          <NavLink
-            key={n.to}
-            to={n.to}
-            end={n.to === "/"}
-            title={compact ? n.label : undefined}
-            aria-label={compact ? n.label : undefined}
-            className={({ isActive }) =>
-              cx(
-                "group relative flex min-h-11 items-center rounded-2xl text-sm font-bold transition-colors",
-                compact ? "justify-center px-0" : "gap-3 px-3.5",
-                isActive
-                  ? n.special
-                    ? "bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-sm"
-                    : "bg-blue-600 text-white shadow-xs"
-                  : n.special
-                    ? "border border-violet-500/30 bg-violet-500/10 text-violet-700 hover:bg-violet-500/20 dark:text-violet-300"
-                    : "text-ink/85 hover:bg-soft hover:text-ink",
-              )
-            }
-          >
-            <n.icon className="h-5 w-5 shrink-0" aria-hidden />
-            {!compact && <span className="min-w-0 flex-1 truncate">{n.label}</span>}
-            {count ? (
-              compact ? (
-                <span className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full bg-rose-500 ring-2 ring-card" />
-              ) : (
-                <span className="grid h-5 min-w-5 place-items-center rounded-full bg-rose-600 px-1.5 text-[11px] font-bold text-white">
-                  {count}
-                </span>
-              )
-            ) : null}
-          </NavLink>
-        );
-      })}
+      {CORE_NAV[0].items.map((n) => renderNavItem(n, compact))}
+      {EXTRA_NAV.length > 0 && (
+        <div className="pt-2 border-t border-line/60">
+          {!compact && (
+            <button
+              type="button"
+              onClick={toggleExtraNav}
+              className="flex w-full items-center justify-between rounded-xl px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-wider text-muted hover:bg-soft hover:text-ink"
+            >
+              <span>Điều phối Chuyên sâu</span>
+              <Chevron open={showExtraNav} className="h-3.5 w-3.5" />
+            </button>
+          )}
+          {(showExtraNav || compact) && (
+            <div className="mt-1 space-y-1">
+              {EXTRA_NAV[0].items.map((n) => renderNavItem(n, compact))}
+            </div>
+          )}
+        </div>
+      )}
     </nav>
   );
 
@@ -237,7 +273,7 @@ export function Layout({ children }: { children: ReactNode }) {
             </div>
           )}
 
-          {/* Nút chuyển đổi Giao diện Đơn giản <-> Studio Phim AI <-> Quản trị Chuyên sâu */}
+          {/* Nút chuyển đổi Giao diện Đơn giản <-> DNA <-> Studio Phim AI <-> Quản trị Chuyên sâu */}
           <div className="flex items-center rounded-2xl border border-line bg-soft p-1 text-xs">
             <button
               type="button"
@@ -254,6 +290,19 @@ export function Layout({ children }: { children: ReactNode }) {
             </button>
             <button
               type="button"
+              onClick={() => switchWorkspaceMode("advanced", "/dna")}
+              className={cx(
+                "flex items-center gap-1.5 rounded-xl px-3 py-1.5 font-bold transition",
+                showAdvanced && loc.pathname.startsWith("/dna")
+                  ? "bg-emerald-600 text-white shadow-xs"
+                  : "text-emerald-700 hover:bg-emerald-500/10 dark:text-emerald-300",
+              )}
+            >
+              <Target className="h-3.5 w-3.5" />
+              <span>🧬 DNA Thương hiệu</span>
+            </button>
+            <button
+              type="button"
               onClick={() => switchWorkspaceMode("advanced", "/studio")}
               className={cx(
                 "flex items-center gap-1.5 rounded-xl px-3 py-1.5 font-bold transition",
@@ -267,10 +316,10 @@ export function Layout({ children }: { children: ReactNode }) {
             </button>
             <button
               type="button"
-              onClick={() => switchWorkspaceMode("advanced", loc.pathname.startsWith("/studio") ? "/" : undefined)}
+              onClick={() => switchWorkspaceMode("advanced", loc.pathname.startsWith("/studio") || loc.pathname.startsWith("/dna") ? "/" : undefined)}
               className={cx(
                 "flex items-center gap-1.5 rounded-xl px-3 py-1.5 font-bold transition",
-                showAdvanced && !loc.pathname.startsWith("/studio")
+                showAdvanced && !loc.pathname.startsWith("/studio") && !loc.pathname.startsWith("/dna")
                   ? "bg-violet-600 text-white shadow-xs"
                   : "text-muted hover:text-ink",
               )}
@@ -278,6 +327,9 @@ export function Layout({ children }: { children: ReactNode }) {
               <SlidersHorizontal className="h-3.5 w-3.5" />
               <span>Quản trị Chuyên sâu</span>
             </button>
+          </div>
+          <div className="hidden lg:block">
+            <BusinessSwitcher />
           </div>
           <div className="flex-1" />
           <button onClick={() => setDark(!dark)} className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-muted hover:bg-soft hover:text-ink" aria-label="Đổi giao diện sáng/tối" title="Đổi chế độ Sáng / Tối">{dark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}</button>
