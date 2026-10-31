@@ -71,7 +71,7 @@ export function probeCliAuth(): Promise<boolean | null> {
     };
     if (!cliInfoRaw().available) return done(false, "Không tìm thấy lệnh `claude`");
     mkdirSync(WORKDIR, { recursive: true });
-    const child = spawn(BIN, ["-p", "--output-format", "json", "--model", PROBE_MODEL, "--tools", "", "--no-session-persistence", "--setting-sources", ""], { cwd: WORKDIR, env: childEnv(), stdio: ["pipe", "pipe", "pipe"] });
+    const child = spawn(BIN, ["-p", "--output-format", "json", "--model", PROBE_MODEL, "--tools", "", "--no-session-persistence", "--setting-sources", "", "--strict-mcp-config", "--disable-slash-commands"], { cwd: WORKDIR, env: childEnv(), stdio: ["pipe", "pipe", "pipe"] });
     let out = "";
     let err = "";
     let timedOut = false;

@@ -286,14 +286,46 @@ export function coreRoutes(app: FastifyInstance) {
     const gatewayHealth = await checkMuse2ApiHealth();
     const dna = activeDna(bizId)?.data;
     const prov = effectiveProvider(bizId);
+    const allStatus = allProvidersStatus(bizId);
+    const cliProviders = [
+      {
+        id: "claude_cli",
+        label: "Claude CLI (Anthropic)",
+        shortLabel: "Claude CLI",
+        ready: Boolean(allStatus.claude_cli?.ready),
+        detail: allStatus.claude_cli?.reason ?? "Sẵn sàng",
+      },
+      {
+        id: "gemini_cli",
+        label: "Gemini CLI (Google)",
+        shortLabel: "Gemini CLI",
+        ready: Boolean(allStatus.gemini_cli?.ready),
+        detail: allStatus.gemini_cli?.reason ?? "Sẵn sàng",
+      },
+      {
+        id: "codex_cli",
+        label: "Codex CLI (OpenAI)",
+        shortLabel: "Codex CLI",
+        ready: Boolean(allStatus.codex_cli?.ready),
+        detail: allStatus.codex_cli?.reason ?? "Sẵn sàng",
+      },
+    ];
     return {
       styles: FRAMEWEAVER_STORY_STYLES,
       niches: MOONREEL_NICHES,
       localVideos: listLocalAvailableVideos(),
+      cliProviders,
       aiProvider: {
         provider: prov.provider,
         ready: prov.ready,
-        label: prov.provider === "claude_cli" ? "Claude CLI (Local)" : prov.provider === "codex_cli" ? "Codex CLI (Local)" : prov.provider === "gemini_cli" ? "Gemini CLI (Local)" : "Local Studio Engine",
+        label:
+          prov.provider === "claude_cli"
+            ? "Claude CLI (Local)"
+            : prov.provider === "codex_cli"
+              ? "Codex CLI (Local)"
+              : prov.provider === "gemini_cli"
+                ? "Gemini CLI (Local)"
+                : "Local Studio Engine",
       },
       gateway: {
         ...gatewayHealth,
@@ -312,14 +344,16 @@ export function coreRoutes(app: FastifyInstance) {
         referenceNotes: z.string().optional(),
         useWhisper: z.boolean().optional(),
         useClaude: z.boolean().optional(),
+        preferredProvider: z.enum(["claude_cli", "gemini_cli", "codex_cli"]).optional(),
       })
       .parse(body ?? {});
     const blueprint = await decodeVideoBlueprint({
       bizId,
       videoPath: p.videoPath,
       referenceNotes: p.referenceNotes,
-      useWhisper: p.useWhisper ?? false,
-      useClaude: p.useClaude ?? false,
+      useWhisper: p.useWhisper ?? true,
+      useClaude: p.useClaude ?? true,
+      preferredProvider: p.preferredProvider,
     });
     return { ok: true, blueprint };
   });
@@ -338,6 +372,7 @@ export function coreRoutes(app: FastifyInstance) {
         editStyle: z.enum(["dynamic", "smooth", "clean"]).optional(),
         renderMp4: z.boolean().optional(),
         useClaude: z.boolean().optional(),
+        preferredProvider: z.enum(["claude_cli", "gemini_cli", "codex_cli"]).optional(),
         customScenes: z
           .array(
             z.object({
@@ -365,7 +400,8 @@ export function coreRoutes(app: FastifyInstance) {
       aspectRatio: p.aspectRatio,
       editStyle: p.editStyle,
       renderMp4: p.renderMp4 ?? false,
-      useClaude: p.useClaude ?? false,
+      useClaude: p.useClaude ?? true,
+      preferredProvider: p.preferredProvider,
       customScenes: p.customScenes,
     });
     return { ok: true, result };
@@ -401,7 +437,7 @@ export function coreRoutes(app: FastifyInstance) {
       bizId,
       "hatch.message.agent_media_generation",
       {
-        prompt: plan.expandedEnginePrompt,
+        prompt: plan.fullVoiceoverVi,
         voiceText: plan.fullVoiceoverVi,
         voice: p.voice || "Binh (nam miền Bắc)",
       },
@@ -415,7 +451,7 @@ export function coreRoutes(app: FastifyInstance) {
         {
           tool: "anim-video",
           title: plan.seoTitle.slice(0, 55),
-          brief: plan.expandedEnginePrompt,
+          brief: plan.fullVoiceoverVi,
           images: [],
           channels: ["tiktok", "facebook"],
           durationSec: 25,

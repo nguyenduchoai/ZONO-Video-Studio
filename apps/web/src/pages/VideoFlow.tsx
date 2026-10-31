@@ -141,6 +141,7 @@ export function VideoFlow() {
     // ảnh theo ô (vai trò) + ảnh tham khảo khác; local engines (Decode & Dựng từ video quay sẵn / Video tự động / Motion 2D)
     video: { source: "flow", flowJobId: "", scriptReady: false, terms: "", voiceName: "Ngọc Huyền", voiceRate: 1, bgm: "random", aspect: "9:16", clipDuration: 4, driving: "d12.mp4", drivingPath: "", drivingName: "", voiceText: "", seconds: 6, animTemplate: "ecommerce-promo", animStyle: "2d-mascot", materials: [] as { path: string; name: string }[] },
   });
+  const [selectedCli, setSelectedCli] = useState<"claude_cli" | "gemini_cli" | "codex_cli">("claude_cli");
   const [decodeBusy, setDecodeBusy] = useState(false);
   const [decodedBlueprint, setDecodedBlueprint] = useState<any>(null);
   const [decodedVideoResult, setDecodedVideoResult] = useState<any>(null);
@@ -151,17 +152,12 @@ export function VideoFlow() {
         videoPath,
         referenceNotes: form.brief,
         useWhisper: true,
-        useClaude: false,
+        useClaude: true,
+        preferredProvider: selectedCli,
       });
       setDecodedBlueprint(res.blueprint);
       setV({ style: res.blueprint.recommendedEditStyle ?? "dynamic" });
-      set((f: any) => ({
-        ...f,
-        durationSec: Math.round(res.blueprint.durationSec || 25),
-        hookTitle: res.blueprint.hookFormula?.onScreenHookTitle || f.hookTitle,
-        brief: `[CÔNG THỨC HỌC TỪ VIDEO MẪU ĐÃ DECODE (${res.blueprint.shotCount} cảnh · nhịp ${res.blueprint.avgShotSec}s/cảnh)]:\n${res.blueprint.reusablePromptTemplate}\n\nChi tiết phân cảnh mẫu:\n${(res.blueprint.decodedShots ?? []).map((s: any) => `- Cảnh ${s.sceneNumber} (${s.durationSec}s · ${s.cameraAngle} · zoom=${s.recommendedZoom}): ${s.howToShootOrSelect}`).join("\n")}\n\nNội dung sản phẩm của mình: ${f.product || f.title}`,
-      }));
-      toast(`Đã Decode xong (${res.blueprint.shotCount} cảnh) — đang kết xuất Video MP4 mới ngay...`, "info");
+      toast(`Đã Decode xong bằng ${selectedCli === "claude_cli" ? "Claude CLI" : selectedCli === "gemini_cli" ? "Gemini CLI" : "Codex CLI"} (${res.blueprint.shotCount} cảnh) — đang kết xuất Video MP4 mới ngay...`, "info");
 
       const cloneRes = await api.post<any>("studio/clone-from-decoded", {
         blueprint: res.blueprint,
@@ -172,9 +168,17 @@ export function VideoFlow() {
         voiceName: form.video?.voiceName || "Ngọc Huyền",
         editStyle: res.blueprint.recommendedEditStyle ?? "dynamic",
         renderMp4: true,
-        useClaude: false,
+        useClaude: true,
+        preferredProvider: selectedCli,
       });
       setDecodedVideoResult(cloneRes.result);
+      const naturalVoiceScript = (cloneRes.result?.scenes ?? []).map((s: any) => s.newVoiceover).join(" ");
+      set((f: any) => ({
+        ...f,
+        durationSec: Math.round(res.blueprint.durationSec || 25),
+        hookTitle: cloneRes.result?.hookTitle || res.blueprint.hookFormula?.onScreenHookTitle || f.hookTitle,
+        brief: naturalVoiceScript || f.brief,
+      }));
       await jobs.reload();
       toast(`🎉 Đã Decode & dựng xong Video MP4 mới (${cloneRes.result?.renderedDurationSec}s)!`, "ok");
     } catch (e: any) {
@@ -484,13 +488,22 @@ export function VideoFlow() {
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
                       <p className="text-xs font-extrabold text-blue-700 dark:text-blue-300">
-                        🔍 Bước 1: Giải mã Video Mẫu (Video Decode · Local FFmpeg + Whisper + Claude AI)
+                        🔍 Bước 1: Giải mã Video Mẫu (Bóc tách Lời thoại gốc Faster-Whisper + CLI AI)
                       </p>
                       <p className="text-[11px] text-muted">
-                        Tải lên 1 video mẫu cần học hỏi (hoặc bấm giải mã video mẫu có sẵn) để AI bóc tách nhịp cắt cảnh, góc quay, Hook 3s đầu và áp vào phim mới.
+                        Tải lên 1 video mẫu cần học hỏi (hoặc bấm giải mã video mẫu có sẵn) để AI bóc tách lời thoại gốc, ý chính, nhịp cắt cảnh và viết lời mới.
                       </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
+                      <select
+                        value={selectedCli}
+                        onChange={(e) => setSelectedCli(e.target.value as "claude_cli" | "gemini_cli" | "codex_cli")}
+                        className="rounded-xl border border-indigo-500/40 bg-indigo-500/10 px-2.5 py-1.5 text-xs font-extrabold text-indigo-700 dark:text-indigo-200"
+                      >
+                        <option value="claude_cli">🤖 Claude CLI</option>
+                        <option value="gemini_cli">🤖 Gemini CLI</option>
+                        <option value="codex_cli">🤖 Codex CLI</option>
+                      </select>
                       <label className={cx("inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-blue-500/40 bg-blue-500/10 px-3 py-1.5 text-xs font-bold text-blue-700 hover:bg-blue-500/20 dark:text-blue-300", (decodeBusy || upPct !== null) && "pointer-events-none opacity-60")}>
                         <Film className="h-3.5 w-3.5" />
                         <span>Tải Video Mẫu để Decode</span>

@@ -40,7 +40,7 @@ export const TASK_CATEGORIES: { id: TaskCategory; label: string; desc: string; r
   { id: "general", label: "Trò chuyện điều phối · Bán hàng · CRM", desc: "Trợ lý Hiền An / Muse Chat, tư vấn khách hàng, chăm sóc lead, viết bài mạng xã hội thường ngày", recommended: "claude_cli", agents: ["assistant", "chat", "follow_up", "content", "ads"] },
   { id: "image", label: "Tạo Ảnh AI & Thiết kế Visual (4:5 / Banner)", desc: "Sinh ảnh sản phẩm, minh hoạ quảng cáo bằng OpenAI (ChatGPT/Codex) hoặc thiết kế SVG/HTML Chrome Local", recommended: "codex_cli", agents: ["post_image"] },
   { id: "seo", label: "Viết bài chuẩn SEO · Nội dung dài · Tổng hợp Web", desc: "Bài viết chuẩn SEO Website, nghiên cứu từ khóa, tổng hợp tin tức báo chí dài", recommended: "gemini_cli", agents: ["seo_web"] },
-  { id: "video", label: "Sản xuất Video · Kịch bản Veo 3 & Local Studio", desc: "Kịch bản video ngắn, điều phối Google Flow Veo 3, Gemini Video & Remotion + VieNeu-TTS Local", recommended: "gemini_cli", agents: ["video_script", "creative"] },
+  { id: "video", label: "Sản xuất Video · Giải mã Video & Local Studio", desc: "Giải mã Video Mẫu (Decode), dựng phim từ Video Quay Sẵn, kịch bản video ngắn + VieNeu-TTS Local", recommended: "claude_cli", agents: ["video_script", "creative"] },
 ];
 
 export const DEFAULT_TASK_ROUTING: Record<TaskCategory, Provider> = {
@@ -48,7 +48,7 @@ export const DEFAULT_TASK_ROUTING: Record<TaskCategory, Provider> = {
   general: "claude_cli",
   image: "codex_cli",
   seo: "gemini_cli",
-  video: "gemini_cli",
+  video: "claude_cli",
 };
 
 export const DEFAULT_PROVIDER_PRIORITY: Provider[] = ["claude_cli", "gemini_cli", "codex_cli", "sandbox"];

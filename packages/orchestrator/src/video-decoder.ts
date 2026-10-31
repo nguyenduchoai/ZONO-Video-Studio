@@ -141,24 +141,30 @@ const jsonLine = (out: string) => {
   }
 };
 
-/** Tìm danh sách các file video MP4 có sẵn trên máy (trong data/uploads và data/creative) để người dùng có thể chọn test ngay */
+/** Tìm danh sách các file video MP4 gốc của người dùng trong data/uploads để chọn Decode hoặc làm Raw Footage */
 export function listLocalAvailableVideos(): { path: string; url: string; name: string; sizeMB: number; updatedAt: string }[] {
-  const results: { path: string; url: string; name: string; sizeMB: number; updatedAt: string }[] = [];
+  const userVideos: { path: string; url: string; name: string; sizeMB: number; updatedAt: string }[] = [];
+  const generatedVideos: { path: string; url: string; name: string; sizeMB: number; updatedAt: string }[] = [];
   const uploadsDir = resolve("data/uploads");
   if (existsSync(uploadsDir)) {
     for (const f of readdirSync(uploadsDir)) {
       if (!/\.(mp4|mov|m4v|webm)$/i.test(f)) continue;
+      if (/^(sample_|ref_)/i.test(f)) continue;
       const full = join(uploadsDir, f);
       try {
         const st = statSync(full);
         if (st.size > 10_000) {
-          results.push({
+          const isCloned = /^cloned_/i.test(f);
+          const cleanLabel = f.replace(/^[0-9a-f]{12}_/i, "");
+          const entry = {
             path: full,
             url: `/v1/uploads/${encodeURIComponent(f)}`,
-            name: `Video đã tải lên · ${f}`,
+            name: isCloned ? `Phim đã dựng · ${cleanLabel}` : cleanLabel,
             sizeMB: Math.round((st.size / 1048576) * 10) / 10,
             updatedAt: st.mtime.toISOString(),
-          });
+          };
+          if (isCloned) generatedVideos.push(entry);
+          else userVideos.push(entry);
         }
       } catch {
         // ignore
@@ -166,30 +172,9 @@ export function listLocalAvailableVideos(): { path: string; url: string; name: s
     }
   }
 
-  const creativeDir = resolve("data/creative");
-  if (existsSync(creativeDir)) {
-    for (const dirName of readdirSync(creativeDir).slice(0, 25)) {
-      const candidate = join(creativeDir, dirName, "final.mp4");
-      if (!existsSync(candidate)) continue;
-      try {
-        const st = statSync(candidate);
-        if (st.size > 10_000) {
-          const pub = ensurePublicUploadCopy(candidate, `sample_${dirName.slice(0, 8)}`);
-          results.push({
-            path: candidate,
-            url: pub.publicUrl,
-            name: `Video Mẫu Local #${dirName.slice(0, 8)} (${(st.size / 1048576).toFixed(1)} MB)`,
-            sizeMB: Math.round((st.size / 1048576) * 10) / 10,
-            updatedAt: st.mtime.toISOString(),
-          });
-        }
-      } catch {
-        // ignore
-      }
-    }
-  }
-
-  return results.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 12);
+  userVideos.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  generatedVideos.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  return [...userVideos, ...generatedVideos.slice(0, 2)].slice(0, 10);
 }
 
 function ensurePublicUploadCopy(srcPath: string, prefix: string): { publicPath: string; publicUrl: string } {
@@ -299,6 +284,7 @@ export async function decodeVideoBlueprint(opts: {
   referenceNotes?: string;
   useWhisper?: boolean;
   useClaude?: boolean;
+  preferredProvider?: "claude_cli" | "gemini_cli" | "codex_cli";
 }): Promise<DecodedVideoBlueprint> {
   const available = listLocalAvailableVideos();
   const resolvedPath =
@@ -346,9 +332,9 @@ export async function decodeVideoBlueprint(opts: {
     }));
   }
 
-  // 2. Bóc lời thoại bằng Faster-Whisper Local (có Cache SHA1 theo file)
+  // 2. Luôn bóc lời thoại bằng Faster-Whisper Local (đã có Cache SHA1 theo file nên chạy lại mất 0ms)
   let words: Word[] = [];
-  if (opts.useWhisper !== false && srcInfo.hasAudio) {
+  if (srcInfo.hasAudio) {
     try {
       words = await transcribeWordsWithCache(bin, resolvedPath);
     } catch (e) {
@@ -366,99 +352,98 @@ export async function decodeVideoBlueprint(opts: {
 
   const pacingLabel =
     avgShotSec <= 2.8
-      ? "Nhịp Nhanh Dồn Dập (Fast-Cut TikTok/Reels · giữ chân 3 giây đầu cực mạnh)"
+      ? "Nhịp Nhanh Dồn Dập (Fast-Cut TikTok/Reels)"
       : avgShotSec <= 4.8
-        ? "Nhịp Vừa Chuẩn Thương Mại (Balanced Storytelling · dễ nghe, dễ chốt đơn)"
-        : "Nhịp Chậm Điện Ảnh (Cinematic Pacing · tập trung chiều sâu cảm xúc)";
+        ? "Nhịp Vừa Chuẩn Thương Mại (Balanced Storytelling)"
+        : "Nhịp Chậm Điện Ảnh (Cinematic Pacing)";
 
   const recommendedEditStyle: EditStyle =
     avgShotSec <= 2.8 ? "dynamic" : avgShotSec <= 4.8 ? "clean" : "smooth";
 
-  // 3. Khớp lời thoại theo từng phân cảnh (shot)
+  // 3. Khớp lời thoại thực tế theo từng phân cảnh (shot)
   const shotTranscripts = rawShots.map((sh, idx) => {
     const ws = words.filter((w) => w.s >= sh.start - 0.15 && w.e <= sh.end + 0.25);
     if (ws.length > 0) return ws.map((w) => w.w).join(" ");
-    if (idx === 0) return "Câu mở đầu (Hook) đánh thẳng vào nỗi đau hoặc sự tò mò của người xem trong 3 giây đầu.";
-    if (idx === rawShots.length - 1) return "Lời kêu gọi hành động (CTA) rõ ràng, chốt ưu đãi hoặc mời bấm giỏ hàng/nhắn tin.";
-    return `Triển khai chi tiết minh chứng / trải nghiệm thực tế ở phân cảnh ${idx + 1}.`;
+    if (idx === 0) return "Mở đầu gây chú ý trong 3 giây đầu";
+    if (idx === rawShots.length - 1) return "Tổng kết thông điệp & lời kêu gọi hành động";
+    return `Triển khai nội dung phân cảnh ${idx + 1}`;
   });
 
-  // Fallback công thức giải mã chuẩn xác (dùng cho sandbox hoặc khi chạy tức thì)
   const zoomCycle: DecodedShot["recommendedZoom"][] = ["punch", "in", "pan_right", "out", "pan_left", "in"];
   const transCycle = ["slideleft", "zoomin", "dissolve", "wipeleft", "fade"];
   const angleCycle = [
-    "Cận cảnh trực diện (Medium Close-Up · 85mm) — thu hút ánh nhìn ngay giây đầu",
-    "Góc rộng bối cảnh thực tế (Wide Establishing · 24mm) — thấy rõ không gian & thao tác",
-    "Góc cận chi tiết sản phẩm / thao tác tay (Macro Detail Insert · 50mm) — tăng độ tin cậy",
-    "Góc nghiêng 45 độ (Over-the-Shoulder / POV) — tạo cảm giác trải nghiệm thật",
-    "Góc chính diện chốt thông điệp (Hero Center Shot · 35mm) — kèm bảng giá / CTA nổi bật",
+    "Góc cận trực diện",
+    "Góc rộng bối cảnh",
+    "Góc cận chi tiết",
+    "Góc nghiêng thực tế",
+    "Góc chính diện chốt ý",
   ];
 
   const buildDefaultDecode = () => ({
     hookFormula: {
-      first3SecHook: shotTranscripts[0] || "Mở đầu bằng câu hỏi xoáy trực tiếp vào vấn đề + cận cảnh sản phẩm/nhân vật chuyển động ngay giây 0.2s",
-      visualHookTechnique: `Cắt cảnh đầu ${rawShots[0] ? (rawShots[0].end - rawShots[0].start).toFixed(1) : "3.0"}s kết hợp hiệu ứng Zoom Punch + tiêu đề chữ lớn tương phản cao ở 1/3 trên khung hình`,
-      onScreenHookTitle: "BÍ QUYẾT TỐI ƯU HIỆU QUẢ GẤP 3 LẦN",
+      first3SecHook: shotTranscripts[0] || "Mở đầu bằng tình huống thực tế đánh trúng mối quan tâm của người xem ngay 3 giây đầu",
+      visualHookTechnique: `Cảnh mở đầu dài ${rawShots[0] ? (rawShots[0].end - rawShots[0].start).toFixed(1) : "3.0"}s kết hợp tiêu đề nổi bật và chuyển động thu phóng nhẹ`,
+      onScreenHookTitle: "ĐIỂM NHẤN QUAN TRỌNG NHẤT",
     },
     narrativeArc: [
-      `1. Hook Mở Đầu (0s – ${(rawShots[0]?.end ?? 3.5).toFixed(1)}s): Gây chú ý tức thì bằng hình ảnh cận cảnh & câu hỏi trực diện.`,
-      `2. Dẫn Dắt & Vấn Đề: Chỉ ra sai lầm phổ biến hoặc nhu cầu thực tế của khách hàng.`,
-      `3. Trình Diễn Giải Pháp (Show, Don't Tell): Quay cận cảnh thao tác thực tế, chi tiết sản phẩm/dịch vụ sắc nét.`,
-      `4. Chốt Đơn & Kêu Gọi Hành Động (CTA): Tổng kết lợi ích cốt lõi và thúc đẩy hành động ngay.`,
+      `1. Mở đầu (${(rawShots[0]?.end ?? 3.5).toFixed(1)}s đầu): "${shotTranscripts[0]}"`,
+      `2. Triển khai vấn đề: Đặt ra góc nhìn thực tế từ câu chuyện trong video.`,
+      `3. Minh chứng & Giải pháp: Đưa dẫn chứng trực quan qua các cảnh giữa.`,
+      `4. Kết bài & Tương tác: "${shotTranscripts[shotTranscripts.length - 1]}"`,
     ],
-    editingRhythmNotes: `Video gồm ${shotCount} phân cảnh trên tổng thời lượng ${durationSec}s (trung bình ${avgShotSec}s/cảnh). ${pacingLabel}. Kết hợp phụ đề từng từ (Word-by-Word Karaoke) ở vùng an toàn dưới và nhạc nền ducking -14 LUFS.`,
-    reusablePromptTemplate: `Hãy viết kịch bản ${shotCount} phân cảnh (tổng ${durationSec}s, mỗi cảnh ~${avgShotSec}s). Cảnh 1 bắt buộc có Hook ≤ 7 chữ trên màn hình + Zoom Punch. Các cảnh giữa đan xen góc cận sản phẩm (Macro) và góc trung (Medium Shot). Cảnh cuối chốt CTA rõ ràng.`,
+    editingRhythmNotes: `Video gồm ${shotCount} phân cảnh trên tổng thời lượng ${durationSec}s (trung bình ${avgShotSec}s/cảnh, tốc độ đọc ${wordsPerMinute} từ/phút).`,
+    reusablePromptTemplate: `Viết kịch bản ${shotCount} phân cảnh (tổng ${durationSec}s, mỗi cảnh ~${avgShotSec}s) bám sát nhịp dẫn chuyện của video mẫu.`,
     shots: rawShots.map((sh, idx) => ({
       sceneNumber: idx + 1,
       visualDescription:
         idx === 0
-          ? "Khung hình mở đầu (Hook): Nhân vật hoặc sản phẩm chính xuất hiện nổi bật ở trung tâm, chuyển động dứt khoát thu hút mắt nhìn."
+          ? "Mở bài đặt vấn đề trực diện, thu hút sự chú ý của người xem"
           : idx === rawShots.length - 1
-            ? "Khung hình kết (CTA): Toàn cảnh sản phẩm hoàn chỉnh kèm thông điệp kêu gọi hành động rõ ràng."
-            : `Phân cảnh ${idx + 1}: Minh họa trực quan quá trình sử dụng / chi tiết đắt giá của sản phẩm ở góc quay thực tế.`,
+            ? "Tổng kết thông điệp cốt lõi và đặt câu hỏi gợi mở tương tác"
+            : `Triển khai ý thứ ${idx + 1} làm rõ luận điểm của câu chuyện`,
       cameraAngle: angleCycle[idx % angleCycle.length],
       recommendedZoom: zoomCycle[idx % zoomCycle.length],
       recommendedTransition: idx === 0 ? "cut" : transCycle[idx % transCycle.length],
       onScreenText:
         idx === 0
-          ? "ĐIỂM NHẤN 3 GIÂY ĐẦU"
+          ? "GÓC NHÌN THỰC TẾ"
           : idx === rawShots.length - 1
-            ? "NHẮN TIN NHẬN ƯU ĐÃI NGAY"
-            : `ĐIỂM NỔI BẬT #${idx}`,
+            ? "BẠN NGHĨ SAO?"
+            : `ĐIỂM CHÍNH #${idx}`,
       howToShootOrSelect:
         idx === 0
-          ? "Chọn đoạn video quay sẵn có ánh sáng đẹp nhất, rõ mặt người nói hoặc cận cảnh sản phẩm bắt mắt nhất (dài ~" + (sh.end - sh.start).toFixed(1) + "s)."
+          ? `Chọn cảnh mở đầu rõ nét nhất dài ~${(sh.end - sh.start).toFixed(1)}s`
           : idx === rawShots.length - 1
-            ? "Chọn đoạn video quay tổng thể sản phẩm, đóng gói hoặc khách hàng hài lòng để đặt nút kêu gọi hành động."
-            : `Chọn đoạn b-roll quay cận thao tác tay, chi tiết chất liệu hoặc cảnh sử dụng thực tế (dài ~${(sh.end - sh.start).toFixed(1)}s).`,
+            ? `Chọn cảnh tổng kết / thành phẩm dài ~${(sh.end - sh.start).toFixed(1)}s`
+            : `Chọn cảnh minh họa thao tác hoặc sản phẩm thực tế dài ~${(sh.end - sh.start).toFixed(1)}s`,
     })),
   });
 
   let claudeOut = buildDefaultDecode();
-  let decodedByProvider = "local_ffmpeg_analyzer";
+  const targetProvider = opts.preferredProvider ?? effectiveProvider(opts.bizId).provider;
+  let decodedByProvider = "faster_whisper_local";
 
-  const prov = effectiveProvider(opts.bizId);
-  if (opts.useClaude !== false && prov.ready && prov.provider !== "sandbox") {
+  if (opts.useClaude !== false && targetProvider !== "sandbox") {
     try {
       const g = await generate({
         bizId: opts.bizId,
         agentKey: "creative",
-        tier: "medium",
+        tier: "small",
+        preferredProvider: opts.preferredProvider ?? "claude_cli",
+        fast: true,
         schema: ClaudeDecodeSchema,
-        images: contactSheetPath ? [{ path: contactSheetPath, mediaType: "image/png" as const }] : undefined,
         system: [
-          "Bạn là Đạo diễn & Chuyên gia Giải mã Video Ngắn (Viral Video Reverse-Engineer) của ZONO Studio.",
-          "Nhiệm vụ: Xem ảnh Contact Sheet các phân cảnh của video mẫu + thông số cắt cảnh FFmpeg + lời thoại bóc băng Whisper để giải mã chính xác CÔNG THỨC LÀM PHIM của video này.",
-          "Mục tiêu: Giúp chủ doanh nghiệp hiểu rõ cấu trúc từng cảnh (Hook, góc quay, hiệu ứng zoom/chuyển cảnh, chữ trên màn hình) và hướng dẫn họ dùng các VIDEO QUAY SẴN (raw footage) của họ để dựng một bộ phim mới học theo đúng công thức này.",
-          "Trả về JSON đúng schema tiếng Việt sắc sảo, thực chiến.",
+          "Bạn là Đạo diễn Phân tích Kịch bản Video Ngắn của ZONO Studio.",
+          "Dựa trên lời thoại thực tế bóc băng (Whisper) của từng phân cảnh, hãy tóm tắt ngắn gọn ý chính của từng cảnh, công thức Hook 3s đầu và gợi ý chọn cảnh quay sẵn tương ứng.",
+          "TUYỆT ĐỐI KHÔNG viết thông số ống kính máy ảnh dài dòng vào visualDescription; hãy viết ngắn gọn ý nghĩa nội dung của cảnh đó bằng tiếng Việt tự nhiên.",
         ].join("\n"),
         user: [
-          `Thông số Video Mẫu: Thời lượng ${durationSec}s, độ phân giải ${srcInfo.width}x${srcInfo.height}, ${(srcInfo as any).fps ?? 30} fps, ${shotCount} phân cảnh (trung bình ${avgShotSec}s/cảnh).`,
-          opts.referenceNotes ? `Ghi chú của người dùng: ${opts.referenceNotes}` : "",
-          fullTranscript ? `Lời thoại bóc băng (Whisper): ${fullTranscript}` : "Video không có lời thoại rõ hoặc chỉ dùng nhạc nền/b-roll.",
-          "Danh sách phân cảnh FFmpeg phát hiện:",
-          ...rawShots.map((sh, i) => `- Cảnh ${i + 1} (${sh.start.toFixed(1)}s -> ${sh.end.toFixed(1)}s, dài ${(sh.end - sh.start).toFixed(1)}s): Lời="${shotTranscripts[i]}"`),
-          `Hãy trả về đúng ${rawShots.length} phần tử trong mảng shots tương ứng với ${rawShots.length} cảnh trên.`,
+          `Thông số Video Mẫu: Thời lượng ${durationSec}s, ${shotCount} phân cảnh (trung bình ${avgShotSec}s/cảnh).`,
+          opts.referenceNotes ? `Chủ đề người dùng muốn làm: ${opts.referenceNotes}` : "",
+          fullTranscript ? `Toàn bộ lời thoại thực tế trong Video Mẫu: "${fullTranscript}"` : "",
+          "Lời thoại theo từng cảnh:",
+          ...rawShots.map((sh, i) => `- Cảnh ${i + 1} (${sh.start.toFixed(1)}s -> ${sh.end.toFixed(1)}s, dài ${(sh.end - sh.start).toFixed(1)}s): "${shotTranscripts[i]}"`),
+          `Hãy trả về đúng ${rawShots.length} phần tử trong mảng shots.`,
         ]
           .filter(Boolean)
           .join("\n"),
@@ -466,7 +451,7 @@ export async function decodeVideoBlueprint(opts: {
       });
       if (g.output?.shots?.length) {
         claudeOut = g.output;
-        decodedByProvider = g.provider || prov.provider;
+        decodedByProvider = g.provider || targetProvider;
       }
     } catch (e) {
       logger.warn("video_decode.claude_fallback", { error: String(e).slice(0, 250) });
@@ -540,6 +525,7 @@ export async function produceFromDecodedBlueprint(opts: {
   editStyle?: EditStyle;
   renderMp4?: boolean;
   useClaude?: boolean;
+  preferredProvider?: "claude_cli" | "gemini_cli" | "codex_cli";
   customScenes?: {
     sceneNumber: number;
     newVoiceover: string;
@@ -611,28 +597,35 @@ export async function produceFromDecodedBlueprint(opts: {
         start: 0,
         end: Math.min(sources[0].duration, dShot.durationSec),
       };
-      const targetWordCount = Math.max(8, Math.round(dShot.durationSec * 2.8));
+      const fallbackNarratives = [
+        `Bạn có biết vì sao nhiều người vẫn loay hoay với ${opts.topic.toLowerCase()} mà chưa đạt hiệu quả cao nhất?`,
+        `Tại ${brand}, quy trình tuyển chọn ${product} được kiểm soát tỉ mỉ từng bước để giữ trọn giá trị nguyên bản.`,
+        `Từng chi tiết thực tế đều cho thấy sự khác biệt rõ rệt về độ tinh khiết và trải nghiệm sử dụng mỗi ngày.`,
+        `Không chỉ tiết kiệm thời gian, giải pháp từ ${brand} còn mang lại sự an tâm tuyệt đối cho cả gia đình bạn.`,
+        `Hàng ngàn khách hàng đã trực tiếp kiểm chứng và hài lòng ngay từ lần đầu tiên trải nghiệm thực tế.`,
+        `Hãy nhắn tin ngay cho ${brand} hoặc bấm vào bên dưới để nhận tư vấn và ưu đãi đặc biệt hôm nay!`,
+      ];
       const defaultVoice =
-        idx === 0
-          ? `Bạn có biết vì sao nhiều người vẫn loay hoay với ${opts.topic.toLowerCase()} mà chưa đạt hiệu quả cao nhất?`
-          : idx === targetShots.length - 1
-            ? `Hãy nhắn tin ngay cho ${brand} hoặc bấm vào link bên dưới để trải nghiệm ${product} với ưu đãi đặc biệt hôm nay!`
-            : `Tại ${brand}, quy trình ${product} được chuẩn hóa tỉ mỉ từng chi tiết giúp bạn tiết kiệm thời gian và nhân đôi chất lượng thực tế.`;
+        idx === targetShots.length - 1
+          ? fallbackNarratives[fallbackNarratives.length - 1]
+          : fallbackNarratives[idx % (fallbackNarratives.length - 1)];
       return {
         sceneNumber: idx + 1,
-        newVoiceover: defaultVoice.split(/\s+/).slice(0, targetWordCount + 8).join(" "),
+        newVoiceover: defaultVoice,
         newOnScreenText:
           idx === 0
             ? "BÍ QUYẾT THỰC CHIẾN"
             : idx === targetShots.length - 1
               ? "NHẬN ƯU ĐÃI NGAY"
-              : `ƯU ĐIỂM VƯỢT TRỘI #${idx}`,
+              : `ĐIỂM ĐẮT GIÁ #${idx}`,
         rawSourceIndex: candidate.srcIndex,
         rawStartSec: Math.round(candidate.start * 10) / 10,
         rawEndSec: Math.round(Math.min(sources[candidate.srcIndex]?.duration ?? 15, candidate.start + dShot.durationSec) * 10) / 10,
         zoom: dShot.recommendedZoom,
         transition: dShot.recommendedTransition || (idx === 0 ? "cut" : "slideleft"),
-        directorNote: `Học theo Cảnh ${idx + 1} của Video Decode (${dShot.durationSec}s · ${dShot.cameraAngle}): ghép đoạn quay sẵn #${candidate.srcIndex + 1} (${candidate.start.toFixed(1)}s–${Math.min(sources[candidate.srcIndex]?.duration ?? 15, candidate.start + dShot.durationSec).toFixed(1)}s).`,
+        directorNote: dShot.spokenText
+          ? `Học nhịp Cảnh ${idx + 1} (${dShot.durationSec}s · lời gốc: "${dShot.spokenText.slice(0, 65)}..."): ghép đoạn quay sẵn #${candidate.srcIndex + 1}.`
+          : `Học theo Cảnh ${idx + 1} của Video Decode (${dShot.durationSec}s): ghép đoạn quay sẵn #${candidate.srcIndex + 1}.`,
       };
     }),
   });
@@ -641,42 +634,44 @@ export async function produceFromDecodedBlueprint(opts: {
   let providerUsed = opts.customScenes?.length ? "user_edited_timeline" : "local_template_matcher";
 
   const prov = effectiveProvider(opts.bizId);
-  if (!opts.customScenes?.length && opts.useClaude !== false && prov.ready && prov.provider !== "sandbox") {
+  if (!opts.customScenes?.length && opts.useClaude !== false && (opts.preferredProvider || (prov.ready && prov.provider !== "sandbox"))) {
     try {
       const g = await generate({
         bizId: opts.bizId,
         agentKey: "creative",
+        preferredProvider: opts.preferredProvider,
+        fast: true,
         tier: "medium",
         schema: ClaudeClonePlanSchema,
-        images: rawSheets.slice(0, 3).map((p) => ({ path: p, mediaType: "image/png" as const })),
         system: [
-          `Bạn là Đạo diễn Dựng Phim Thực Chiến của thương hiệu ${brand}.`,
-          "Nhiệm vụ: Dựa trên CÔNG THỨC VIDEO MẪU ĐÃ DECODE (số cảnh, độ dài từng cảnh, kiểu Hook 3s đầu, góc quay, hiệu ứng zoom/transition) và DANH SÁCH VIDEO QUAY SẴN (Raw Footage) của người dùng, hãy:",
-          "1. Viết lời thoại tiếng Việt mới (`newVoiceover`) và chữ nổi trên màn hình (`newOnScreenText`, ≤ 6 chữ) cho Chủ đề/Sản phẩm mới sao cho khớp độ dài từng cảnh (khoảng 2.8 từ/giây).",
-          "2. Chọn đoạn video quay sẵn (`rawSourceIndex`, `rawStartSec`, `rawEndSec`) phù hợp nhất với từng cảnh trong công thức Decode.",
-          "3. Giữ nguyên nhịp độ cuốn hút (pacing, zoom, transition) đã học được từ Video Mẫu.",
+          `Bạn là Đạo diễn Kịch Bản & Dựng Phim Thực Chiến của thương hiệu ${brand}.`,
+          "Nhiệm vụ: Dựa trên NỘI DUNG LỜI THOẠI GỐC & NHỊP CẮT của Video Mẫu đã Decode và DANH SÁCH VIDEO QUAY SẴN (Raw Footage) của người dùng, hãy:",
+          "1. Học cách dẫn dắt câu chuyện của Video Mẫu để viết lời thoại tiếng Việt mới (`newVoiceover`) thật tự nhiên, cuốn hút, mỗi cảnh 1 ý nối tiếp nhau (TUYỆT ĐỐI KHÔNG lặp lại cùng một câu ở các cảnh và KHÔNG đọc thuật ngữ kỹ thuật góc máy) cho Chủ đề/Sản phẩm mới.",
+          "2. Viết chữ nổi trên màn hình (`newOnScreenText`, ≤ 6 chữ) súc tích cho từng cảnh.",
+          "3. Chọn đoạn video quay sẵn (`rawSourceIndex`, `rawStartSec`, `rawEndSec`) phù hợp nhất với từng cảnh.",
         ].join("\n"),
         user: [
           `CHỦ ĐỀ / YÊU CẦU MỚI: ${opts.topic}`,
           `SẢN PHẨM / THƯƠNG HIỆU: ${product} (${brand})`,
-          `CÔNG THỨC VIDEO MẪU ĐÃ DECODE (${targetShots.length} cảnh, tổng ${opts.blueprint.durationSec}s, nhịp ${opts.blueprint.pacingLabel}):`,
-          `- Công thức Hook 3s đầu: ${opts.blueprint.hookFormula.first3SecHook} (${opts.blueprint.hookFormula.visualHookTechnique})`,
+          `BẢN GHI LỜI THOẠI GỐC TRONG VIDEO MẪU: "${opts.blueprint.fullTranscript || "Không có lời thoại"}"`,
+          `CẤU TRÚC TỪNG CẢNH CỦA VIDEO MẪU (${targetShots.length} cảnh, tổng ${opts.blueprint.durationSec}s, nhịp ${opts.blueprint.pacingLabel}):`,
+          `- Mở bài 3s đầu của Video Mẫu: ${opts.blueprint.hookFormula.first3SecHook}`,
           ...targetShots.map(
             (s) =>
-              `  + Cảnh ${s.sceneNumber} (${s.durationSec}s): Góc="${s.cameraAngle}" | Zoom="${s.recommendedZoom}" | Chuyển cảnh="${s.recommendedTransition}" | Gợi ý chọn cảnh="${s.howToShootOrSelect}"`,
+              `  + Cảnh ${s.sceneNumber} (${s.durationSec}s): Lời gốc trong mẫu="${s.spokenText || ""}" | Ý chính="${s.visualDescription}" | Zoom="${s.recommendedZoom}"`,
           ),
           "DANH SÁCH VIDEO QUAY SẴN CỦA NGƯỜI DÙNG:",
           ...sources.map(
             (s) =>
               `- Video nguồn #${s.index} (${basename(s.path)}, dài ${s.duration.toFixed(1)}s): Các đoạn cắt: ${s.shots.map((sh) => `[${sh.start.toFixed(1)}s-${sh.end.toFixed(1)}s]`).join(", ")}`,
           ),
-          `Hãy trả về đúng ${targetShots.length} cảnh trong mảng scenes.`,
+          `Hãy trả về đúng ${targetShots.length} cảnh trong mảng scenes, mỗi cảnh có lời thoại (newVoiceover) riêng biệt nối tiếp nhau thành kịch bản hoàn chỉnh.`,
         ].join("\n"),
         sandbox: buildDefaultClonePlan,
       });
       if (g.output?.scenes?.length) {
         clonePlan = g.output;
-        providerUsed = g.provider || prov.provider;
+        providerUsed = g.provider || opts.preferredProvider || prov.provider;
       }
     } catch (e) {
       logger.warn("video_decode.clone_claude_fallback", { error: String(e).slice(0, 250) });
@@ -698,7 +693,9 @@ export async function produceFromDecodedBlueprint(opts: {
       sceneNumber: idx + 1,
       templateTiming: `${dShot.startSec.toFixed(1)}s – ${dShot.endSec.toFixed(1)}s (${dShot.durationSec.toFixed(1)}s)`,
       durationSec: dShot.durationSec,
-      originalShotSummary: `${dShot.cameraAngle} · ${dShot.visualDescription}`,
+      originalShotSummary: dShot.spokenText
+        ? `🎙️ Lời gốc: "${dShot.spokenText}"`
+        : `${dShot.visualDescription}`,
       newVoiceover: (custom?.newVoiceover ?? cScene?.newVoiceover ?? `Phân cảnh ${idx + 1} giới thiệu ${product}.`).trim(),
       newOnScreenText: (custom?.newOnScreenText ?? cScene?.newOnScreenText ?? dShot.onScreenText).slice(0, 60),
       selectedRawCut: {

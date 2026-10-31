@@ -59,7 +59,8 @@ export function ReelWeaverStudio() {
   const [result, setResult] = useState<any>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
-  // State cho Trạm Decode Video Mẫu & Dựng Phim Từ Video Quay Sẵn (Local FFmpeg + Whisper + Claude AI)
+  // State cho Trạm Decode Video Mẫu & Dựng Phim Từ Video Quay Sẵn (Local FFmpeg + Whisper + CLI AI)
+  const [selectedCli, setSelectedCli] = useState<"claude_cli" | "gemini_cli" | "codex_cli">("claude_cli");
   const [decodeBusy, setDecodeBusy] = useState<boolean>(false);
   const [cloneBusy, setCloneBusy] = useState<boolean>(false);
   const [uploadPct, setUploadPct] = useState<number | null>(null);
@@ -73,25 +74,30 @@ export function ReelWeaverStudio() {
   // Tự động nạp sẵn 1 Video Mẫu đã Decode ngay khi mở trang để người dùng thấy kết quả tức thì
   useEffect(() => {
     if (!catalog) return;
+    if (catalog.aiProvider?.provider && ["claude_cli", "gemini_cli", "codex_cli"].includes(catalog.aiProvider.provider)) {
+      setSelectedCli(catalog.aiProvider.provider);
+    }
     if (!decodedBlueprint && !decodeBusy) void handleDecodeVideo(undefined, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [catalog]);
 
-  const handleDecodeVideo = async (videoPath?: string, silent = false) => {
+  const handleDecodeVideo = async (videoPath?: string, silent = false, cliOverride?: "claude_cli" | "gemini_cli" | "codex_cli") => {
+    const activeCli = cliOverride ?? selectedCli;
     setDecodeBusy(true);
     try {
       const res = await api.post<any>("studio/decode-video", {
         videoPath,
         referenceNotes: topic,
-        useWhisper: !silent,
+        useWhisper: true,
         useClaude: useClaudeForDecode && !silent,
+        preferredProvider: activeCli,
       });
       setDecodedBlueprint(res.blueprint);
       if (res.blueprint?.recommendedEditStyle) {
         setEditStyle(res.blueprint.recommendedEditStyle);
       }
       if (!silent) {
-        toast(`Đã Decode xong (${res.blueprint.shotCount} cảnh · nhịp ${res.blueprint.avgShotSec}s) — đang tự động dựng Video MP4 mới cho anh...`, "info");
+        toast(`Đã Decode xong bằng ${activeCli === "claude_cli" ? "Claude CLI" : activeCli === "gemini_cli" ? "Gemini CLI" : "Codex CLI"} (${res.blueprint.shotCount} cảnh) — đang dựng Video MP4 mới...`, "info");
       }
       if (res.blueprint) {
         setCloneBusy(true);
@@ -108,6 +114,7 @@ export function ReelWeaverStudio() {
             editStyle: res.blueprint.recommendedEditStyle ?? editStyle ?? "dynamic",
             renderMp4: !silent && renderRealMp4,
             useClaude: !silent && useClaudeForDecode,
+            preferredProvider: activeCli,
           });
           setClonedResult(cloneRes.result);
           setEditableScenes(cloneRes.result?.scenes ?? []);
@@ -144,6 +151,7 @@ export function ReelWeaverStudio() {
         editStyle,
         renderMp4: renderRealMp4,
         useClaude: !useEditedScenes,
+        preferredProvider: selectedCli,
         customScenes: useEditedScenes
           ? editableScenes.map((s) => ({
               sceneNumber: s.sceneNumber,
@@ -234,17 +242,39 @@ export function ReelWeaverStudio() {
           </div>
 
           <div className="flex flex-col items-end gap-2">
-            <div className="flex items-center gap-2 rounded-xl bg-black/25 px-3 py-1.5 text-xs font-semibold backdrop-blur-md">
+            {/* Bộ chọn CLI AI trực tiếp: Claude CLI · Gemini CLI · Codex CLI */}
+            <div className="flex flex-wrap items-center gap-1.5 rounded-xl bg-black/25 px-2.5 py-1.5 text-xs font-semibold backdrop-blur-md">
               <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>Bộ não: <b>{catalog?.aiProvider?.label ?? "Claude CLI (Local)"}</b></span>
-              <span className="text-white/40">|</span>
-              <button
-                type="button"
-                onClick={() => void reload()}
-                className="underline hover:text-indigo-200"
-              >
-                Làm mới
-              </button>
+              <span className="text-indigo-100">Chọn CLI AI:</span>
+              {[
+                { id: "claude_cli" as const, label: "Claude CLI" },
+                { id: "gemini_cli" as const, label: "Gemini CLI" },
+                { id: "codex_cli" as const, label: "Codex CLI" },
+              ].map((cli) => {
+                const statusObj = (catalog?.cliProviders ?? []).find((p: any) => p.id === cli.id);
+                const isReady = statusObj ? statusObj.ready : true;
+                const active = selectedCli === cli.id;
+                return (
+                  <button
+                    key={cli.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedCli(cli.id);
+                      toast(`Đã chuyển bộ não AI sang ${cli.label}!`, "ok");
+                    }}
+                    className={cx(
+                      "inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-bold transition",
+                      active
+                        ? "bg-white text-indigo-700 shadow-xs"
+                        : "bg-white/10 text-white/85 hover:bg-white/20",
+                    )}
+                    title={statusObj?.detail || cli.label}
+                  >
+                    <span className={cx("h-1.5 w-1.5 rounded-full", isReady ? "bg-emerald-400" : "bg-amber-400")} />
+                    {cli.label}
+                  </button>
+                );
+              })}
             </div>
             {/* 2 Tab chuyển đổi gọn gàng */}
             <div className="inline-flex rounded-xl bg-black/30 p-1 backdrop-blur-md">
@@ -291,22 +321,43 @@ export function ReelWeaverStudio() {
                 </span>
                 <div>
                   <h2 className="text-base font-extrabold text-ink">
-                    Bước 1: Giải Mã Video Mẫu (Decode Nhịp Cắt, Góc Máy & Hook 3 Giây Đầu)
+                    Bước 1: Giải Mã Video Mẫu (Bóc Tách Lời Thoại Gốc, Ý Chính & Nhịp Cắt)
                   </h2>
                   <p className="text-xs text-muted">
-                    Tải lên 1 video mẫu anh thích (TikTok/Reels/Quảng cáo) hoặc chọn ngay video có sẵn trên máy. Hệ thống tự cache kết quả phân tích để chạy tức thì.
+                    Tải lên 1 video mẫu anh thích (TikTok/Reels/Quảng cáo) hoặc chọn ngay video có sẵn trên máy. Faster-Whisper tự bóc tách từng câu thoại gốc & CLI AI viết lại kịch bản mới.
                   </p>
                 </div>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                <label className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-700 dark:text-indigo-300 mr-2">
+                {/* Bộ chọn CLI AI ngay tại Bước 1 */}
+                <div className="inline-flex items-center gap-1 rounded-xl border border-indigo-500/30 bg-indigo-500/10 px-2.5 py-1.5 text-xs">
+                  <span className="font-bold text-indigo-700 dark:text-indigo-300">🤖 CLI:</span>
+                  <select
+                    value={selectedCli}
+                    onChange={(e) => {
+                      const nextCli = e.target.value as "claude_cli" | "gemini_cli" | "codex_cli";
+                      setSelectedCli(nextCli);
+                      toast(
+                        `Đã chọn ${nextCli === "claude_cli" ? "Claude CLI" : nextCli === "gemini_cli" ? "Gemini CLI" : "Codex CLI"} để phân tích & viết kịch bản!`,
+                        "ok",
+                      );
+                    }}
+                    className="bg-transparent font-extrabold text-indigo-700 dark:text-indigo-200 focus:outline-none"
+                  >
+                    <option value="claude_cli">Claude CLI (Anthropic)</option>
+                    <option value="gemini_cli">Gemini CLI (Google)</option>
+                    <option value="codex_cli">Codex CLI (OpenAI)</option>
+                  </select>
+                </div>
+
+                <label className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-700 dark:text-indigo-300 mr-1">
                   <input
                     type="checkbox"
                     checked={useClaudeForDecode}
                     onChange={(e) => setUseClaudeForDecode(e.target.checked)}
                   />
-                  Dùng Claude AI phân tích sâu ảnh Contact Sheet
+                  Dùng CLI AI phân tích kịch bản
                 </label>
                 <label
                   className={cx(
@@ -443,23 +494,29 @@ export function ReelWeaverStudio() {
 
                   <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-2.5 text-xs space-y-1">
                     <div className="font-extrabold text-amber-800 dark:text-amber-300">
-                      🎯 Công thức Hook 3 Giây Đầu & Nhịp Dựng:
+                      🎯 Công thức Mở Bài (Hook 3 Giây Đầu) & Lời Thoại Gốc:
                     </div>
                     <p className="text-ink"><b>Mở bài:</b> {decodedBlueprint.hookFormula?.first3SecHook}</p>
-                    <p className="text-muted"><b>Kỹ thuật:</b> {decodedBlueprint.hookFormula?.visualHookTechnique}</p>
+                    {decodedBlueprint.fullTranscript && (
+                      <p className="text-muted">
+                        <b>🎙️ Toàn bộ lời gốc trong Video Mẫu:</b> "{decodedBlueprint.fullTranscript}"
+                      </p>
+                    )}
                   </div>
                 </div>
 
                 <div className="space-y-2 rounded-2xl border border-line bg-soft/40 p-3.5 lg:col-span-7">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-extrabold text-indigo-600">
-                      🎞️ {decodedBlueprint.shotCount} Phân cảnh mẫu & Hướng dẫn chọn cảnh quay sẵn tương ứng
+                      🎞️ {decodedBlueprint.shotCount} Phân cảnh & Lời thoại gốc bóc tách từ Video Mẫu
                     </span>
-                    <span className="text-[11px] font-medium text-muted">{decodedBlueprint.pacingLabel}</span>
+                    <span className="text-[11px] font-medium text-muted">
+                      Bộ não: <b>{decodedBlueprint.decodedByProvider || selectedCli}</b> · {decodedBlueprint.pacingLabel}
+                    </span>
                   </div>
-                  <div className="max-h-64 space-y-2 overflow-y-auto pr-1 scroll-thin">
+                  <div className="max-h-72 space-y-2 overflow-y-auto pr-1 scroll-thin">
                     {(decodedBlueprint.decodedShots ?? []).map((sh: any) => (
-                      <div key={sh.sceneNumber} className="rounded-xl border border-line bg-card p-2.5 text-xs space-y-1">
+                      <div key={sh.sceneNumber} className="rounded-xl border border-line bg-card p-2.5 text-xs space-y-1.5">
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <span className="font-extrabold text-ink">
                             Cảnh {sh.sceneNumber} ({sh.startSec}s → {sh.endSec}s · dài {sh.durationSec}s)
@@ -469,9 +526,15 @@ export function ReelWeaverStudio() {
                             <Badge tone="amber">Chuyển: {sh.recommendedTransition}</Badge>
                           </div>
                         </div>
-                        <p className="text-muted">{sh.cameraAngle} — {sh.visualDescription}</p>
+                        {sh.spokenText ? (
+                          <p className="rounded-lg bg-indigo-500/[0.08] px-2.5 py-1.5 font-semibold text-ink">
+                            🎙️ Lời gốc trong cảnh: "{sh.spokenText}"
+                          </p>
+                        ) : (
+                          <p className="text-muted">📝 Nội dung cảnh: {sh.visualDescription}</p>
+                        )}
                         <p className="text-emerald-700 dark:text-emerald-300 font-semibold">
-                          💡 Cách chọn clip quay sẵn: {sh.howToShootOrSelect}
+                          💡 Gợi ý ghép cảnh quay sẵn: {sh.howToShootOrSelect}
                         </p>
                       </div>
                     ))}
