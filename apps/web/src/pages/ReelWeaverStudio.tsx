@@ -5,7 +5,7 @@ async function uploadMediaFile(file: File): Promise<{ path: string; name: string
   const res = await fetch(apiUrl(`/v1/uploads/stream?name=${encodeURIComponent(file.name)}`), {
     method: "PUT",
     headers: {
-      "content-type": file.type || "application/octet-stream",
+      "content-type": "application/octet-stream", // server chỉ có parser octet-stream cho /uploads/stream
       ...(currentBizId() ? { "x-biz-id": currentBizId()! } : {}),
     },
     body: file,
