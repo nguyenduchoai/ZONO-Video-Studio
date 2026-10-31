@@ -822,8 +822,15 @@ function JobDetail({ id }: { id: string }) {
       <div className="space-y-3 text-sm">
         <p className="flex flex-wrap items-center gap-2"><Badge tone={STATUS[j.status]?.[1]}>{j.tool === "portrait" && j.status === "done" ? "Xong · trong thư viện video" : STATUS[j.status]?.[0]}</Badge>{elapsed != null && <span className="text-xs text-muted">{elapsed} phút</span>}{j.model && <span className="text-xs text-muted">· {j.model}</span>}</p>
         {j.error && <p className="rounded-xl bg-rose-500/10 p-3 text-rose-700 dark:text-rose-300">{j.error}</p>}
-        {j.asset && <video src={`/v1/media/${j.asset.id}`} controls className="mx-auto max-h-[480px] rounded-xl bg-black" />}
-        {j.asset && <p className="text-xs text-muted">{j.asset.duration?.toFixed(1)}s · {j.asset.width}x{j.asset.height} · <a className="text-blue-600" href={`/v1/media/${j.asset.id}?download=1`}>Tải MP4</a></p>}
+        {j.asset && (
+          <div className="space-y-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-3">
+            <p className="flex flex-wrap items-center justify-between gap-2 text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+              <span>🎬 VIDEO FINAL đã sẵn sàng · {j.asset.duration?.toFixed(1)}s · {j.asset.width}x{j.asset.height}</span>
+              <a href={`/v1/media/${j.asset.id}?download=1`} download className="inline-flex items-center rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-emerald-700">⬇ Tải Video Final (.mp4)</a>
+            </p>
+            <video src={`/v1/media/${j.asset.id}`} controls autoPlay muted playsInline className="mx-auto max-h-[520px] rounded-xl bg-black" />
+          </div>
+        )}
         {j.result?.caption && <div className="rounded-xl bg-soft p-3 text-xs"><p className="mb-1 font-semibold">Caption</p><p className="whitespace-pre-wrap">{j.result.caption}</p></div>}
         {j.result?.redoneScenes?.length > 0 && <p className="text-xs text-muted">Cảnh làm lại: {j.result.redoneScenes.map((r: any) => `#${r.scene} (${r.reason})`).join("; ")}</p>}
         {j.approval?.status === "pending" && <Link to={`/approvals?id=${j.approval.id}`}><Button size="sm" variant="primary">Duyệt video →</Button></Link>}
