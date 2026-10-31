@@ -15,7 +15,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
-const args = new Set(process.argv.slice(2));
+const args = new Set(["--no-zlcrm", "--no-video-ai", ...process.argv.slice(2)]);
 const hex = (n) => randomBytes(n).toString("hex");
 const ok = (m) => console.log(`  ✓ ${m}`);
 const warn = (m) => console.log(`  ! ${m}`);
@@ -74,7 +74,6 @@ if (!existsSync(envPath)) {
   else env += `\n# Lần chạy đầu: fresh = doanh nghiệp mới, DNA trống (Nạp DNA trong giao diện) · blank = DNA + cấu hình ZONO, không dữ liệu mẫu\nSEED_MODE=${seedMode}\n`;
   writeFileSync(envPath, env, { mode: 0o600 });
   ok("Tạo .env (khóa mã hóa token sinh ngẫu nhiên cho máy này)");
-  notes.push("Điền TYPESAFE_API_KEY vào .env nếu muốn Jev chạy thật (để trống = heuristic).");
 } else ok(".env đã có — giữ nguyên");
 mkdirSync(join(ROOT, "data"), { recursive: true });
 
