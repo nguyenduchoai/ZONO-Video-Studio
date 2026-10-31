@@ -975,8 +975,14 @@ export async function produceFromDecodedBlueprint(opts: {
       );
 
       const rRun = await runProcess(bin, [join(TOOLS_DIR, "pro_edit.py"), "render", planFile], {
-        timeoutMs: 180_000,
+        timeoutMs: 900_000, // dựng ~80s video 9:16 mất vài phút trên máy thường — 3 phút là quá ngắn
       });
+      if (!(rRun.code === 0 && existsSync(finalMp4) && statSync(finalMp4).size > 10_000)) {
+        // Không được trả video mẫu gốc như thể đã dựng xong.
+        renderedVideoUrl = null;
+        renderNotes = `Dựng MP4 chưa thành công (mã ${rRun.code ?? "timeout"}) — bấm Build lại; video mẫu gốc KHÔNG phải kết quả.`;
+        logger.warn("video_decode.render_failed", { code: rRun.code, err: String((rRun as any).stderr ?? "").slice(-300) });
+      }
       if (rRun.code === 0 && existsSync(finalMp4) && statSync(finalMp4).size > 10_000) {
         copyFileSync(finalMp4, cachedMp4Path);
         renderedVideoUrl = `/v1/uploads/${cachedMp4Name}`;
@@ -985,7 +991,8 @@ export async function produceFromDecodedBlueprint(opts: {
       }
     } catch (e) {
       logger.warn("video_decode.render_fallback", { error: String(e).slice(0, 250) });
-      renderNotes += ` (Sử dụng bản xem trước nhanh do tiến trình render FFmpeg đang bận: ${e instanceof Error ? e.message.slice(0, 100) : String(e)})`;
+      renderedVideoUrl = null;
+      renderNotes = `Dựng MP4 lỗi: ${e instanceof Error ? e.message.slice(0, 160) : String(e)} — bấm Build lại.`;
     }
   }
 
