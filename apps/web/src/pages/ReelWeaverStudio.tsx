@@ -1,1522 +1,1456 @@
-import { useEffect, useState } from "react";
-import { Check, Clapperboard, Copy, Download, ExternalLink, Film, Layers, Loader2, Mic, Palette, Play, RefreshCw, Scissors, Sparkles, Upload, Volume2, Wand2 } from "lucide-react";
-import { api, apiUrl, useApi } from "../lib/api";
-import { Badge, Button, Card, cx, useToast } from "../components/ui";
+import React, { useEffect, useRef, useState } from "react";
+import { api, apiUrl, currentBizId } from "../lib/api";
 
-function uploadStreamFile(f: File, onPct: (n: number | null) => void): Promise<{ path: string }> {
-  return new Promise((res, rej) => {
-    const x = new XMLHttpRequest();
-    x.open("PUT", apiUrl(`/v1/uploads/stream?name=${encodeURIComponent(f.name)}`));
-    x.setRequestHeader("content-type", "application/octet-stream");
-    x.upload.onprogress = (e) => e.lengthComputable && onPct(Math.round((e.loaded / e.total) * 100));
-    x.onload = () => {
-      try {
-        const j = JSON.parse(x.responseText);
-        x.status < 300 ? res(j) : rej(new Error(j.message ?? `Lỗi ${x.status}`));
-      } catch {
-        rej(new Error(`Lỗi ${x.status}`));
-      }
-    };
-    x.onerror = () => rej(new Error("Mất kết nối khi tải lên"));
-    x.send(f);
-  }).finally(() => onPct(null)) as Promise<{ path: string }>;
+async function uploadMediaFile(file: File): Promise<{ path: string; name: string; url: string }> {
+  const res = await fetch(apiUrl(`/v1/uploads/stream?name=${encodeURIComponent(file.name)}`), {
+    method: "PUT",
+    headers: {
+      "content-type": file.type || "application/octet-stream",
+      ...(currentBizId() ? { "x-biz-id": currentBizId()! } : {}),
+    },
+    body: file,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || `Lỗi tải tệp (${res.status})`);
+  const savedFileName = data.path ? String(data.path).split(/[\\/]/).pop() || file.name : file.name;
+  return {
+    path: data.path,
+    name: data.name || file.name,
+    url: `/v1/uploads/${encodeURIComponent(savedFileName)}`,
+  };
 }
 
-const QUICK_TOPIC_PRESETS = [
-  {
-    label: "🍯 Đặc sản & Thực phẩm sạch",
-    text: "Quy trình tuyển chọn Yến Sào Chưng Tươi & Mật Ong Hoa Nhãn nguyên chất giữ trọn chữ tín với khách hàng",
-  },
-  {
-    label: "🛍️ Review Sản phẩm / Đập hộp",
-    text: "Trải nghiệm thực tế 3 điểm ăn tiền nhất của sản phẩm khiến khách hàng chốt đơn ngay trong 15 giây",
-  },
-  {
-    label: "🏪 Giới thiệu Cửa hàng / Dịch vụ",
-    text: "Một ngày hậu trường chuẩn bị đơn hàng tỉ mỉ và phản hồi chân thực từ khách hàng thân thiết",
-  },
-  {
-    label: "🤖 Giải pháp AI & Tự động hóa",
-    text: "Cách dùng hệ thống ZONO AI giải mã video mẫu và tự động dựng phim thương mại từ các cảnh quay sẵn",
-  },
+type CliProvider = "claude_cli" | "gemini_cli" | "codex_cli";
+type TextPosition = "top" | "center" | "bottom" | "hidden";
+type TextTheme = "gold" | "yellow_full" | "emerald" | "coral" | "cyan" | "violet";
+type CaptionBgStyle = "solid_dark" | "translucent" | "brand_box" | "none";
+
+interface DecodedShot {
+  sceneNumber: number;
+  shotId: string;
+  startSec: number;
+  endSec: number;
+  durationSec: number;
+  spokenText: string;
+  visualDescription: string;
+  cameraAngle: string;
+  recommendedZoom: "in" | "out" | "punch" | "pan_left" | "pan_right" | "none";
+  recommendedTransition: string;
+  onScreenText: string;
+  howToShootOrSelect: string;
+}
+
+interface DecodedVideoBlueprint {
+  id: string;
+  sourceVideoPath: string;
+  sourceVideoUrl: string;
+  sourceFileName: string;
+  durationSec: number;
+  width: number;
+  height: number;
+  fps: number;
+  hasAudio: boolean;
+  shotCount: number;
+  avgShotSec: number;
+  pacingLabel: string;
+  recommendedEditStyle: "dynamic" | "smooth" | "clean";
+  contactSheetUrl: string | null;
+  fullTranscript: string;
+  wordsPerMinute: number;
+  decodedByProvider: string;
+  hookFormula: {
+    first3SecHook: string;
+    visualHookTechnique: string;
+    onScreenHookTitle: string;
+  };
+  narrativeArc: string[];
+  editingRhythmNotes: string;
+  decodedShots: DecodedShot[];
+  reusablePromptTemplate: string;
+}
+
+interface ClonedProductionScene {
+  sceneNumber: number;
+  templateTiming: string;
+  durationSec: number;
+  originalShotSummary: string;
+  newVoiceover: string;
+  newOnScreenText: string;
+  selectedRawCut: {
+    sourceIndex: number;
+    sourceFileName: string;
+    startSec: number;
+    endSec: number;
+  };
+  zoom: string;
+  transition: string;
+  directorNote: string;
+}
+
+interface ClonedVideoProductionResult {
+  id: string;
+  topic: string;
+  product: string;
+  brandName: string;
+  providerUsed: string;
+  blueprintId: string;
+  pacingApplied: string;
+  editStyle: "dynamic" | "smooth" | "clean";
+  captionPosition: TextPosition;
+  headlinePosition: TextPosition;
+  textTheme?: TextTheme;
+  captionBgStyle?: CaptionBgStyle;
+  thumbnailTitle?: string;
+  thumbnailSvgDataUrl?: string;
+  hookTitle: string;
+  ctaText: string;
+  caption: string;
+  scenes: ClonedProductionScene[];
+  renderedVideoUrl: string | null;
+  renderedDurationSec: number;
+  renderNotes: string;
+}
+
+interface LocalVideoItem {
+  path: string;
+  url: string;
+  name: string;
+  sizeMB: number;
+}
+
+interface ChatTurn {
+  role: "user" | "assistant";
+  text: string;
+  changes?: string[];
+  at: string;
+}
+
+const VI_VOICE_OPTIONS = [
+  { id: "Binh", label: "Giọng Nam · Bình (Miền Bắc · chuẩn TikTok/Review)" },
+  { id: "Tuyen", label: "Giọng Nam · Tuyên (Miền Bắc · truyền cảm)" },
+  { id: "Ngoc", label: "Giọng Nữ · Ngọc (Miền Bắc · tự nhiên)" },
+  { id: "Ly", label: "Giọng Nữ · Ly (Miền Bắc · trẻ trung)" },
+  { id: "Vinh", label: "Giọng Nam · Vĩnh (Miền Nam · ấm áp)" },
+  { id: "Doan", label: "Giọng Nữ · Đoan (Miền Nam · dịu dàng)" },
+];
+
+const TEXT_THEME_OPTIONS: { id: TextTheme; label: string; color: string }[] = [
+  { id: "gold", label: "Vàng Kim", color: "#FFD43B" },
+  { id: "yellow_full", label: "Vàng Rực", color: "#FACC15" },
+  { id: "emerald", label: "Xanh Ngọc", color: "#10B981" },
+  { id: "coral", label: "Đỏ Cam", color: "#F43F5E" },
+  { id: "cyan", label: "Xanh Dương", color: "#0EA5E9" },
+  { id: "violet", label: "Tím Neon", color: "#8B5CF6" },
+];
+
+const CAPTION_BG_OPTIONS: { id: CaptionBgStyle; label: string; desc: string }[] = [
+  { id: "solid_dark", label: "Hộp Đen Đậm", desc: "Nền đen rõ chữ nhất" },
+  { id: "translucent", label: "Hộp Mờ Trong Suốt", desc: "Mờ nhẹ hiện đại" },
+  { id: "brand_box", label: "Hộp Màu Nổi", desc: "Nền màu theo chủ đề" },
+  { id: "none", label: "Không Nền", desc: "Chỉ chữ + viền đen" },
+];
+
+const POSITION_OPTIONS: { id: TextPosition; label: string }[] = [
+  { id: "bottom", label: "Dưới đáy" },
+  { id: "center", label: "Chính giữa" },
+  { id: "top", label: "Trên cao" },
+  { id: "hidden", label: "Ẩn chữ" },
 ];
 
 export function ReelWeaverStudio() {
-  const { data: catalog, reload } = useApi<any>("studio/reelweaver-catalog");
-  const toast = useToast();
+  const [preferredProvider, setPreferredProvider] = useState<CliProvider>("claude_cli");
+  const [localVideos, setLocalVideos] = useState<LocalVideoItem[]>([]);
+  const [selectedRefVideoPath, setSelectedRefVideoPath] = useState<string>("");
+  const [uploadingRef, setUploadingRef] = useState(false);
+  const [decoding, setDecoding] = useState(false);
+  const [blueprint, setBlueprint] = useState<DecodedVideoBlueprint | null>(null);
 
-  // Chế độ hiển thị: "decode_workflow" (Mặc định tinh gọn 3 bước) | "storyboard_studio" (Lên kịch bản đa kênh nâng cao)
-  const [studioTab, setStudioTab] = useState<"decode_workflow" | "storyboard_studio">("decode_workflow");
+  // Raw footage & Nội dung kịch bản mới
+  const [rawFootages, setRawFootages] = useState<LocalVideoItem[]>([]);
+  const [uploadingRaw, setUploadingRaw] = useState(false);
+  const [topic, setTopic] = useState("Giới thiệu sản phẩm chất lượng cao, cam kết nguyên chất và ưu đãi hôm nay");
+  const [productName, setProductName] = useState("Sản phẩm chủ lực");
+  const [brandName, setBrandName] = useState("ZONO");
 
-  const [selectedNiche, setSelectedNiche] = useState<string>("commercial-brand");
-  const [selectedStyle, setSelectedStyle] = useState<string>("decoded_footage");
-  const [topic, setTopic] = useState<string>(QUICK_TOPIC_PRESETS[0].text);
-  const [voice, setVoice] = useState<string>("Ngọc Huyền");
+  // Tuỳ chọn hiển thị, màu chữ, nền chữ, vị trí chữ & thumbnail
   const [audioMode, setAudioMode] = useState<"voiceover" | "keep_audio">("voiceover");
-  const [editStyle, setEditStyle] = useState<"dynamic" | "smooth" | "clean">("dynamic");
+  const [voiceName, setVoiceName] = useState("Binh");
   const [aspectRatio, setAspectRatio] = useState<"9:16" | "16:9">("9:16");
-  const [busy, setBusy] = useState<boolean>(false);
-  const [result, setResult] = useState<any>(null);
-  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [editStyle, setEditStyle] = useState<"dynamic" | "smooth" | "clean">("dynamic");
+  const [textTheme, setTextTheme] = useState<TextTheme>("gold");
+  const [captionBgStyle, setCaptionBgStyle] = useState<CaptionBgStyle>("solid_dark");
+  const [captionPosition, setCaptionPosition] = useState<TextPosition>("bottom");
+  const [headlinePosition, setHeadlinePosition] = useState<TextPosition>("top");
+  const [thumbnailTitle, setThumbnailTitle] = useState("BÍ QUYẾT THỰC CHIẾN");
+  const [customThumbnailUrl, setCustomThumbnailUrl] = useState<string | null>(null);
 
-  // State cho Trạm Decode Video Mẫu & Dựng Phim Từ Video Quay Sẵn (Local FFmpeg + Whisper + CLI AI)
-  const [selectedCli, setSelectedCli] = useState<"claude_cli" | "gemini_cli" | "codex_cli">("claude_cli");
-  const [showOriginalVoice, setShowOriginalVoice] = useState<boolean>(false);
-  const [captionPosition, setCaptionPosition] = useState<"top" | "center" | "bottom" | "hidden">("bottom");
-  const [headlinePosition, setHeadlinePosition] = useState<"top" | "center" | "bottom" | "hidden">("top");
-  const [chatInput, setChatInput] = useState<string>("");
-  const [chatBusy, setChatBusy] = useState<boolean>(false);
-  const [chatHistory, setChatHistory] = useState<
-    { role: "user" | "ai"; text: string; changes?: string[]; provider?: string }[]
+  // Kịch bản câu thoại từng cảnh (để đổi kịch bản trực tiếp hoặc bằng AI)
+  const [editableScenes, setEditableScenes] = useState<
+    {
+      sceneNumber: number;
+      newVoiceover: string;
+      newOnScreenText: string;
+      zoom: string;
+      transition: string;
+      rawSourceIndex: number;
+      rawStartSec: number;
+      rawEndSec: number;
+    }[]
   >([]);
-  const [decodeBusy, setDecodeBusy] = useState<boolean>(false);
-  const [cloneBusy, setCloneBusy] = useState<boolean>(false);
-  const [uploadPct, setUploadPct] = useState<number | null>(null);
-  const [useClaudeForDecode, setUseClaudeForDecode] = useState<boolean>(true);
-  const [renderRealMp4, setRenderRealMp4] = useState<boolean>(true);
-  const [decodedBlueprint, setDecodedBlueprint] = useState<any>(null);
-  const [rawFootageList, setRawFootageList] = useState<{ path: string; name: string }[]>([]);
-  const [clonedResult, setClonedResult] = useState<any>(null);
-  const [editableScenes, setEditableScenes] = useState<any[]>([]);
 
-  // Tự động nạp sẵn 1 Video Mẫu đã Decode ngay khi mở trang để người dùng thấy kết quả tức thì
+  const [rewritingScript, setRewritingScript] = useState(false);
+  const [buildingVideo, setBuildingVideo] = useState(false);
+  const [production, setProduction] = useState<ClonedVideoProductionResult | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [showShotDetails, setShowShotDetails] = useState(false);
+
+  // Chat Đạo Diễn AI
+  const [chatInput, setChatInput] = useState("");
+  const [chatLoading, setChatLoading] = useState(false);
+  const [chatHistory, setChatHistory] = useState<ChatTurn[]>([]);
+
+  const refInputRef = useRef<HTMLInputElement | null>(null);
+  const rawInputRef = useRef<HTMLInputElement | null>(null);
+  const thumbInputRef = useRef<HTMLInputElement | null>(null);
+
   useEffect(() => {
-    if (!catalog) return;
-    const initCli =
-      catalog.aiProvider?.provider && ["claude_cli", "gemini_cli", "codex_cli"].includes(catalog.aiProvider.provider)
-        ? catalog.aiProvider.provider
-        : "claude_cli";
-    setSelectedCli(initCli);
-    if (!decodedBlueprint && !decodeBusy) void handleDecodeVideo(undefined, true, initCli);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [catalog]);
+    api
+      .get("/dna")
+      .then((res: any) => {
+        const d = res?.dna?.data;
+        if (d?.company?.brand || d?.company?.name) {
+          setBrandName(d.company.brand || d.company.name);
+        }
+        if (Array.isArray(d?.products) && d.products.length > 0 && d.products[0]?.name) {
+          const p0 = d.products[0];
+          setProductName(p0.name);
+          setThumbnailTitle(`${p0.name.toUpperCase()} CHÍNH HÃNG`);
+          setTopic(
+            `${p0.name} — ${p0.summary || (Array.isArray(p0.sellingPoints) ? p0.sellingPoints.join(", ") : "Chất lượng vượt trội, ưu đãi đặc biệt")}`,
+          );
+        }
+      })
+      .catch(() => {});
 
-  const handleDecodeVideo = async (videoPath?: string, silent = false, cliOverride?: "claude_cli" | "gemini_cli" | "codex_cli") => {
-    const activeCli = cliOverride ?? selectedCli;
-    setDecodeBusy(true);
+    api
+      .get("/studio/local-videos")
+      .then((res: any) => {
+        const vids: LocalVideoItem[] = res?.videos || [];
+        setLocalVideos(vids);
+        if (vids.length > 0) {
+          setSelectedRefVideoPath(vids[0].path);
+          setRawFootages([vids[0]]);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const syncEditableScenesFromProduction = (prod: ClonedVideoProductionResult) => {
+    setEditableScenes(
+      prod.scenes.map((s) => ({
+        sceneNumber: s.sceneNumber,
+        newVoiceover: s.newVoiceover,
+        newOnScreenText: s.newOnScreenText,
+        zoom: s.zoom,
+        transition: s.transition,
+        rawSourceIndex: s.selectedRawCut.sourceIndex,
+        rawStartSec: s.selectedRawCut.startSec,
+        rawEndSec: s.selectedRawCut.endSec,
+      })),
+    );
+    if (prod.captionPosition) setCaptionPosition(prod.captionPosition);
+    if (prod.headlinePosition) setHeadlinePosition(prod.headlinePosition);
+    if (prod.textTheme) setTextTheme(prod.textTheme);
+    if (prod.captionBgStyle) setCaptionBgStyle(prod.captionBgStyle);
+    if (prod.thumbnailTitle) setThumbnailTitle(prod.thumbnailTitle);
+  };
+
+  // 1. Decode Video Mẫu + Tự động tạo luôn Kịch Bản Mới cho các cảnh
+  const runDecodeAndPrepareScript = async (pathOverride?: string) => {
+    const targetPath = pathOverride ?? selectedRefVideoPath;
+    setDecoding(true);
+    setErrorMsg(null);
     try {
-      const res = await api.post<any>("studio/decode-video", {
-        videoPath,
-        referenceNotes: topic,
+      const res: any = await api.post("/studio/decode-video", {
+        videoPath: targetPath || undefined,
         useWhisper: true,
-        useClaude: useClaudeForDecode,
-        preferredProvider: activeCli,
+        useClaude: true,
+        preferredProvider,
       });
-      setDecodedBlueprint(res.blueprint);
-      if (res.blueprint?.recommendedEditStyle) {
-        setEditStyle(res.blueprint.recommendedEditStyle);
-      }
-      // Đồng bộ tức thì số cảnh của Bước 3 bên dưới theo đúng số cảnh vừa Decode ở Bước 1 (tránh lệch số cảnh trong lúc chờ AI viết lời mới)
-      if (res.blueprint?.decodedShots?.length) {
-        setEditableScenes(
-          res.blueprint.decodedShots.map((dShot: any, idx: number) => ({
-            sceneNumber: idx + 1,
-            templateTiming: `${dShot.startSec.toFixed(1)}s – ${dShot.endSec.toFixed(1)}s (${dShot.durationSec.toFixed(1)}s)`,
-            durationSec: dShot.durationSec,
-            originalShotSummary: dShot.visualDescription,
-            newVoiceover: `Đang dùng ${activeCli === "claude_cli" ? "Claude CLI" : activeCli === "gemini_cli" ? "Gemini CLI" : "Codex CLI"} viết lời Voice mới cho Cảnh ${idx + 1}...`,
-            newOnScreenText: dShot.onScreenText || `ĐIỂM NHẤN #${idx + 1}`,
-            selectedRawCut: {
-              sourceIndex: 0,
-              sourceFileName: res.blueprint.sourceFileName,
-              startSec: dShot.startSec,
-              endSec: dShot.endSec,
+      if (res?.blueprint) {
+        const bp: DecodedVideoBlueprint = res.blueprint;
+        setBlueprint(bp);
+        setEditStyle(bp.recommendedEditStyle || "dynamic");
+        const activeRaws =
+          rawFootages.length > 0
+            ? rawFootages.map((r) => r.path)
+            : [bp.sourceVideoPath];
+        if (rawFootages.length === 0) {
+          setRawFootages([
+            {
+              path: bp.sourceVideoPath,
+              url: bp.sourceVideoUrl,
+              name: bp.sourceFileName,
+              sizeMB: 5,
             },
-            zoom: dShot.recommendedZoom || "in",
-            transition: dShot.recommendedTransition || "slideleft",
-          })),
-        );
-      }
-      if (!silent) {
-        toast(`Đã Decode xong bằng ${activeCli === "claude_cli" ? "Claude CLI" : activeCli === "gemini_cli" ? "Gemini CLI" : "Codex CLI"} (${res.blueprint.shotCount} cảnh) — đang tự động viết kịch bản mới & dựng MP4 bên dưới...`, "info");
-      }
-      if (res.blueprint) {
-        setCloneBusy(true);
-        try {
-          const cloneRes = await api.post<any>("studio/clone-from-decoded", {
-            blueprint: res.blueprint,
-            rawVideoPaths: rawFootageList.map((r) => r.path),
-            topic,
-            product: catalog?.productsSummary,
-            brandName: catalog?.brandName,
-            voiceName: voice,
-            audioMode,
-            aspectRatio,
-            editStyle: res.blueprint.recommendedEditStyle ?? editStyle ?? "dynamic",
-            captionPosition,
-            headlinePosition,
-            renderMp4: renderRealMp4,
-            useClaude: useClaudeForDecode,
-            preferredProvider: activeCli,
-          });
-          setClonedResult(cloneRes.result);
-          setEditableScenes(cloneRes.result?.scenes ?? []);
-          if (!silent) {
-            toast(`🎉 Đã cập nhật xong ${cloneRes.result?.scenes?.length ?? res.blueprint.shotCount} cảnh & Video MP4 mới bên dưới!`, "ok");
-          }
-        } finally {
-          setCloneBusy(false);
+          ]);
+        }
+
+        // Gọi AI tạo luôn kịch bản câu thoại mới khớp đúng số cảnh vừa Decode (renderMp4 = false để hiện kịch bản tức thì)
+        const cloneRes: any = await api.post("/studio/clone-from-decoded", {
+          blueprint: bp,
+          rawVideoPaths: activeRaws,
+          topic,
+          product: productName,
+          brandName,
+          voiceName,
+          audioMode,
+          aspectRatio,
+          editStyle: bp.recommendedEditStyle || "dynamic",
+          captionPosition,
+          headlinePosition,
+          textTheme,
+          captionBgStyle,
+          thumbnailTitle,
+          renderMp4: false,
+          useClaude: true,
+          preferredProvider,
+        });
+        if (cloneRes?.result) {
+          setProduction(cloneRes.result);
+          syncEditableScenesFromProduction(cloneRes.result);
         }
       }
-    } catch (e: any) {
-      if (!silent) toast(e?.message ?? "Lỗi khi giải mã video mẫu", "err");
+    } catch (err: any) {
+      setErrorMsg(err?.message || "Không thể giải mã video mẫu.");
     } finally {
-      setDecodeBusy(false);
+      setDecoding(false);
     }
   };
 
-  const handleCloneFromDecoded = async (
-    useEditedScenes = false,
-    posOverride?: {
-      captionPosition?: "top" | "center" | "bottom" | "hidden";
-      headlinePosition?: "top" | "center" | "bottom" | "hidden";
-    },
-  ) => {
-    if (!decodedBlueprint) {
-      toast("Vui lòng chọn hoặc tải 1 Video Mẫu ở Bước 1 trước!", "err");
+  // Nút "Viết / Đổi Kịch Bản Mới bằng AI" ngay ở Bước 1
+  const handleRewriteScriptWithAI = async () => {
+    if (!blueprint) {
+      await runDecodeAndPrepareScript();
       return;
     }
-    const nextCaptionPos = posOverride?.captionPosition ?? captionPosition;
-    const nextHeadlinePos = posOverride?.headlinePosition ?? headlinePosition;
-    setCloneBusy(true);
+    setRewritingScript(true);
+    setErrorMsg(null);
     try {
-      const res = await api.post<any>("studio/clone-from-decoded", {
-        blueprint: decodedBlueprint,
-        rawVideoPaths: rawFootageList.map((r) => r.path),
+      const res: any = await api.post("/studio/clone-from-decoded", {
+        blueprint,
+        rawVideoPaths: rawFootages.length > 0 ? rawFootages.map((r) => r.path) : [blueprint.sourceVideoPath],
         topic,
-        product: catalog?.productsSummary,
-        brandName: catalog?.brandName,
-        voiceName: voice,
+        product: productName,
+        brandName,
+        voiceName,
         audioMode,
         aspectRatio,
-        editStyle,
-        captionPosition: nextCaptionPos,
-        headlinePosition: nextHeadlinePos,
-        renderMp4: renderRealMp4,
-        useClaude: !useEditedScenes,
-        preferredProvider: selectedCli,
-        customScenes: useEditedScenes
-          ? editableScenes.map((s) => ({
-              sceneNumber: s.sceneNumber,
-              newVoiceover: s.newVoiceover,
-              newOnScreenText: s.newOnScreenText,
-              zoom: s.zoom,
-              transition: s.transition,
-              rawSourceIndex: s.selectedRawCut?.sourceIndex,
-              rawStartSec: s.selectedRawCut?.startSec,
-              rawEndSec: s.selectedRawCut?.endSec,
-            }))
-          : undefined,
-      });
-      setClonedResult(res.result);
-      setEditableScenes(res.result?.scenes ?? []);
-      if (res.result?.captionPosition) setCaptionPosition(res.result.captionPosition);
-      if (res.result?.headlinePosition) setHeadlinePosition(res.result.headlinePosition);
-      toast(
-        useEditedScenes
-          ? "Đã kết xuất lại Video MP4 theo đúng cách cắt, lời thoại & vị trí chữ anh vừa chỉnh!"
-          : "Đã học theo Video Decode và dựng xong Phim Mới từ Video Quay Sẵn!",
-        "ok",
-      );
-    } catch (e: any) {
-      toast(e?.message ?? "Lỗi khi dựng phim theo công thức Decode", "err");
-    } finally {
-      setCloneBusy(false);
-    }
-  };
-
-  const handleChatEditVideo = async (presetText?: string) => {
-    const msg = (presetText ?? chatInput).trim();
-    if (!msg) {
-      toast("Vui lòng nhập yêu cầu thay đổi cách cắt, lời thoại hoặc vị trí đặt chữ!", "err");
-      return;
-    }
-    if (!decodedBlueprint) {
-      toast("Đang tải Video Mẫu Decode, vui lòng thử lại sau giây lát!", "err");
-      return;
-    }
-    if (!presetText) setChatInput("");
-    setChatHistory((prev) => [...prev, { role: "user", text: msg }]);
-    setChatBusy(true);
-    setCloneBusy(true);
-    try {
-      const currentProd = clonedResult ?? {
-        id: "init",
-        topic,
-        product: catalog?.productsSummary || topic,
-        brandName: catalog?.brandName || "ZONO",
-        providerUsed: selectedCli,
-        blueprintId: decodedBlueprint.id,
-        pacingApplied: decodedBlueprint.pacingLabel,
         editStyle,
         captionPosition,
         headlinePosition,
-        hookTitle: `${topic.slice(0, 28).toUpperCase()}`,
-        ctaText: "Nhắn tin ngay để nhận ưu đãi!",
-        caption: topic,
-        scenes: editableScenes,
-        renderedVideoUrl: null,
-        renderedDurationSec: decodedBlueprint.durationSec,
-        renderNotes: "",
-      };
-      const res = await api.post<any>("studio/chat-edit-video", {
-        message: msg,
-        blueprint: decodedBlueprint,
-        currentProduction: {
-          ...currentProd,
-          captionPosition,
-          headlinePosition,
-          editStyle,
-          scenes: editableScenes.length ? editableScenes : currentProd.scenes,
-        },
-        rawVideoPaths: rawFootageList.map((r) => r.path),
-        voiceName: voice,
-        audioMode,
-        aspectRatio,
-        preferredProvider: selectedCli,
+        textTheme,
+        captionBgStyle,
+        thumbnailTitle,
+        renderMp4: false,
+        useClaude: true,
+        preferredProvider,
       });
-      if (res.production) {
-        setClonedResult(res.production);
-        setEditableScenes(res.production.scenes ?? []);
-        if (res.production.captionPosition) setCaptionPosition(res.production.captionPosition);
-        if (res.production.headlinePosition) setHeadlinePosition(res.production.headlinePosition);
-        if (res.production.editStyle) setEditStyle(res.production.editStyle);
+      if (res?.result) {
+        setProduction(res.result);
+        syncEditableScenesFromProduction(res.result);
       }
-      setChatHistory((prev) => [
-        ...prev,
-        {
-          role: "ai",
-          text: res.reply || "Đã cập nhật kịch bản, cách cắt, vị trí chữ và kết xuất lại Video MP4 mới!",
-          changes: res.changesSummary ?? [],
-          provider: res.providerUsed || selectedCli,
-        },
-      ]);
-      toast("🎉 Đã áp dụng yêu cầu Chat & dựng lại Video MP4 mới!", "ok");
-    } catch (e: any) {
-      toast(e?.message ?? "Lỗi khi xử lý yêu cầu Chat chỉnh sửa video", "err");
+    } catch (err: any) {
+      setErrorMsg(err?.message || "Lỗi khi viết kịch bản mới.");
     } finally {
-      setChatBusy(false);
-      setCloneBusy(false);
+      setRewritingScript(false);
     }
   };
 
-  const updateEditableScene = (idx: number, patch: Record<string, any>) => {
-    setEditableScenes((prev) => prev.map((sc, i) => (i === idx ? { ...sc, ...patch } : sc)));
-  };
-
-  const handleGenerateStoryboard = async (silent = false) => {
-    if (!topic.trim()) {
-      toast("Vui lòng nhập chủ đề hoặc ý tưởng video!", "err");
+  // Nút "🎬 BUILD VIDEO MP4" ở Bước 2
+  const handleBuildVideoMp4 = async () => {
+    if (!blueprint) {
+      setErrorMsg("Vui lòng chọn hoặc tải Video Mẫu cần Decode ở Bước 1 trước!");
       return;
     }
-    setBusy(true);
+    setBuildingVideo(true);
+    setErrorMsg(null);
     try {
-      const res = await api.post<any>("studio/reelweaver-plan", {
-        topic: topic.trim(),
-        styleId: selectedStyle,
-        nicheSlug: selectedNiche,
-        brandName: catalog?.brandName,
-        productsSummary: catalog?.productsSummary,
-        voice,
+      const res: any = await api.post("/studio/clone-from-decoded", {
+        blueprint,
+        rawVideoPaths: rawFootages.length > 0 ? rawFootages.map((r) => r.path) : [blueprint.sourceVideoPath],
+        topic,
+        product: productName,
+        brandName,
+        voiceName,
+        audioMode,
         aspectRatio,
+        editStyle,
+        captionPosition,
+        headlinePosition,
+        textTheme,
+        captionBgStyle,
+        thumbnailTitle,
+        renderMp4: true,
+        useClaude: editableScenes.length === 0,
+        preferredProvider,
+        customScenes: editableScenes.length > 0 ? editableScenes : undefined,
       });
-      setResult(res);
-      if (!silent) {
-        toast("Đã dựng xong Kịch bản 5 cảnh + Thumbnail Satori + Caption 4 kênh!", "ok");
+      if (res?.result) {
+        setProduction(res.result);
+        syncEditableScenesFromProduction(res.result);
       }
-    } catch (e: any) {
-      if (!silent) toast(e?.message ?? "Lỗi khi dựng kịch bản Studio", "err");
+    } catch (err: any) {
+      setErrorMsg(err?.message || "Lỗi khi dựng Video MP4.");
     } finally {
-      setBusy(false);
+      setBuildingVideo(false);
     }
   };
 
-  const copyText = (key: string, text: string) => {
-    void navigator.clipboard.writeText(text);
-    setCopiedKey(key);
-    toast("Đã sao chép vào bộ nhớ tạm!", "ok");
-    setTimeout(() => setCopiedKey(null), 1800);
+  // Khung Chat Đạo Diễn AI ở Bước 3
+  const handleSendChatDirector = async (presetText?: string) => {
+    const msg = (presetText ?? chatInput).trim();
+    if (!msg || !blueprint || !production) return;
+    if (!presetText) setChatInput("");
+    setChatHistory((prev) => [
+      ...prev,
+      { role: "user", text: msg, at: new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }) },
+    ]);
+    setChatLoading(true);
+    setErrorMsg(null);
+    try {
+      const res: any = await api.post("/studio/chat-edit-video", {
+        message: msg,
+        blueprint,
+        currentProduction: {
+          ...production,
+          captionPosition,
+          headlinePosition,
+          textTheme,
+          captionBgStyle,
+          thumbnailTitle,
+          scenes: production.scenes.map((sc, idx) => ({
+            ...sc,
+            newVoiceover: editableScenes[idx]?.newVoiceover ?? sc.newVoiceover,
+            newOnScreenText: editableScenes[idx]?.newOnScreenText ?? sc.newOnScreenText,
+          })),
+        },
+        rawVideoPaths: rawFootages.length > 0 ? rawFootages.map((r) => r.path) : [blueprint.sourceVideoPath],
+        voiceName,
+        audioMode,
+        aspectRatio,
+        preferredProvider,
+      });
+      if (res?.production) {
+        setProduction(res.production);
+        syncEditableScenesFromProduction(res.production);
+        setChatHistory((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            text: res.reply || "Đã cập nhật kịch bản, màu chữ, vị trí chữ và dựng lại Video MP4!",
+            changes: res.changesSummary || [],
+            at: new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }),
+          },
+        ]);
+      }
+    } catch (err: any) {
+      setErrorMsg(err?.message || "Không thể thực hiện lệnh chỉnh sửa qua Chat.");
+    } finally {
+      setChatLoading(false);
+    }
   };
 
-  const niches: any[] = catalog?.niches ?? [];
-  const styles: any[] = catalog?.styles ?? [];
-  const activeNicheObj = niches.find((n) => n.slug === selectedNiche) ?? niches[0];
-  const activeStyleObj = styles.find((s) => s.id === selectedStyle) ?? styles[0];
-  const plan = result?.plan;
+  const handleUploadReferenceVideo = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingRef(true);
+    setErrorMsg(null);
+    try {
+      const uploaded = await uploadMediaFile(file);
+      if (uploaded?.path) {
+        const newItem: LocalVideoItem = {
+          path: uploaded.path,
+          url: uploaded.url,
+          name: file.name,
+          sizeMB: Math.round((file.size / 1048576) * 10) / 10,
+        };
+        setLocalVideos((prev) => [newItem, ...prev]);
+        setSelectedRefVideoPath(newItem.path);
+        if (rawFootages.length === 0) setRawFootages([newItem]);
+        await runDecodeAndPrepareScript(newItem.path);
+      }
+    } catch (err: any) {
+      setErrorMsg(err?.message || "Lỗi tải video mẫu lên.");
+    } finally {
+      setUploadingRef(false);
+      if (refInputRef.current) refInputRef.current.value = "";
+    }
+  };
+
+  const handleUploadRawFootages = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setUploadingRaw(true);
+    setErrorMsg(null);
+    try {
+      const uploadedItems: LocalVideoItem[] = [];
+      for (const file of files) {
+        const up = await uploadMediaFile(file);
+        if (up?.path) {
+          uploadedItems.push({
+            path: up.path,
+            url: up.url,
+            name: file.name,
+            sizeMB: Math.round((file.size / 1048576) * 10) / 10,
+          });
+        }
+      }
+      if (uploadedItems.length) {
+        setRawFootages((prev) => [...uploadedItems, ...prev]);
+      }
+    } catch (err: any) {
+      setErrorMsg(err?.message || "Lỗi tải video quay sẵn.");
+    } finally {
+      setUploadingRaw(false);
+      if (rawInputRef.current) rawInputRef.current.value = "";
+    }
+  };
+
+  const handleUploadCustomThumbnail = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const up = await uploadMediaFile(file);
+      if (up?.url) {
+        setCustomThumbnailUrl(up.url);
+      }
+    } catch {
+      // ignore
+    } finally {
+      if (thumbInputRef.current) thumbInputRef.current.value = "";
+    }
+  };
+
+  const activePosterUrl = customThumbnailUrl || production?.thumbnailSvgDataUrl || undefined;
 
   return (
-    <div className="space-y-5 pb-12">
-      {/* Banner Header tinh gọn + Thanh chuyển chế độ 2 Tab */}
-      <div className="rounded-3xl bg-gradient-to-r from-indigo-600 via-violet-600 to-blue-600 p-5 text-white shadow-lg">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/20 px-3 py-1 text-xs font-bold uppercase tracking-wider backdrop-blur-sm">
-              <Sparkles className="h-3.5 w-3.5" />
-              ZONO Video Studio · 100% Local FFmpeg + Faster-Whisper + Claude AI
+    <div style={{ maxWidth: 1220, margin: "0 auto", padding: "12px 16px 64px" }}>
+      {/* HEADER GỌN GÀNG + CHỌN CLI AI */}
+      <div
+        style={{
+          background: "linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)",
+          borderRadius: 16,
+          padding: "16px 20px",
+          color: "#fff",
+          marginBottom: 16,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: 12,
+        }}
+      >
+        <div>
+          <h1 style={{ fontSize: 20, fontWeight: 800, margin: "0 0 4px" }}>
+            🎬 Studio Dựng Video Nhanh (Decode → Đổi Kịch Bản → Build MP4)
+          </h1>
+          <div style={{ fontSize: 12.5, color: "#cbd5e1" }}>
+            3 bước gọn nhẹ: <b>1. Up Video Decode & Đổi Kịch Bản</b> → <b>2. Chọn Màu Chữ, Nền Chữ, Thumbnail & Build</b> → <b>3. Chat Đạo Diễn AI sửa trực tiếp</b>
+          </div>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.08)", padding: "6px 10px", borderRadius: 12 }}>
+          <span style={{ fontSize: 11.5, fontWeight: 700, color: "#cbd5e1" }}>AI:</span>
+          {(
+            [
+              { id: "claude_cli", label: "🟣 Claude" },
+              { id: "gemini_cli", label: "🔵 Gemini" },
+              { id: "codex_cli", label: "🟢 Codex" },
+            ] as { id: CliProvider; label: string }[]
+          ).map((cli) => {
+            const active = preferredProvider === cli.id;
+            return (
+              <button
+                key={cli.id}
+                onClick={() => setPreferredProvider(cli.id)}
+                style={{
+                  background: active ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "transparent",
+                  color: "#fff",
+                  border: active ? "1px solid #a5b4fc" : "1px solid rgba(255,255,255,0.18)",
+                  borderRadius: 8,
+                  padding: "5px 10px",
+                  fontSize: 11.5,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                {cli.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {errorMsg && (
+        <div
+          style={{
+            background: "#fef2f2",
+            border: "1px solid #fecaca",
+            color: "#b91c1c",
+            padding: "10px 14px",
+            borderRadius: 10,
+            marginBottom: 14,
+            fontSize: 13,
+            fontWeight: 600,
+          }}
+        >
+          ⚠️ {errorMsg}
+        </div>
+      )}
+
+      {/* ==================== BƯỚC 1: UP VIDEO DECODE + ĐỔI KỊCH BẢN MỚI ==================== */}
+      <div
+        style={{
+          background: "#fff",
+          border: "1px solid #e2e8f0",
+          borderRadius: 16,
+          padding: 18,
+          marginBottom: 16,
+          boxShadow: "0 2px 8px rgba(15,23,42,0.03)",
+        }}
+      >
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1.25fr", gap: 18 }}>
+          {/* CỘT TRÁI BƯỚC 1: UP VIDEO MẪU CẦN DECODE & VIDEO QUAY SẴN */}
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+              <span
+                style={{
+                  width: 26,
+                  height: 26,
+                  borderRadius: 8,
+                  background: "#2563eb",
+                  color: "#fff",
+                  fontWeight: 800,
+                  fontSize: 13,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                1
+              </span>
+              <div style={{ fontSize: 15, fontWeight: 800, color: "#0f172a" }}>
+                Up Video Mẫu để Decode & Chọn Video Để Dựng
+              </div>
             </div>
-            <h1 className="text-xl font-extrabold tracking-tight sm:text-2xl">
-              Giải Mã Video Mẫu (Decode) & Làm Phim Từ Video Quay Sẵn
-            </h1>
-            <p className="max-w-3xl text-xs text-indigo-100 sm:text-sm">
-              Quy trình tối giản 3 bước: <b>(1) Chọn Video Mẫu để Decode nhịp cắt & Hook 3s</b> ➔ <b>(2) Đưa Video Quay Sẵn + Chủ đề vào</b> ➔ <b>(3) Sửa câu thoại trực tiếp & Xuất MP4</b>.
-            </p>
+
+            {/* Nút tải Video Mẫu cần Decode */}
+            <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, padding: 12, marginBottom: 12 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                <span style={{ fontSize: 12.5, fontWeight: 700, color: "#1e293b" }}>
+                  📹 1A. Video Mẫu cần Decode (học nhịp cắt & công thức):
+                </span>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <input
+                    ref={refInputRef}
+                    type="file"
+                    accept="video/mp4,video/quicktime,video/webm"
+                    style={{ display: "none" }}
+                    onChange={handleUploadReferenceVideo}
+                  />
+                  <button
+                    onClick={() => refInputRef.current?.click()}
+                    disabled={uploadingRef || decoding}
+                    style={{
+                      background: "#2563eb",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: 8,
+                      padding: "6px 12px",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                    }}
+                  >
+                    {uploadingRef ? "⏳ Đang tải..." : "⬆️ Up Video Mẫu"}
+                  </button>
+                  <button
+                    onClick={() => runDecodeAndPrepareScript()}
+                    disabled={decoding}
+                    style={{
+                      background: "#0f172a",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: 8,
+                      padding: "6px 12px",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                    }}
+                  >
+                    {decoding ? "⏳ Đang Decode..." : "🔍 Decode Ngay"}
+                  </button>
+                </div>
+              </div>
+
+              {/* Chọn nhanh từ kho trên máy */}
+              {localVideos.length > 0 && (
+                <select
+                  value={selectedRefVideoPath}
+                  onChange={(e) => {
+                    setSelectedRefVideoPath(e.target.value);
+                    runDecodeAndPrepareScript(e.target.value);
+                  }}
+                  style={{
+                    width: "100%",
+                    padding: "7px 10px",
+                    borderRadius: 8,
+                    border: "1px solid #cbd5e1",
+                    fontSize: 12,
+                    background: "#fff",
+                  }}
+                >
+                  {localVideos.map((v) => (
+                    <option key={v.path} value={v.path}>
+                      🎞️ {v.name} ({v.sizeMB} MB)
+                    </option>
+                  ))}
+                </select>
+              )}
+
+              {blueprint && (
+                <div style={{ marginTop: 10, display: "flex", gap: 10, alignItems: "center" }}>
+                  <video
+                    key={blueprint.sourceVideoUrl}
+                    src={blueprint.sourceVideoUrl}
+                    controls
+                    playsInline
+                    preload="metadata"
+                    style={{ width: 130, height: 84, borderRadius: 8, background: "#000", objectFit: "cover" }}
+                  />
+                  <div style={{ flex: 1, fontSize: 11.5, color: "#334155", lineHeight: 1.5 }}>
+                    <div style={{ fontWeight: 800, color: "#0f172a" }}>
+                      ✅ Đã Decode: {blueprint.shotCount} cảnh · {blueprint.durationSec}s ({blueprint.pacingLabel})
+                    </div>
+                    {blueprint.fullTranscript && (
+                      <div style={{ color: "#475569", marginTop: 2 }}>
+                        🎙️ Lời gốc: <i>"{blueprint.fullTranscript.slice(0, 90)}..."</i>
+                      </div>
+                    )}
+                    <button
+                      onClick={() => setShowShotDetails((v) => !v)}
+                      style={{
+                        marginTop: 4,
+                        background: "transparent",
+                        border: "none",
+                        color: "#2563eb",
+                        fontSize: 11,
+                        fontWeight: 700,
+                        padding: 0,
+                        cursor: "pointer",
+                      }}
+                    >
+                      {showShotDetails ? "▲ Thu gọn chi tiết cảnh mẫu" : "▼ Xem chi tiết cảnh mẫu đã bóc tách"}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {blueprint && showShotDetails && (
+                <div style={{ marginTop: 8, maxHeight: 140, overflowY: "auto", fontSize: 11, background: "#fff", padding: 8, borderRadius: 8, border: "1px solid #e2e8f0" }}>
+                  {blueprint.decodedShots.map((sh) => (
+                    <div key={sh.shotId} style={{ padding: "4px 0", borderBottom: "1px dashed #e2e8f0" }}>
+                      <b>Cảnh {sh.sceneNumber} ({sh.startSec}s–{sh.endSec}s):</b> {sh.spokenText || sh.visualDescription}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* 1B. Video đã có / Video quay sẵn để dựng */}
+            <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, padding: 12 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                <span style={{ fontSize: 12.5, fontWeight: 700, color: "#1e293b" }}>
+                  🎞️ 1B. Video Quay Sẵn dùng để dựng mới ({rawFootages.length} clip):
+                </span>
+                <div>
+                  <input
+                    ref={rawInputRef}
+                    type="file"
+                    accept="video/mp4,video/quicktime,video/webm"
+                    multiple
+                    style={{ display: "none" }}
+                    onChange={handleUploadRawFootages}
+                  />
+                  <button
+                    onClick={() => rawInputRef.current?.click()}
+                    disabled={uploadingRaw}
+                    style={{
+                      background: "#4f46e5",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: 8,
+                      padding: "5px 10px",
+                      fontSize: 11.5,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                    }}
+                  >
+                    {uploadingRaw ? "⏳ Đang tải..." : "+ Up Thêm Video Quay Sẵn"}
+                  </button>
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {rawFootages.map((rf, idx) => (
+                  <span
+                    key={`${rf.path}_${idx}`}
+                    style={{
+                      background: "#e0e7ff",
+                      color: "#3730a3",
+                      fontSize: 11,
+                      fontWeight: 700,
+                      padding: "4px 8px",
+                      borderRadius: 6,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                    }}
+                  >
+                    #{idx + 1} {rf.name.slice(0, 24)}
+                    {rawFootages.length > 1 && (
+                      <button
+                        onClick={() => setRawFootages((prev) => prev.filter((_, i) => i !== idx))}
+                        style={{ border: "none", background: "transparent", color: "#dc2626", cursor: "pointer", fontWeight: 800, padding: 0 }}
+                      >
+                        ×
+                      </button>
+                    )}
+                  </span>
+                ))}
+              </div>
+            </div>
           </div>
 
-          <div className="flex flex-col items-end gap-2">
-            {/* Bộ chọn CLI AI trực tiếp: Claude CLI · Gemini CLI · Codex CLI */}
-            <div className="flex flex-wrap items-center gap-1.5 rounded-xl bg-black/25 px-2.5 py-1.5 text-xs font-semibold backdrop-blur-md">
-              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-indigo-100">Chọn CLI AI:</span>
-              {[
-                { id: "claude_cli" as const, label: "Claude CLI" },
-                { id: "gemini_cli" as const, label: "Gemini CLI" },
-                { id: "codex_cli" as const, label: "Codex CLI" },
-              ].map((cli) => {
-                const statusObj = (catalog?.cliProviders ?? []).find((p: any) => p.id === cli.id);
-                const isReady = statusObj ? statusObj.ready : true;
-                const active = selectedCli === cli.id;
+          {/* CỘT PHẢI BƯỚC 1: Ô ĐỔI KỊCH BẢN / NỘI DUNG MỚI (RÕ RÀNG NGAY TRÊN ĐẦU) */}
+          <div style={{ background: "#fffbeb", border: "1.5px solid #fcd34d", borderRadius: 14, padding: 14 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
+              <div style={{ fontSize: 14.5, fontWeight: 800, color: "#92400e" }}>
+                ✍️ Đổi Kịch Bản & Nội Dung Mới (Theo nhịp {blueprint ? `${blueprint.shotCount} cảnh` : "Video Decode"})
+              </div>
+              <button
+                onClick={handleRewriteScriptWithAI}
+                disabled={rewritingScript || decoding}
+                style={{
+                  background: "linear-gradient(135deg, #d97706, #b45309)",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 8,
+                  padding: "6px 12px",
+                  fontSize: 12,
+                  fontWeight: 800,
+                  cursor: "pointer",
+                }}
+              >
+                {rewritingScript ? "⏳ AI đang viết kịch bản..." : "✨ Viết / Đổi Kịch Bản Mới bằng AI"}
+              </button>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: "#78350f", display: "block", marginBottom: 3 }}>
+                  Tên Sản Phẩm / Dịch Vụ:
+                </label>
+                <input
+                  value={productName}
+                  onChange={(e) => setProductName(e.target.value)}
+                  style={{ width: "100%", padding: "6px 9px", borderRadius: 8, border: "1px solid #fcd34d", fontSize: 12.5, background: "#fff" }}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: "#78350f", display: "block", marginBottom: 3 }}>
+                  Tên Thương Hiệu:
+                </label>
+                <input
+                  value={brandName}
+                  onChange={(e) => setBrandName(e.target.value)}
+                  style={{ width: "100%", padding: "6px 9px", borderRadius: 8, border: "1px solid #fcd34d", fontSize: 12.5, background: "#fff" }}
+                />
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 10 }}>
+              <label style={{ fontSize: 11, fontWeight: 700, color: "#78350f", display: "block", marginBottom: 3 }}>
+                Thông tin / Ý tưởng muốn đưa vào kịch bản mới:
+              </label>
+              <textarea
+                rows={2}
+                value={topic}
+                onChange={(e) => setTopic(e.target.value)}
+                placeholder="Nhập điểm mạnh sản phẩm, ưu đãi, câu chuyện hoặc nội dung mới muốn thay vào..."
+                style={{ width: "100%", padding: "7px 10px", borderRadius: 8, border: "1px solid #fcd34d", fontSize: 12.5, background: "#fff", resize: "vertical" }}
+              />
+            </div>
+
+            {/* Danh sách câu thoại từng cảnh để sửa trực tiếp */}
+            <div style={{ fontSize: 11.5, fontWeight: 800, color: "#92400e", marginBottom: 6 }}>
+              📝 Chỉnh sửa trực tiếp câu thoại & chữ nổi từng cảnh ({editableScenes.length || blueprint?.shotCount || 0} cảnh):
+            </div>
+            {editableScenes.length === 0 ? (
+              <div style={{ fontSize: 12, color: "#78350f", background: "rgba(255,255,255,0.7)", padding: 10, borderRadius: 8 }}>
+                👉 Bấm <b>"🔍 Decode Ngay"</b> hoặc <b>"✨ Viết / Đổi Kịch Bản Mới bằng AI"</b> để hiện kịch bản từng cảnh tại đây.
+              </div>
+            ) : (
+              <div style={{ display: "grid", gap: 6, maxHeight: 190, overflowY: "auto", paddingRight: 4 }}>
+                {editableScenes.map((sc, idx) => (
+                  <div
+                    key={sc.sceneNumber}
+                    style={{
+                      background: "#fff",
+                      border: "1px solid #fde68a",
+                      borderRadius: 8,
+                      padding: "6px 8px",
+                      display: "grid",
+                      gridTemplateColumns: "62px 1fr 125px",
+                      gap: 6,
+                      alignItems: "center",
+                    }}
+                  >
+                    <span style={{ fontSize: 11, fontWeight: 800, color: "#b45309" }}>
+                      Cảnh {sc.sceneNumber}
+                    </span>
+                    <input
+                      value={sc.newVoiceover}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setEditableScenes((prev) =>
+                          prev.map((item, i) => (i === idx ? { ...item, newVoiceover: val } : item)),
+                        );
+                      }}
+                      placeholder="Lời thoại cảnh này..."
+                      style={{
+                        width: "100%",
+                        padding: "5px 8px",
+                        borderRadius: 6,
+                        border: "1px solid #cbd5e1",
+                        fontSize: 12,
+                      }}
+                    />
+                    <input
+                      value={sc.newOnScreenText}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setEditableScenes((prev) =>
+                          prev.map((item, i) => (i === idx ? { ...item, newOnScreenText: val } : item)),
+                        );
+                      }}
+                      placeholder="Chữ nổi..."
+                      style={{
+                        width: "100%",
+                        padding: "5px 8px",
+                        borderRadius: 6,
+                        border: "1px solid #cbd5e1",
+                        fontSize: 11.5,
+                        fontWeight: 700,
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ==================== BƯỚC 2: CHỌN CÁCH HIỂN THỊ, MÀU CHỮ, NỀN CHỮ, THUMBNAIL & BUILD ==================== */}
+      <div
+        style={{
+          background: "#fff",
+          border: "1px solid #e2e8f0",
+          borderRadius: 16,
+          padding: 18,
+          marginBottom: 16,
+          boxShadow: "0 2px 8px rgba(15,23,42,0.03)",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10, marginBottom: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span
+              style={{
+                width: 26,
+                height: 26,
+                borderRadius: 8,
+                background: "#7c3aed",
+                color: "#fff",
+                fontWeight: 800,
+                fontSize: 13,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              2
+            </span>
+            <div style={{ fontSize: 15, fontWeight: 800, color: "#0f172a" }}>
+              Chọn Cách Hiển Thị, Màu Chữ, Nền Chữ, Vị Trí & Thumbnail → Build Video
+            </div>
+          </div>
+
+          <button
+            onClick={handleBuildVideoMp4}
+            disabled={buildingVideo || decoding}
+            style={{
+              background: "linear-gradient(135deg, #16a34a, #059669)",
+              color: "#fff",
+              border: "none",
+              borderRadius: 12,
+              padding: "11px 24px",
+              fontSize: 14,
+              fontWeight: 800,
+              cursor: "pointer",
+              boxShadow: "0 6px 18px rgba(22,163,74,0.28)",
+            }}
+          >
+            {buildingVideo ? "⏳ Đang Build Video MP4..." : "🎬 BUILD VIDEO MP4 NGAY"}
+          </button>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
+          {/* 1. Khung hình & Nhịp cắt & Âm thanh */}
+          <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, padding: 12 }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: "#0f172a", marginBottom: 8 }}>
+              📐 1. Khung Hiển Thị & Giọng Đọc
+            </div>
+            <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+              {(
+                [
+                  { id: "9:16", label: "📱 Dọc 9:16 (TikTok/Reels)" },
+                  { id: "16:9", label: "🖥️ Ngang 16:9 (YouTube)" },
+                ] as const
+              ).map((ar) => (
+                <button
+                  key={ar.id}
+                  onClick={() => setAspectRatio(ar.id)}
+                  style={{
+                    flex: 1,
+                    padding: "6px 8px",
+                    borderRadius: 8,
+                    border: aspectRatio === ar.id ? "2px solid #4f46e5" : "1px solid #cbd5e1",
+                    background: aspectRatio === ar.id ? "#eef2ff" : "#fff",
+                    color: aspectRatio === ar.id ? "#312e81" : "#475569",
+                    fontSize: 11.5,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                  }}
+                >
+                  {ar.label}
+                </button>
+              ))}
+            </div>
+            <select
+              value={audioMode}
+              onChange={(e) => setAudioMode(e.target.value as "voiceover" | "keep_audio")}
+              style={{ width: "100%", padding: "6px 8px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: 12, marginBottom: 6, background: "#fff" }}
+            >
+              <option value="voiceover">🎙️ Lồng tiếng Việt mới (Tắt tiếng gốc)</option>
+              <option value="keep_audio">🔊 Giữ nguyên tiếng gốc của Video</option>
+            </select>
+            {audioMode === "voiceover" && (
+              <select
+                value={voiceName}
+                onChange={(e) => setVoiceName(e.target.value)}
+                style={{ width: "100%", padding: "6px 8px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: 11.5, background: "#fff" }}
+              >
+                {VI_VOICE_OPTIONS.map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {v.label}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          {/* 2. Màu chữ (Text Theme) */}
+          <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, padding: 12 }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: "#0f172a", marginBottom: 8 }}>
+              🎨 2. Màu Chữ Phụ Đề & Tiêu Đề
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
+              {TEXT_THEME_OPTIONS.map((th) => {
+                const active = textTheme === th.id;
                 return (
                   <button
-                    key={cli.id}
-                    type="button"
-                    onClick={() => {
-                      setSelectedCli(cli.id);
-                      void handleDecodeVideo(decodedBlueprint?.sourceVideoPath, false, cli.id);
+                    key={th.id}
+                    onClick={() => setTextTheme(th.id)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                      padding: "6px 8px",
+                      borderRadius: 8,
+                      border: active ? "2px solid #0f172a" : "1px solid #cbd5e1",
+                      background: active ? "#0f172a" : "#fff",
+                      color: active ? "#fff" : "#1e293b",
+                      fontSize: 11.5,
+                      fontWeight: 700,
+                      cursor: "pointer",
                     }}
-                    className={cx(
-                      "inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-bold transition",
-                      active
-                        ? "bg-white text-indigo-700 shadow-xs"
-                        : "bg-white/10 text-white/85 hover:bg-white/20",
-                    )}
-                    title={statusObj?.detail || cli.label}
                   >
-                    <span className={cx("h-1.5 w-1.5 rounded-full", isReady ? "bg-emerald-400" : "bg-amber-400")} />
-                    {cli.label}
+                    <span
+                      style={{
+                        width: 12,
+                        height: 12,
+                        borderRadius: "50%",
+                        background: th.color,
+                        border: "1px solid rgba(0,0,0,0.2)",
+                        flexShrink: 0,
+                      }}
+                    />
+                    {th.label}
                   </button>
                 );
               })}
             </div>
-            {/* 2 Tab chuyển đổi gọn gàng */}
-            <div className="inline-flex rounded-xl bg-black/30 p-1 backdrop-blur-md">
+          </div>
+
+          {/* 3. Kiểu nền chữ & Vị trí đặt chữ */}
+          <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, padding: 12 }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: "#0f172a", marginBottom: 6 }}>
+              🪧 3. Kiểu Nền Chữ & Vị Trí Đặt Chữ
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 5, marginBottom: 8 }}>
+              {CAPTION_BG_OPTIONS.map((bg) => {
+                const active = captionBgStyle === bg.id;
+                return (
+                  <button
+                    key={bg.id}
+                    onClick={() => setCaptionBgStyle(bg.id)}
+                    style={{
+                      padding: "5px 7px",
+                      borderRadius: 7,
+                      border: active ? "2px solid #4f46e5" : "1px solid #cbd5e1",
+                      background: active ? "#eef2ff" : "#fff",
+                      color: active ? "#312e81" : "#334155",
+                      fontSize: 11,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      textAlign: "left",
+                    }}
+                  >
+                    {bg.label}
+                  </button>
+                );
+              })}
+            </div>
+            <div style={{ display: "flex", gap: 4 }}>
+              {POSITION_OPTIONS.map((pos) => {
+                const active = captionPosition === pos.id;
+                return (
+                  <button
+                    key={pos.id}
+                    onClick={() => setCaptionPosition(pos.id)}
+                    style={{
+                      flex: 1,
+                      padding: "5px 4px",
+                      borderRadius: 7,
+                      border: active ? "2px solid #059669" : "1px solid #cbd5e1",
+                      background: active ? "#ecfdf5" : "#fff",
+                      color: active ? "#065f46" : "#475569",
+                      fontSize: 11,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                    }}
+                  >
+                    {pos.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 4. Thumbnail (Ảnh bìa Video) */}
+          <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, padding: 12 }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: "#0f172a", marginBottom: 6 }}>
+              🖼️ 4. Thumbnail (Ảnh Bìa Video)
+            </div>
+            <input
+              value={thumbnailTitle}
+              onChange={(e) => setThumbnailTitle(e.target.value)}
+              placeholder="Tiêu đề lớn trên Thumbnail..."
+              style={{ width: "100%", padding: "6px 8px", borderRadius: 8, border: "1px solid #cbd5e1", fontSize: 12, marginBottom: 6, background: "#fff" }}
+            />
+            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              <input
+                ref={thumbInputRef}
+                type="file"
+                accept="image/*"
+                style={{ display: "none" }}
+                onChange={handleUploadCustomThumbnail}
+              />
               <button
-                type="button"
-                onClick={() => setStudioTab("decode_workflow")}
-                className={cx(
-                  "rounded-lg px-3 py-1.5 text-xs font-bold transition",
-                  studioTab === "decode_workflow"
-                    ? "bg-white text-indigo-700 shadow-xs"
-                    : "text-white/85 hover:text-white",
-                )}
-              >
-                🎬 1. Decode & Dựng Video Quay Sẵn (Chính)
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setStudioTab("storyboard_studio");
-                  if (!result && !busy) void handleGenerateStoryboard(true);
+                onClick={() => thumbInputRef.current?.click()}
+                style={{
+                  background: "#fff",
+                  border: "1px solid #cbd5e1",
+                  borderRadius: 7,
+                  padding: "5px 10px",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  cursor: "pointer",
                 }}
-                className={cx(
-                  "rounded-lg px-3 py-1.5 text-xs font-bold transition",
-                  studioTab === "storyboard_studio"
-                    ? "bg-white text-indigo-700 shadow-xs"
-                    : "text-white/85 hover:text-white",
-                )}
               >
-                ✨ 2. Kịch Bản Phân Cảnh & Caption 4 Kênh
+                📤 Tải Ảnh Bìa Riêng
               </button>
+              {customThumbnailUrl && (
+                <button
+                  onClick={() => setCustomThumbnailUrl(null)}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    color: "#dc2626",
+                    fontSize: 11,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                  }}
+                >
+                  Dùng bìa AI tự tạo
+                </button>
+              )}
             </div>
           </div>
         </div>
       </div>
 
-      {studioTab === "decode_workflow" ? (
-        <div className="space-y-5">
-          {/* BƯỚC 1: CHỌN HOẶC TẢI VIDEO MẪU CẦN DECODE */}
-          <Card className="border-2 border-blue-500/30 p-5">
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-line pb-3">
-              <div className="flex items-center gap-2.5">
-                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-xs font-extrabold text-white">
-                  1
-                </span>
-                <div>
-                  <h2 className="text-base font-extrabold text-ink">
-                    Bước 1: Giải Mã Video Mẫu (Bóc Tách Phân Cảnh & AI Viết Lời Voice Mới)
-                  </h2>
-                  <p className="text-xs text-muted">
-                    Tải lên 1 video mẫu anh thích hoặc chọn video có sẵn. Decode xong hệ thống tự động đưa sang AI viết lại kịch bản mới & dựng MP4 bên dưới.
-                  </p>
-                </div>
-              </div>
+      {/* ==================== BƯỚC 3: XEM VIDEO MP4 + THUMBNAIL & KHUNG CHAT ĐẠO DIỄN AI ==================== */}
+      <div
+        style={{
+          background: "#fff",
+          border: "1.5px solid #c7d2fe",
+          borderRadius: 16,
+          padding: 18,
+          boxShadow: "0 6px 20px rgba(79,70,229,0.06)",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+          <span
+            style={{
+              width: 26,
+              height: 26,
+              borderRadius: 8,
+              background: "#059669",
+              color: "#fff",
+              fontWeight: 800,
+              fontSize: 13,
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            3
+          </span>
+          <div style={{ fontSize: 15, fontWeight: 800, color: "#0f172a" }}>
+            Kết Quả Video MP4, Thumbnail & Khung Chat Sửa Mọi Thứ (Nội Dung · Màu Chữ · Nền Chữ · Vị Trí · Cách Cắt)
+          </div>
+        </div>
 
-              <div className="flex flex-wrap items-center gap-2">
-                {/* Bộ chọn CLI AI ngay tại Bước 1 */}
-                <div className="inline-flex items-center gap-1 rounded-xl border border-indigo-500/30 bg-indigo-500/10 px-2.5 py-1.5 text-xs">
-                  <span className="font-bold text-indigo-700 dark:text-indigo-300">🤖 CLI:</span>
-                  <select
-                    value={selectedCli}
-                    onChange={(e) => {
-                      const nextCli = e.target.value as "claude_cli" | "gemini_cli" | "codex_cli";
-                      setSelectedCli(nextCli);
-                      void handleDecodeVideo(decodedBlueprint?.sourceVideoPath, false, nextCli);
-                    }}
-                    className="bg-transparent font-extrabold text-indigo-700 dark:text-indigo-200 focus:outline-none"
-                  >
-                    <option value="claude_cli">Claude CLI (Anthropic)</option>
-                    <option value="gemini_cli">Gemini CLI (Google)</option>
-                    <option value="codex_cli">Codex CLI (OpenAI)</option>
-                  </select>
-                </div>
-
-                <label className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-700 dark:text-indigo-300 mr-1">
-                  <input
-                    type="checkbox"
-                    checked={useClaudeForDecode}
-                    onChange={(e) => setUseClaudeForDecode(e.target.checked)}
-                  />
-                  Dùng CLI AI phân tích kịch bản
-                </label>
-                <label
-                  className={cx(
-                    "inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-blue-600 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition",
-                    (decodeBusy || uploadPct !== null) && "pointer-events-none opacity-60",
-                  )}
+        <div style={{ display: "grid", gridTemplateColumns: "1.05fr 1.2fr", gap: 18, alignItems: "start" }}>
+          {/* CỘT TRÁI: TRÌNH PHÁT VIDEO MP4 + ẢNH BÌA THUMBNAIL */}
+          <div style={{ background: "#0f172a", borderRadius: 14, padding: 14, color: "#fff" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+              <span style={{ fontSize: 13, fontWeight: 800, color: "#34d399" }}>
+                🎬 Video Thành Phẩm & Thumbnail
+              </span>
+              {production?.renderedVideoUrl && (
+                <a
+                  href={production.renderedVideoUrl}
+                  download={`zono_video_${production.id}.mp4`}
+                  style={{
+                    background: "#16a34a",
+                    color: "#fff",
+                    textDecoration: "none",
+                    padding: "5px 12px",
+                    borderRadius: 8,
+                    fontSize: 12,
+                    fontWeight: 800,
+                  }}
                 >
-                  <Upload className="h-3.5 w-3.5" />
-                  <span>{uploadPct !== null ? `Đang tải ${uploadPct}%...` : "Tải Video Mẫu cần Decode (.mp4/.mov)"}</span>
-                  <input
-                    type="file"
-                    accept="video/*"
-                    className="hidden"
-                    onChange={async (e) => {
-                      const f = e.target.files?.[0];
-                      if (!f) return;
-                      try {
-                        const up = await uploadStreamFile(f, setUploadPct);
-                        await handleDecodeVideo(up.path, false);
-                      } catch (err: any) {
-                        toast(err?.message ?? "Lỗi tải video mẫu", "err");
-                      }
-                    }}
-                  />
-                </label>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  loading={decodeBusy}
-                  onClick={() => void handleDecodeVideo(decodedBlueprint?.sourceVideoPath, false)}
-                >
-                  <Scissors className="mr-1 h-3.5 w-3.5" />
-                  Decode lại
-                </Button>
-              </div>
+                  ⬇️ Tải Video MP4
+                </a>
+              )}
             </div>
 
-            {/* Thanh chọn nhanh Video có sẵn trên máy */}
-            {(catalog?.localVideos ?? []).length > 0 && (
-              <div className="mb-4 flex flex-wrap items-center gap-2 text-xs">
-                <span className="font-bold text-muted">Kho Video trên máy:</span>
-                {(catalog.localVideos as any[]).slice(0, 5).map((v) => (
-                  <button
-                    key={v.path}
-                    type="button"
-                    onClick={() => void handleDecodeVideo(v.path, false)}
-                    className={cx(
-                      "rounded-lg border px-2.5 py-1 font-medium transition",
-                      decodedBlueprint?.sourceVideoPath === v.path
-                        ? "border-blue-600 bg-blue-500/15 text-blue-700 dark:text-blue-300 font-bold"
-                        : "border-line bg-card text-ink hover:bg-soft",
-                    )}
+            {production?.renderedVideoUrl ? (
+              <div style={{ display: "grid", gridTemplateColumns: "1.4fr 0.85fr", gap: 12, alignItems: "start" }}>
+                <div>
+                  <video
+                    key={production.renderedVideoUrl}
+                    src={production.renderedVideoUrl}
+                    poster={activePosterUrl}
+                    controls
+                    playsInline
+                    style={{
+                      width: "100%",
+                      maxHeight: 340,
+                      borderRadius: 10,
+                      background: "#000",
+                      border: "1px solid #334155",
+                    }}
+                  />
+                  <div style={{ fontSize: 11.5, color: "#94a3b8", marginTop: 6 }}>
+                    {production.renderNotes}
+                  </div>
+                </div>
+
+                {/* Khung xem trước Thumbnail */}
+                <div style={{ background: "#1e293b", borderRadius: 10, padding: 10, textAlign: "center" }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#cbd5e1", marginBottom: 6 }}>
+                    🖼️ Thumbnail (Ảnh Bìa)
+                  </div>
+                  {activePosterUrl && (
+                    <img
+                      src={activePosterUrl}
+                      alt="Video Thumbnail"
+                      style={{ width: "100%", maxHeight: 220, objectFit: "contain", borderRadius: 8, border: "1px solid #475569" }}
+                    />
+                  )}
+                  {activePosterUrl && (
+                    <a
+                      href={activePosterUrl}
+                      download={`thumbnail_${production.id}.svg`}
+                      style={{
+                        display: "inline-block",
+                        marginTop: 8,
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: "#38bdf8",
+                        textDecoration: "none",
+                      }}
+                    >
+                      ⬇️ Tải Thumbnail
+                    </a>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div style={{ padding: "48px 16px", textAlign: "center", color: "#94a3b8", fontSize: 13 }}>
+                👉 Hãy bấm <b>"🔍 Decode Ngay"</b> ở Bước 1 rồi bấm <b>"🎬 BUILD VIDEO MP4 NGAY"</b> ở Bước 2 để tạo Video!
+              </div>
+            )}
+          </div>
+
+          {/* CỘT PHẢI: KHUNG CHAT ĐẠO DIỄN AI SỬA NỘI DUNG, MÀU MÈ, NỀN CHỮ, VỊ TRÍ CHỮ, CÁCH CẮT */}
+          <div style={{ background: "#f5f3ff", border: "1.5px solid #c4b5fd", borderRadius: 14, padding: 14 }}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: "#4c1d95", marginBottom: 4 }}>
+              💬 Chat Đạo Diễn AI — Gõ lệnh sửa Kịch Bản, Màu Chữ, Nền Chữ, Vị Trí Đặt Chữ & Cách Cắt
+            </div>
+            <div style={{ fontSize: 12, color: "#5b21b6", marginBottom: 10 }}>
+              Chỉ cần gõ yêu cầu hoặc bấm nút gợi ý bên dưới, AI sẽ tự sửa và <b>Build lại Video MP4</b> ngay lập tức!
+            </div>
+
+            {/* Các nút lệnh 1 chạm */}
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
+              {[
+                "Đổi kịch bản ngắn gọn, súc tích và chốt đơn mạnh hơn",
+                "Đổi chữ sang màu Xanh Ngọc và nền hộp mờ trong suốt",
+                "Đổi chữ sang màu Đỏ Cam và bỏ nền chữ",
+                "Đưa chữ phụ đề ra Chính Giữa màn hình",
+                "Đưa chữ phụ đề lên Trên Cao màn hình",
+                "Đổi cách cắt nhịp nhanh TikTok + hiệu ứng Zoom Punch",
+                "Ẩn toàn bộ chữ phụ đề trên video",
+              ].map((sug) => (
+                <button
+                  key={sug}
+                  disabled={chatLoading || !production}
+                  onClick={() => handleSendChatDirector(sug)}
+                  style={{
+                    background: "#fff",
+                    color: "#5b21b6",
+                    border: "1px solid #c4b5fd",
+                    borderRadius: 999,
+                    padding: "5px 10px",
+                    fontSize: 11,
+                    fontWeight: 700,
+                    cursor: production ? "pointer" : "not-allowed",
+                  }}
+                >
+                  ✨ {sug}
+                </button>
+              ))}
+            </div>
+
+            {chatHistory.length > 0 && (
+              <div
+                style={{
+                  background: "#fff",
+                  border: "1px solid #ddd6fe",
+                  borderRadius: 10,
+                  padding: 10,
+                  marginBottom: 10,
+                  maxHeight: 165,
+                  overflowY: "auto",
+                  display: "grid",
+                  gap: 6,
+                }}
+              >
+                {chatHistory.map((turn, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      padding: "7px 10px",
+                      borderRadius: 8,
+                      fontSize: 12,
+                      background: turn.role === "user" ? "#ede9fe" : "#ecfdf5",
+                      color: turn.role === "user" ? "#3b0764" : "#065f46",
+                    }}
                   >
-                    🎞️ {v.name} ({v.sizeMB} MB)
-                  </button>
+                    <b>{turn.role === "user" ? "🧑 Anh" : "🎬 Đạo Diễn AI"} ({turn.at}):</b> {turn.text}
+                  </div>
                 ))}
               </div>
             )}
 
-            {/* KẾT QUẢ BƯỚC 1: VIDEO MẪU + CONTACT SHEET + DANH SÁCH CẢNH ĐÃ BÓC TÁCH */}
-            {decodedBlueprint && (
-              <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-                <div className="space-y-3 rounded-2xl border border-line bg-soft/40 p-3.5 lg:col-span-5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-extrabold text-blue-600">
-                      📊 Công thức đã bóc tách: {decodedBlueprint.sourceFileName}
-                    </span>
-                    <Badge tone="green">
-                      {decodedBlueprint.shotCount} cảnh · {decodedBlueprint.avgShotSec}s/cảnh
-                    </Badge>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    {decodedBlueprint.sourceVideoUrl && (
-                      <div>
-                        <div className="mb-1 text-[11px] font-bold text-muted">
-                          1. Video Mẫu Gốc {audioMode === "voiceover" ? "(🔇 Đã tắt Voice cũ)" : ""}:
-                        </div>
-                        <video
-                          key={decodedBlueprint.sourceVideoUrl}
-                          src={decodedBlueprint.sourceVideoUrl}
-                          muted={audioMode === "voiceover"}
-                          controls
-                          playsInline
-                          preload="metadata"
-                          className="h-36 w-full rounded-xl border border-line bg-black object-contain"
-                        />
-                      </div>
-                    )}
-                    {decodedBlueprint.contactSheetUrl && (
-                      <div>
-                        <div className="mb-1 text-[11px] font-bold text-muted">
-                          2. Bảng Contact Sheet ({decodedBlueprint.shotCount} cảnh):
-                        </div>
-                        <img
-                          src={decodedBlueprint.contactSheetUrl}
-                          alt="Contact Sheet"
-                          className="h-36 w-full rounded-xl border border-line bg-black object-contain"
-                        />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Hiển thị ngay Video MP4 Mới Đã Tạo ngay tại Bước 1 để không phải cuộn xuống */}
-                  <div className="rounded-xl border-2 border-emerald-500/40 bg-emerald-500/10 p-2.5 text-xs space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="font-extrabold text-emerald-700 dark:text-emerald-300">
-                        3. 🎬 Video MP4 Mới Đã Dựng ({audioMode === "voiceover" ? `Voice AI mới: ${voice}` : "Giữ âm thanh gốc"}):
-                      </span>
-                      {clonedResult?.renderedVideoUrl && !cloneBusy && (
-                        <a
-                          href={clonedResult.renderedVideoUrl}
-                          download={`zono-decoded-video-${Date.now()}.mp4`}
-                          className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-emerald-700"
-                        >
-                          <Download className="h-3 w-3" />
-                          Tải MP4
-                        </a>
-                      )}
-                    </div>
-                    {cloneBusy ? (
-                      <div className="flex items-center gap-2 py-6 justify-center text-emerald-700 dark:text-emerald-300 font-semibold">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Đang dùng {selectedCli === "claude_cli" ? "Claude CLI" : selectedCli === "gemini_cli" ? "Gemini CLI" : "Codex CLI"} viết kịch bản mới & lồng tiếng VieNeu-TTS...
-                      </div>
-                    ) : (
-                      clonedResult?.renderedVideoUrl && (
-                        <video
-                          key={clonedResult.renderedVideoUrl}
-                          src={clonedResult.renderedVideoUrl}
-                          controls
-                          playsInline
-                          preload="metadata"
-                          className="h-48 w-full rounded-xl border border-emerald-500/40 bg-black object-contain shadow-sm"
-                        />
-                      )
-                    )}
-                  </div>
-
-                  <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-2.5 text-xs space-y-1">
-                    <div className="flex items-center justify-between">
-                      <span className="font-extrabold text-amber-800 dark:text-amber-300">
-                        🎯 Công thức Mở Bài (Hook 3 Giây Đầu):
-                      </span>
-                      {audioMode === "voiceover" && decodedBlueprint.fullTranscript && (
-                        <button
-                          type="button"
-                          onClick={() => setShowOriginalVoice((v) => !v)}
-                          className="text-[11px] font-bold text-indigo-600 hover:underline"
-                        >
-                          {showOriginalVoice ? "🙈 Ẩn Voice cũ của video mẫu" : "👁️ Xem Voice cũ của video mẫu"}
-                        </button>
-                      )}
-                    </div>
-                    <p className="text-ink"><b>Mở bài:</b> {decodedBlueprint.hookFormula?.first3SecHook}</p>
-                    {(audioMode === "keep_audio" || showOriginalVoice) && decodedBlueprint.fullTranscript && (
-                      <p className="text-muted">
-                        <b>🔊 Lời gốc trong Video Mẫu:</b> "{decodedBlueprint.fullTranscript}"
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="space-y-2.5 rounded-2xl border border-line bg-soft/40 p-3.5 lg:col-span-7">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="text-xs font-extrabold text-indigo-600">
-                      🎞️ Đồng bộ {decodedBlueprint.shotCount} Phân cảnh Decode & Kịch bản Voice Mới (AI: {clonedResult?.providerUsed || decodedBlueprint.decodedByProvider || selectedCli})
-                    </span>
-                    <span className="text-[11px] font-medium text-muted">
-                      {audioMode === "voiceover" ? `🔇 Đã ẩn Voice cũ · Đang dùng Voice mới (${voice})` : "🔊 Đang giữ Voice gốc"}
-                    </span>
-                  </div>
-                  {/* Hiển thị đầy đủ TẤT CẢ các cảnh dạng lưới 2 cột (không cuộn ẩn làm tưởng nhầm chỉ có 2 cảnh) */}
-                  <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-                    {(decodedBlueprint.decodedShots ?? []).map((sh: any, idx: number) => {
-                      const matchedClone = editableScenes[idx];
-                      return (
-                        <div key={sh.sceneNumber} className="rounded-xl border border-line bg-card p-2.5 text-xs space-y-1.5">
-                          <div className="flex flex-wrap items-center justify-between gap-1.5">
-                            <span className="font-extrabold text-ink">
-                              Cảnh {sh.sceneNumber} ({sh.startSec}s → {sh.endSec}s · {sh.durationSec}s)
-                            </span>
-                            <div className="flex items-center gap-1">
-                              <Badge tone="blue">Zoom: {sh.recommendedZoom}</Badge>
-                              <Badge tone="amber">{sh.recommendedTransition}</Badge>
-                            </div>
-                          </div>
-                          <p className="text-muted">📝 <b>Ý chính Decode:</b> {sh.visualDescription}</p>
-                          {audioMode === "voiceover" ? (
-                            <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1.5 font-semibold text-emerald-900 dark:text-emerald-200">
-                              🎙️ <b>Voice mới (AI):</b> "{matchedClone?.newVoiceover || "Đang tạo lời thoại mới..."}"
-                            </div>
-                          ) : (
-                            sh.spokenText && (
-                              <p className="rounded-lg bg-indigo-500/[0.08] px-2.5 py-1.5 font-semibold text-ink">
-                                🔊 Lời gốc giữ nguyên: "{sh.spokenText}"
-                              </p>
-                            )
-                          )}
-                          {audioMode === "voiceover" && showOriginalVoice && sh.spokenText && (
-                            <p className="text-[11px] italic text-muted">
-                              (Voice cũ đã tắt: "{sh.spokenText}")
-                            </p>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* 💬 KHUNG CHAT ĐẠO DIỄN AI TRỰC TIẾP: THAY ĐỔI CÁCH CẮT, LỜI THOẠI, VỊ TRÍ ĐẶT CHỮ */}
-                  <div className="mt-3 rounded-2xl border-2 border-indigo-500/40 bg-indigo-500/[0.07] p-3.5 space-y-3">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-indigo-600 text-xs font-bold text-white">
-                          💬
-                        </span>
-                        <div>
-                          <div className="text-xs font-extrabold text-indigo-800 dark:text-indigo-200">
-                            Chat Đạo Diễn AI ({selectedCli === "claude_cli" ? "Claude CLI" : selectedCli === "gemini_cli" ? "Gemini CLI" : "Codex CLI"}): Sửa Cách Cắt · Lời Thoại · Vị Trí Đặt Chữ
-                          </div>
-                          <div className="text-[11px] text-muted">
-                            Nhắn yêu cầu bất kỳ hoặc bấm nút chọn nhanh bên dưới — AI tự động sửa và kết xuất lại Video MP4 ngay lập tức!
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Thanh chọn nhanh Vị trí đặt chữ Phụ đề (Caption Position) */}
-                      <div className="flex flex-wrap items-center gap-1 rounded-xl border border-indigo-500/30 bg-card px-2 py-1 text-[11px]">
-                        <span className="font-bold text-muted mr-1">📍 Vị trí đặt chữ:</span>
-                        {[
-                          { id: "top" as const, label: "⬆️ Trên cao" },
-                          { id: "center" as const, label: "🎯 Chính giữa" },
-                          { id: "bottom" as const, label: "⬇️ Dưới đáy" },
-                          { id: "hidden" as const, label: "🙈 Ẩn chữ" },
-                        ].map((pos) => (
-                          <button
-                            key={pos.id}
-                            type="button"
-                            disabled={cloneBusy || chatBusy}
-                            onClick={() => {
-                              setCaptionPosition(pos.id);
-                              void handleCloneFromDecoded(true, { captionPosition: pos.id });
-                            }}
-                            className={cx(
-                              "rounded-lg px-2 py-0.5 font-bold transition",
-                              captionPosition === pos.id
-                                ? "bg-indigo-600 text-white shadow-xs"
-                                : "bg-soft text-ink hover:bg-indigo-500/15",
-                            )}
-                          >
-                            {pos.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Các nút gợi ý Chat 1-Click theo 3 nhóm: Vị trí chữ · Cách cắt · Lời thoại */}
-                    <div className="flex flex-wrap gap-1.5 text-[11px]">
-                      {[
-                        "📍 Đưa chữ phụ đề ra chính giữa màn hình",
-                        "📍 Đưa chữ phụ đề lên phía trên màn hình",
-                        "✂️ Đổi cách cắt sang nhịp nhanh TikTok + Zoom Punch mạnh",
-                        "🎬 Đổi cách cắt sang nhịp mượt điện ảnh (Dissolve êm)",
-                        "⏱️ Cắt ngắn mỗi cảnh đi cho nhịp nhanh gọn hơn",
-                        "🎙️ Viết lại lời thoại tất cả các cảnh ngắn gọn, chốt đơn mạnh hơn",
-                      ].map((chip) => (
-                        <button
-                          key={chip}
-                          type="button"
-                          disabled={chatBusy || cloneBusy}
-                          onClick={() => void handleChatEditVideo(chip)}
-                          className="rounded-lg border border-indigo-500/30 bg-card px-2.5 py-1 font-semibold text-indigo-700 dark:text-indigo-200 hover:bg-indigo-600 hover:text-white transition disabled:opacity-50"
-                        >
-                          {chip}
-                        </button>
-                      ))}
-                    </div>
-
-                    {/* Ô nhập Chat trực tiếp */}
-                    <form
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        void handleChatEditVideo();
-                      }}
-                      className="flex flex-col gap-2 sm:flex-row"
-                    >
-                      <input
-                        type="text"
-                        value={chatInput}
-                        onChange={(e) => setChatInput(e.target.value)}
-                        placeholder="Nhập yêu cầu cho AI: VD 'Đưa chữ lên giữa màn hình, sửa lời cảnh 1 ngắn hơn, cắt cảnh 2 nhịp nhanh Zoom Punch'..."
-                        className="flex-1 rounded-xl border border-indigo-500/40 bg-card px-3.5 py-2 text-xs font-medium text-ink focus:border-indigo-600 focus:outline-none"
-                      />
-                      <Button
-                        type="submit"
-                        size="sm"
-                        variant="primary"
-                        loading={chatBusy || cloneBusy}
-                        className="bg-indigo-600 hover:bg-indigo-700 px-4 py-2 text-xs font-bold shrink-0"
-                      >
-                        <Wand2 className="mr-1.5 h-3.5 w-3.5" />
-                        Gửi AI & Dựng Lại MP4
-                      </Button>
-                    </form>
-
-                    {/* Lịch sử phản hồi của Đạo diễn AI */}
-                    {chatHistory.length > 0 && (
-                      <div className="max-h-40 space-y-1.5 overflow-y-auto rounded-xl border border-line bg-card p-2.5 text-xs">
-                        {chatHistory.slice(-4).map((m, i) => (
-                          <div
-                            key={i}
-                            className={cx(
-                              "rounded-lg px-2.5 py-1.5",
-                              m.role === "user"
-                                ? "bg-indigo-500/10 font-semibold text-indigo-800 dark:text-indigo-200"
-                                : "bg-emerald-500/10 text-emerald-900 dark:text-emerald-200",
-                            )}
-                          >
-                            <div>
-                              <b>{m.role === "user" ? "🧑 Anh yêu cầu:" : `🤖 Đạo diễn AI (${m.provider || selectedCli}):`}</b> {m.text}
-                            </div>
-                            {m.changes && m.changes.length > 0 && (
-                              <ul className="mt-1 list-disc pl-4 text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
-                                {m.changes.map((c, ci) => (
-                                  <li key={ci}>{c}</li>
-                                ))}
-                              </ul>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-          </Card>
-
-          {/* BƯỚC 2: NẠP VIDEO QUAY SẴN + NHẬP CHỦ ĐỀ & CẤU HÌNH DỰNG */}
-          <Card className="border-2 border-indigo-500/30 p-5 space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-3">
-              <div className="flex items-center gap-2.5">
-                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600 text-xs font-extrabold text-white">
-                  2
-                </span>
-                <div>
-                  <h2 className="text-base font-extrabold text-ink">
-                    Bước 2: Chọn Video Quay Sẵn (Raw Footage) & Nhập Nội Dung Muốn Làm
-                  </h2>
-                  <p className="text-xs text-muted">
-                    Đưa các clip quay sản phẩm/cửa hàng của anh vào, chọn lồng tiếng Việt tự nhiên hoặc giữ âm thanh gốc của clip.
-                  </p>
-                </div>
-              </div>
-
-              <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-indigo-600 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-indigo-700 transition">
-                <Film className="h-3.5 w-3.5" />
-                <span>+ Tải lên các Video Quay Sẵn (.mp4/.mov)</span>
-                <input
-                  type="file"
-                  accept="video/*"
-                  multiple
-                  className="hidden"
-                  onChange={async (e) => {
-                    const files = Array.from(e.target.files ?? []);
-                    for (const f of files) {
-                      try {
-                        const r = await uploadStreamFile(f, setUploadPct);
-                        setRawFootageList((prev) => [
-                          ...prev,
-                          { path: r.path, name: `${f.name} (${(f.size / 1048576).toFixed(1)} MB)` },
-                        ]);
-                      } catch (err: any) {
-                        toast(err?.message ?? "Lỗi tải video quay sẵn", "err");
-                      }
-                    }
-                  }}
-                />
-              </label>
-            </div>
-
-            {/* Chọn nhanh clip quay sẵn từ kho máy hoặc danh sách đã thêm */}
-            <div className="space-y-2">
-              <div className="flex flex-wrap items-center gap-2 text-xs">
-                <span className="font-bold text-muted">Chọn thêm từ kho Video có sẵn trên máy:</span>
-                {(catalog?.localVideos ?? []).slice(0, 5).map((v: any) => {
-                  const added = rawFootageList.some((r) => r.path === v.path);
-                  return (
-                    <button
-                      key={v.path}
-                      type="button"
-                      onClick={() => {
-                        if (added) {
-                          setRawFootageList((prev) => prev.filter((r) => r.path !== v.path));
-                        } else {
-                          setRawFootageList((prev) => [...prev, { path: v.path, name: v.name }]);
-                        }
-                      }}
-                      className={cx(
-                        "rounded-lg border px-2.5 py-1 font-medium transition",
-                        added
-                          ? "border-indigo-600 bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 font-bold"
-                          : "border-line bg-card text-ink hover:bg-soft",
-                      )}
-                    >
-                      {added ? "✓ Đã chọn: " : "+ Thêm: "}
-                      {v.name}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {rawFootageList.length > 0 ? (
-                <div className="flex flex-wrap items-center gap-2 rounded-xl bg-indigo-500/[0.06] p-2.5 text-xs">
-                  <span className="font-bold text-indigo-700 dark:text-indigo-300">
-                    Đang dùng {rawFootageList.length} video quay sẵn:
-                  </span>
-                  {rawFootageList.map((m, idx) => (
-                    <span
-                      key={`${m.path}_${idx}`}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-500/30 bg-card px-2.5 py-1 font-semibold text-ink"
-                    >
-                      📹 {m.name}
-                      <button
-                        type="button"
-                        onClick={() => setRawFootageList((prev) => prev.filter((_, j) => j !== idx))}
-                        className="text-rose-600 hover:underline"
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => setRawFootageList([])}
-                    className="ml-auto text-[11px] font-semibold text-rose-600 hover:underline"
-                  >
-                    Xóa hết
-                  </button>
-                </div>
-              ) : (
-                <div className="rounded-xl border border-dashed border-line bg-soft/40 px-3 py-2 text-xs text-muted">
-                  💡 Chưa chọn clip riêng — hệ thống sẽ tự động lấy nguồn Video Mẫu trên máy để dựng thử ngay cho anh xem trước.
-                </div>
-              )}
-            </div>
-
-            {/* Ô nhập Chủ đề / Sản phẩm + Cấu hình Âm thanh & Giọng đọc */}
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-              <div className="space-y-2 lg:col-span-7">
-                <label className="block text-xs font-extrabold uppercase tracking-wider text-muted">
-                  Chủ đề / Sản phẩm / Thông điệp muốn Claude AI viết theo công thức Decode:
-                </label>
-                <textarea
-                  rows={2}
-                  value={topic}
-                  onChange={(e) => setTopic(e.target.value)}
-                  placeholder="Nhập sản phẩm, điểm mạnh, ưu đãi hoặc nội dung anh muốn truyền tải..."
-                  className="w-full rounded-2xl border border-line bg-card px-3.5 py-2.5 text-sm text-ink focus:border-indigo-600 focus:outline-none"
-                />
-                <div className="flex flex-wrap gap-1.5">
-                  {QUICK_TOPIC_PRESETS.map((p) => (
-                    <button
-                      key={p.label}
-                      type="button"
-                      onClick={() => setTopic(p.text)}
-                      className="rounded-lg border border-line bg-soft px-2.5 py-1 text-[11px] font-semibold text-ink hover:border-indigo-400"
-                    >
-                      {p.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2.5 lg:col-span-5">
-                <div>
-                  <label className="mb-1 block text-xs font-bold text-muted">Chế độ Âm thanh</label>
-                  <select
-                    value={audioMode}
-                    onChange={(e) => setAudioMode(e.target.value as "voiceover" | "keep_audio")}
-                    className="w-full rounded-xl border border-line bg-card px-3 py-2 text-xs font-semibold text-ink"
-                  >
-                    <option value="voiceover">🎙️ Lồng tiếng Việt AI (VieNeu-TTS)</option>
-                    <option value="keep_audio">🔊 Giữ tiếng gốc của Video Quay Sẵn</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="mb-1 block text-xs font-bold text-muted">Giọng đọc (khi lồng tiếng)</label>
-                  <select
-                    value={voice}
-                    disabled={audioMode === "keep_audio"}
-                    onChange={(e) => setVoice(e.target.value)}
-                    className="w-full rounded-xl border border-line bg-card px-3 py-2 text-xs font-semibold text-ink disabled:opacity-50"
-                  >
-                    <option value="Ngọc Huyền">🎙️ Ngọc Huyền (Nữ miền Bắc)</option>
-                    <option value="Bình">🎙️ Bình (Nam miền Bắc)</option>
-                    <option value="Vĩnh">🎙️ Vĩnh (Nam miền Nam)</option>
-                    <option value="Đoan">🎙️ Đoan (Nữ miền Nam)</option>
-                    <option value="Tuyên">🎙️ Tuyên (Nam truyền cảm)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="mb-1 block text-xs font-bold text-muted">Phong cách nhịp cắt</label>
-                  <select
-                    value={editStyle}
-                    onChange={(e) => setEditStyle(e.target.value as "dynamic" | "smooth" | "clean")}
-                    className="w-full rounded-xl border border-line bg-card px-3 py-2 text-xs font-semibold text-ink"
-                  >
-                    <option value="dynamic">⚡ Năng động (Zoom mạnh · TikTok)</option>
-                    <option value="clean">✨ Gọn gàng (Thương mại · Chốt đơn)</option>
-                    <option value="smooth">🎬 Mượt mà (Chuyển cảnh êm)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="mb-1 block text-xs font-bold text-muted">Khung hình xuất</label>
-                  <select
-                    value={aspectRatio}
-                    onChange={(e) => setAspectRatio(e.target.value as "9:16" | "16:9")}
-                    className="w-full rounded-xl border border-line bg-card px-3 py-2 text-xs font-semibold text-ink"
-                  >
-                    <option value="9:16">📱 Dọc 9:16 (TikTok / Reels / Shorts)</option>
-                    <option value="16:9">🖥️ Ngang 16:9 (YouTube / Web)</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-3">
-              <label className="inline-flex items-center gap-2 text-xs font-semibold text-ink">
-                <input
-                  type="checkbox"
-                  checked={renderRealMp4}
-                  onChange={(e) => setRenderRealMp4(e.target.checked)}
-                />
-                Kết xuất luôn file Video MP4 hoàn chỉnh bằng Local FFmpeg (-14 LUFS)
-              </label>
-
-              <Button
-                variant="primary"
-                loading={cloneBusy}
-                onClick={() => void handleCloneFromDecoded(false)}
-                className="bg-gradient-to-r from-indigo-600 to-blue-600 px-5 py-2.5 text-sm font-bold shadow-md hover:from-indigo-700 hover:to-blue-700"
+            <div style={{ display: "flex", gap: 8 }}>
+              <input
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendChatDirector();
+                  }
+                }}
+                disabled={chatLoading || !production}
+                placeholder="VD: Đổi kịch bản sang giới thiệu khuyến mãi 50%, chữ màu vàng rực đặt ở giữa màn hình, nền hộp mờ..."
+                style={{
+                  flex: 1,
+                  padding: "10px 12px",
+                  borderRadius: 10,
+                  border: "1.5px solid #a78bfa",
+                  fontSize: 12.5,
+                  background: "#fff",
+                }}
+              />
+              <button
+                onClick={() => handleSendChatDirector()}
+                disabled={chatLoading || !chatInput.trim() || !production}
+                style={{
+                  background: chatLoading ? "#94a3b8" : "linear-gradient(135deg, #7c3aed, #4f46e5)",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 10,
+                  padding: "10px 16px",
+                  fontSize: 12.5,
+                  fontWeight: 800,
+                  cursor: chatLoading ? "wait" : "pointer",
+                  whiteSpace: "nowrap",
+                }}
               >
-                <Wand2 className="mr-1.5 h-4 w-4" />
-                🎬 Học Theo Video Decode & Dựng Phim Mới Ngay (Claude + Local)
-              </Button>
+                {chatLoading ? "⏳ Đang sửa & Build..." : "🚀 Áp Dụng & Build Lại"}
+              </button>
             </div>
-          </Card>
-
-          {/* BƯỚC 3: CHỈNH SỬA TRỰC TIẾP TỪNG CẢNH & XUẤT LẠI MP4 SIÊU TỐC */}
-          {(clonedResult || editableScenes.length > 0) && (
-            <Card className="border-2 border-emerald-500/35 p-5 space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-3">
-                <div className="flex items-center gap-2.5">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-600 text-xs font-extrabold text-white">
-                    3
-                  </span>
-                  <div>
-                    <h3 className="text-base font-extrabold text-emerald-700 dark:text-emerald-300">
-                      Bước 3: Tinh Chỉnh {editableScenes.length} Cảnh Đã Đồng Bộ Theo Decode & Tải MP4 ({clonedResult?.hookTitle || "Kịch Bản Mới"})
-                    </h3>
-                    <p className="text-xs text-muted">
-                      {cloneBusy
-                        ? `Đang dùng ${selectedCli === "claude_cli" ? "Claude CLI" : selectedCli === "gemini_cli" ? "Gemini CLI" : "Codex CLI"} viết lời Voice mới & kết xuất MP4 cho đúng ${editableScenes.length} cảnh...`
-                        : clonedResult?.renderNotes}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge tone="green">Bộ não AI: {clonedResult?.providerUsed || selectedCli}</Badge>
-                  <Button
-                    size="sm"
-                    variant="primary"
-                    loading={cloneBusy}
-                    onClick={() => void handleCloneFromDecoded(true)}
-                  >
-                    <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
-                    ⚡ Xuất lại MP4 theo lời thoại vừa sửa
-                  </Button>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
-                {/* Cột trái: Bảng chỉnh sửa trực tiếp từng cảnh (Cách cắt, Lời thoại, Vị trí đặt chữ) */}
-                <div className="space-y-3 lg:col-span-8">
-                  <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-indigo-500/30 bg-indigo-500/[0.06] p-3 text-xs">
-                    <div className="flex flex-wrap items-center gap-3">
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-extrabold text-indigo-800 dark:text-indigo-200">📍 Vị trí chữ Phụ đề:</span>
-                        <select
-                          value={captionPosition}
-                          onChange={(e) => {
-                            const nextPos = e.target.value as "top" | "center" | "bottom" | "hidden";
-                            setCaptionPosition(nextPos);
-                            void handleCloneFromDecoded(true, { captionPosition: nextPos });
-                          }}
-                          className="rounded-lg border border-indigo-500/40 bg-card px-2.5 py-1 text-xs font-bold text-ink"
-                        >
-                          <option value="top">⬆️ Đặt ở Trên cao (22%)</option>
-                          <option value="center">🎯 Đặt Chính giữa (52%)</option>
-                          <option value="bottom">⬇️ Đặt ở Dưới đáy (77% · Mặc định)</option>
-                          <option value="hidden">🙈 Ẩn chữ Phụ đề</option>
-                        </select>
-                      </div>
-
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-extrabold text-indigo-800 dark:text-indigo-200">🏷️ Vị trí Tiêu đề cảnh:</span>
-                        <select
-                          value={headlinePosition}
-                          onChange={(e) => {
-                            const nextHPos = e.target.value as "top" | "center" | "bottom" | "hidden";
-                            setHeadlinePosition(nextHPos);
-                            void handleCloneFromDecoded(true, { headlinePosition: nextHPos });
-                          }}
-                          className="rounded-lg border border-indigo-500/40 bg-card px-2.5 py-1 text-xs font-bold text-ink"
-                        >
-                          <option value="top">⬆️ Trên cao (27%)</option>
-                          <option value="center">🎯 Chính giữa (48%)</option>
-                          <option value="bottom">⬇️ Phía dưới (68%)</option>
-                          <option value="hidden">🙈 Ẩn Tiêu đề cảnh</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <span className="text-[11px] font-semibold text-muted">
-                      ✏️ Sửa trực tiếp bên dưới hoặc dùng Khung Chat Đạo Diễn AI rồi bấm "Xuất lại MP4"
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-                    {editableScenes.map((sc: any, idx: number) => (
-                      <div key={sc.sceneNumber} className="rounded-2xl border border-line bg-soft/40 p-3 text-xs space-y-2">
-                        <div className="flex flex-wrap items-center justify-between gap-1.5">
-                          <span className="font-extrabold text-indigo-700 dark:text-indigo-300">
-                            Cảnh {sc.sceneNumber} ({sc.templateTiming})
-                          </span>
-                          <div className="flex items-center gap-1">
-                            <select
-                              value={sc.zoom || "in"}
-                              onChange={(e) => updateEditableScene(idx, { zoom: e.target.value })}
-                              className="rounded-lg border border-line bg-card px-2 py-0.5 text-[11px] font-semibold text-ink"
-                              title="Hiệu ứng Zoom khung hình"
-                            >
-                              <option value="punch">Zoom Punch</option>
-                              <option value="in">Zoom In</option>
-                              <option value="out">Zoom Out</option>
-                              <option value="pan_left">Pan Trái</option>
-                              <option value="pan_right">Pan Phải</option>
-                              <option value="none">Giữ tĩnh</option>
-                            </select>
-                            <select
-                              value={sc.transition || "slideleft"}
-                              onChange={(e) => updateEditableScene(idx, { transition: e.target.value })}
-                              className="rounded-lg border border-line bg-card px-2 py-0.5 text-[11px] font-semibold text-ink"
-                              title="Hiệu ứng chuyển cảnh"
-                            >
-                              <option value="cut">Cắt dứt khoát (Cut)</option>
-                              <option value="slideleft">Trượt nhanh (Slide)</option>
-                              <option value="zoomin">Phóng chuyển (ZoomIn)</option>
-                              <option value="dissolve">Hòa tan mượt (Dissolve)</option>
-                              <option value="fade">Mờ dần (Fade)</option>
-                            </select>
-                          </div>
-                        </div>
-
-                        {/* Chỉnh trực tiếp Cách cắt (Từ giây -> Đến giây) */}
-                        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-emerald-500/25 bg-emerald-500/[0.06] px-2.5 py-1.5 text-[11px]">
-                          <span className="font-bold text-emerald-800 dark:text-emerald-300">
-                            ✂️ Cách cắt ({sc.selectedRawCut?.sourceFileName || "Video gốc"}):
-                          </span>
-                          <div className="flex items-center gap-1 font-semibold text-ink">
-                            <span>Từ</span>
-                            <input
-                              type="number"
-                              step="0.5"
-                              min="0"
-                              value={sc.selectedRawCut?.startSec ?? 0}
-                              onChange={(e) =>
-                                updateEditableScene(idx, {
-                                  selectedRawCut: {
-                                    ...sc.selectedRawCut,
-                                    startSec: Math.max(0, Number(e.target.value) || 0),
-                                  },
-                                })
-                              }
-                              className="w-14 rounded border border-line bg-card px-1.5 py-0.5 text-center text-[11px] font-bold"
-                            />
-                            <span>s →</span>
-                            <input
-                              type="number"
-                              step="0.5"
-                              min="0.5"
-                              value={sc.selectedRawCut?.endSec ?? 5}
-                              onChange={(e) =>
-                                updateEditableScene(idx, {
-                                  selectedRawCut: {
-                                    ...sc.selectedRawCut,
-                                    endSec: Math.max(0.5, Number(e.target.value) || 5),
-                                  },
-                                })
-                              }
-                              className="w-14 rounded border border-line bg-card px-1.5 py-0.5 text-center text-[11px] font-bold"
-                            />
-                            <span>s</span>
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-[10px] font-bold uppercase text-muted">Chữ nổi trên màn hình (Tiêu đề cảnh):</label>
-                          <input
-                            type="text"
-                            value={sc.newOnScreenText || ""}
-                            onChange={(e) => updateEditableScene(idx, { newOnScreenText: e.target.value })}
-                            className="mt-0.5 w-full rounded-lg border border-line bg-card px-2.5 py-1 text-xs font-bold text-ink"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[10px] font-bold uppercase text-muted">
-                            Lời thoại {audioMode === "keep_audio" ? "(Phụ đề hiển thị)" : "(Giọng đọc VieNeu-TTS)"}:
-                          </label>
-                          <textarea
-                            rows={2}
-                            value={sc.newVoiceover || ""}
-                            onChange={(e) => updateEditableScene(idx, { newVoiceover: e.target.value })}
-                            className="mt-0.5 w-full rounded-lg border border-line bg-card px-2.5 py-1.5 text-xs text-ink"
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Cột phải: Video Player + Tải về + Copy Caption */}
-                <div className="space-y-3 lg:col-span-4">
-                  <div className="rounded-2xl border border-line bg-card p-3.5 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-extrabold text-ink">🎬 Video MP4 Hoàn Chỉnh:</span>
-                      {clonedResult?.renderedVideoUrl && !cloneBusy && (
-                        <a
-                          href={clonedResult.renderedVideoUrl}
-                          download={`zono-video-${Date.now()}.mp4`}
-                          className="inline-flex items-center gap-1 rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-700"
-                        >
-                          <Download className="h-3.5 w-3.5" />
-                          Tải MP4 về máy
-                        </a>
-                      )}
-                    </div>
-
-                    {cloneBusy ? (
-                      <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 py-12 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                        <span>Đang dựng Video MP4 mới & tắt Voice cũ...</span>
-                      </div>
-                    ) : (
-                      clonedResult?.renderedVideoUrl && (
-                        <video
-                          key={clonedResult.renderedVideoUrl}
-                          src={clonedResult.renderedVideoUrl}
-                          controls
-                          playsInline
-                          className="mx-auto max-h-80 w-full rounded-2xl border border-line bg-black object-contain shadow-sm"
-                        />
-                      )
-                    )}
-
-                    <div className="rounded-xl bg-soft p-3 text-xs space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-ink">Caption gợi ý đăng kênh:</span>
-                        <button
-                          type="button"
-                          onClick={() => copyText("clone_cap", clonedResult?.caption || "")}
-                          className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 hover:underline"
-                        >
-                          {copiedKey === "clone_cap" ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                          Sao chép
-                        </button>
-                      </div>
-                      <p className="text-muted leading-relaxed">{clonedResult?.caption || "Đang tạo caption mới..."}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </Card>
-          )}
+          </div>
         </div>
-      ) : (
-        /* TAB 2: BÀN DỰNG KỊCH BẢN PHÂN CẢNH ĐA GÓC MÁY & CAPTION 4 NỀN TẢNG */
-        <div className="space-y-6">
-          {/* Bước 1: Chọn Ngách Kênh (MoonReel Niche-First) */}
-          <Card className="p-5">
-            <div className="mb-3 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600 text-xs font-bold text-white">1</span>
-                <h2 className="text-base font-bold text-slate-900">Chọn Ngách Kênh Sản Xuất (MoonReel Niche-First)</h2>
-              </div>
-              {activeNicheObj && (
-                <Badge tone="blue">
-                  Thumbnail: {activeNicheObj.thumbnailStyle.toUpperCase()} · Màu nhấn {activeNicheObj.thumbnailAccent}
-                </Badge>
-              )}
-            </div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {niches.map((n) => {
-                const active = n.slug === selectedNiche;
-                return (
-                  <button
-                    key={n.slug}
-                    type="button"
-                    onClick={() => setSelectedNiche(n.slug)}
-                    className={cx(
-                      "flex flex-col items-start rounded-2xl border p-4 text-left transition-all",
-                      active
-                        ? "border-indigo-600 bg-indigo-50/70 ring-2 ring-indigo-600/20 shadow-sm"
-                        : "border-slate-200 bg-white hover:border-indigo-300 hover:bg-slate-50",
-                    )}
-                  >
-                    <div className="flex w-full items-center justify-between">
-                      <span className="text-xl">{n.icon}</span>
-                      <span
-                        className="rounded-full px-2 py-0.5 text-[11px] font-bold uppercase"
-                        style={{ backgroundColor: `${n.thumbnailAccent}33`, color: "#0f172a" }}
-                      >
-                        {n.thumbnailStyle}
-                      </span>
-                    </div>
-                    <div className="mt-2 font-bold text-slate-900">{n.name}</div>
-                    <div className="mt-1 line-clamp-2 text-xs text-slate-600">{n.description}</div>
-                  </button>
-                );
-              })}
-            </div>
-          </Card>
-
-          {/* Bước 2: Chọn Phong Cách Trực Quan */}
-          <Card className="p-5">
-            <div className="mb-3 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-600 text-xs font-bold text-white">2</span>
-                <h2 className="text-base font-bold text-slate-900">
-                  Chọn Phong Cách Hình Ảnh & Kịch Bản
-                </h2>
-              </div>
-              {activeStyleObj && (
-                <Badge tone="green">
-                  Đang chọn: {activeStyleObj.name} ({activeStyleObj.id})
-                </Badge>
-              )}
-            </div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
-              {styles.map((s) => {
-                const active = s.id === selectedStyle;
-                return (
-                  <button
-                    key={s.id}
-                    type="button"
-                    onClick={() => setSelectedStyle(s.id)}
-                    className={cx(
-                      "flex flex-col justify-between rounded-2xl border p-3.5 text-left transition-all",
-                      active
-                        ? "border-violet-600 bg-violet-50/80 ring-2 ring-violet-600/20 shadow-sm"
-                        : "border-slate-200 bg-white hover:border-violet-300 hover:bg-slate-50",
-                    )}
-                  >
-                    <div>
-                      <div className="flex items-center justify-between gap-2">
-                        <span
-                          className="h-4 w-4 rounded-full border border-slate-300 shadow-inner"
-                          style={{ backgroundColor: s.swatch }}
-                        />
-                        <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold uppercase text-slate-600">
-                          {s.category}
-                        </span>
-                      </div>
-                      <div className="mt-2 text-sm font-bold text-slate-900">{s.name}</div>
-                      <div className="mt-1 line-clamp-3 text-xs text-slate-600">{s.description}</div>
-                    </div>
-                    <div className="mt-2.5 text-[11px] font-semibold text-violet-700">
-                      {active ? "✓ Đang khóa Style này" : "Chọn phong cách →"}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </Card>
-
-          {/* Bước 3: Nhập Chủ Đề & Bấm Dựng Kịch Bản Đa Kênh */}
-          <Card className="p-5">
-            <div className="mb-3 flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-fuchsia-600 text-xs font-bold text-white">3</span>
-              <h2 className="text-base font-bold text-slate-900">
-                Nhập Ý Tưởng & Khởi Chạy Tổ Hợp Dựng Kịch Bản Đa Góc Máy
-              </h2>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-              <div className="lg:col-span-8">
-                <textarea
-                  rows={3}
-                  value={topic}
-                  onChange={(e) => setTopic(e.target.value)}
-                  className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-indigo-600 focus:outline-none"
-                />
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {[
-                    {
-                      label: "🎬 Mẫu Phim Quay Sẵn (Học Theo Video Decode)",
-                      niche: "commercial-brand",
-                      style: "decoded_footage",
-                      text: "Quy trình tuyển chọn nguyên liệu sạch và đóng gói tỉ mỉ tại cửa hàng mỗi sáng",
-                    },
-                    {
-                      label: "💡 Mẫu Truyện Nhân Quả 2D",
-                      niche: "night-stories",
-                      style: "srt_moral",
-                      text: "Câu chuyện chữ tín của người chủ tiệm thực phẩm sạch kiên trì giữ chất lượng suốt 5 năm",
-                    },
-                    {
-                      label: "🕺 Mẫu Người Que (Stickman)",
-                      niche: "personal-finance",
-                      style: "stickman_light",
-                      text: "So sánh hai chủ shop: Người tự làm thủ công 14 tiếng mỗi ngày và người dùng hệ thống AI tự động",
-                    },
-                    {
-                      label: "🏮 Mẫu Truyện Dân Gian VN",
-                      niche: "did-you-know",
-                      style: "srt_folk",
-                      text: "Sự tích nghề làm quà Tết truyền thống và nét đẹp văn hóa làng quê Việt Nam",
-                    },
-                  ].map((preset) => (
-                    <button
-                      key={preset.label}
-                      type="button"
-                      onClick={() => {
-                        setSelectedNiche(preset.niche);
-                        setSelectedStyle(preset.style);
-                        setTopic(preset.text);
-                      }}
-                      className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700"
-                    >
-                      {preset.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex flex-col justify-between gap-3 lg:col-span-4">
-                <Button
-                  onClick={() => void handleGenerateStoryboard(false)}
-                  disabled={busy}
-                  className="w-full justify-center rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 py-3.5 text-sm font-bold text-white shadow-md hover:from-indigo-700 hover:to-violet-700"
-                >
-                  {busy ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Đang dựng 5 phân cảnh...
-                    </>
-                  ) : (
-                    <>
-                      <Wand2 className="mr-2 h-4 w-4" />
-                      Tạo Kịch Bản 5 Cảnh + Caption 4 Kênh
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
-          </Card>
-
-          {plan && (
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-              <div className="space-y-6 lg:col-span-8">
-                <Card className="p-5">
-                  <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <Layers className="h-5 w-5 text-violet-600" />
-                      <h3 className="text-base font-bold text-slate-900">
-                        Bàn Dựng 5 Phân Cảnh Đa Góc Máy (ROOT · CONTINUATION · INSERT Close-Up 85mm)
-                      </h3>
-                    </div>
-                    <Badge tone="green">{plan.style?.name}</Badge>
-                  </div>
-
-                  <div className="space-y-4">
-                    {(plan.scenes ?? []).map((sc: any) => (
-                      <div key={sc.index} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
-                          <span className="rounded-lg bg-indigo-600 px-2.5 py-1 text-xs font-extrabold text-white">
-                            {sc.code} · {sc.timeRange}
-                          </span>
-                          <span className="rounded-lg bg-amber-100 px-2.5 py-1 text-xs font-extrabold text-amber-900">
-                            Chữ nổi: {sc.overlayText}
-                          </span>
-                        </div>
-                        <p className="mt-2 text-sm font-medium italic text-slate-900">🎙️ "{sc.voiceVi}"</p>
-                        <p className="mt-1 font-mono text-xs text-slate-600">🎥 {sc.cameraSentence}</p>
-                      </div>
-                    ))}
-                  </div>
-                </Card>
-              </div>
-
-              <div className="space-y-6 lg:col-span-4">
-                <Card className="p-5">
-                  <h3 className="mb-3 text-sm font-bold text-slate-900">🚀 Bộ Caption 4 Nền Tảng (Sao chép 1 chạm)</h3>
-                  <div className="space-y-3">
-                    {[
-                      {
-                        key: "yt",
-                        label: "▶️ YouTube Title & Chapters",
-                        content: `${plan.seoTitle}\n\n${(plan.multiPlatformCaptions?.youtube?.chapters ?? []).join("\n")}\n\n${(plan.hashtags ?? []).join(" ")}`,
-                      },
-                      { key: "tt", label: "🎵 TikTok Caption", content: plan.multiPlatformCaptions?.tiktok ?? "" },
-                      { key: "fb", label: "📘 Facebook Reels", content: plan.multiPlatformCaptions?.facebook ?? "" },
-                      { key: "ig", label: "📸 Instagram Reels", content: plan.multiPlatformCaptions?.instagram ?? "" },
-                    ].map((item) => (
-                      <div key={item.key} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-slate-800">{item.label}</span>
-                          <button
-                            type="button"
-                            onClick={() => copyText(item.key, item.content)}
-                            className="inline-flex items-center gap-1 rounded-lg bg-white px-2 py-1 text-[11px] font-bold text-indigo-600 shadow-sm"
-                          >
-                            {copiedKey === item.key ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
-                            Sao chép
-                          </button>
-                        </div>
-                        <p className="mt-1.5 whitespace-pre-line text-xs text-slate-600 line-clamp-3">{item.content}</p>
-                      </div>
-                    ))}
-                  </div>
-                </Card>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+      </div>
     </div>
   );
 }

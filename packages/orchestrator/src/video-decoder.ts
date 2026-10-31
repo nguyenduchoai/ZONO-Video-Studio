@@ -53,6 +53,8 @@ export interface DecodedVideoBlueprint {
 }
 
 export type TextPosition = "top" | "center" | "bottom" | "hidden";
+export type TextTheme = "gold" | "yellow_full" | "emerald" | "coral" | "cyan" | "violet";
+export type CaptionBgStyle = "solid_dark" | "translucent" | "brand_box" | "none";
 
 export interface ClonedProductionScene {
   sceneNumber: number;
@@ -83,6 +85,10 @@ export interface ClonedVideoProductionResult {
   editStyle: EditStyle;
   captionPosition: TextPosition;
   headlinePosition: TextPosition;
+  textTheme: TextTheme;
+  captionBgStyle: CaptionBgStyle;
+  thumbnailTitle: string;
+  thumbnailSvgDataUrl: string;
   hookTitle: string;
   ctaText: string;
   caption: string;
@@ -543,6 +549,60 @@ export async function decodeVideoBlueprint(opts: {
  * - Claude AI viết kịch bản mới theo đúng cấu trúc & độ dài từng cảnh của Blueprint vừa Decode, đồng thời chọn đoạn video quay sẵn khớp nhất cho từng cảnh
  * - Dựng thành video MP4 hoàn chỉnh bằng Local FFmpeg (pro_edit.py render) nếu renderMp4 = true
  */
+function buildThumbnailSvgDataUrl(opts: {
+  title: string;
+  subtitle: string;
+  brand: string;
+  textTheme: TextTheme;
+  aspectRatio: "9:16" | "16:9";
+}): string {
+  const w = opts.aspectRatio === "16:9" ? 960 : 540;
+  const h = opts.aspectRatio === "16:9" ? 540 : 960;
+  const themeMap: Record<TextTheme, { accent: string; glow: string; badgeBg: string; badgeText: string }> = {
+    gold: { accent: "#FFD43B", glow: "#D97706", badgeBg: "#FFD43B", badgeText: "#111827" },
+    yellow_full: { accent: "#FACC15", glow: "#CA8A04", badgeBg: "#FACC15", badgeText: "#111827" },
+    emerald: { accent: "#34D399", glow: "#059669", badgeBg: "#10B981", badgeText: "#FFFFFF" },
+    coral: { accent: "#FB7185", glow: "#E11D48", badgeBg: "#F43F5E", badgeText: "#FFFFFF" },
+    cyan: { accent: "#38BDF8", glow: "#0284C7", badgeBg: "#0EA5E9", badgeText: "#FFFFFF" },
+    violet: { accent: "#C084FC", glow: "#7C3AED", badgeBg: "#8B5CF6", badgeText: "#FFFFFF" },
+  };
+  const th = themeMap[opts.textTheme] ?? themeMap.gold;
+  const esc = (s: string) =>
+    s
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  const words = (opts.title || "VIDEO MỚI").toUpperCase().split(/\s+/).filter(Boolean);
+  const mid = Math.ceil(words.length / 2);
+  const line1 = esc(words.slice(0, mid).join(" ").slice(0, 26));
+  const line2 = esc(words.slice(mid).join(" ").slice(0, 26));
+  const sub = esc((opts.subtitle || opts.brand).slice(0, 44));
+  const brand = esc((opts.brand || "ZONO").toUpperCase().slice(0, 20));
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}">
+    <defs>
+      <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#0f172a"/>
+        <stop offset="55%" stop-color="#1e1b4b"/>
+        <stop offset="100%" stop-color="#090d16"/>
+      </linearGradient>
+      <radialGradient id="glow" cx="50%" cy="42%" r="55%">
+        <stop offset="0%" stop-color="${th.glow}" stop-opacity="0.42"/>
+        <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <rect width="100%" height="100%" fill="url(#bg)"/>
+    <rect width="100%" height="100%" fill="url(#glow)"/>
+    <rect x="${Math.round(w * 0.08)}" y="${Math.round(h * 0.12)}" rx="14" ry="14" width="${Math.min(w * 0.5, brand.length * 16 + 44)}" height="42" fill="${th.badgeBg}"/>
+    <text x="${Math.round(w * 0.08 + 22)}" y="${Math.round(h * 0.12 + 28)}" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="800" fill="${th.badgeText}">${brand}</text>
+    <rect x="${Math.round(w * 0.06)}" y="${Math.round(h * 0.34)}" rx="24" ry="24" width="${Math.round(w * 0.88)}" height="${line2 ? 210 : 145}" fill="rgba(10,12,20,0.82)" stroke="${th.accent}" stroke-width="3"/>
+    <text x="50%" y="${Math.round(h * 0.34 + 72)}" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="40" font-weight="900" fill="${th.accent}">${line1}</text>
+    ${line2 ? `<text x="50%" y="${Math.round(h * 0.34 + 132)}" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="40" font-weight="900" fill="#FFFFFF">${line2}</text>` : ""}
+    <text x="50%" y="${Math.round(h * 0.34 + (line2 ? 182 : 118))}" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="21" font-weight="600" fill="#E2E8F0">${sub}</text>
+  </svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
 export async function produceFromDecodedBlueprint(opts: {
   bizId: string;
   blueprint: DecodedVideoBlueprint;
@@ -556,6 +616,9 @@ export async function produceFromDecodedBlueprint(opts: {
   editStyle?: EditStyle;
   captionPosition?: TextPosition;
   headlinePosition?: TextPosition;
+  textTheme?: TextTheme;
+  captionBgStyle?: CaptionBgStyle;
+  thumbnailTitle?: string;
   customHookTitle?: string;
   customCtaText?: string;
   customCaption?: string;
@@ -781,6 +844,16 @@ export async function produceFromDecodedBlueprint(opts: {
 
   const captionPos: TextPosition = opts.captionPosition ?? "bottom";
   const headlinePos: TextPosition = opts.headlinePosition ?? "top";
+  const textTheme: TextTheme = opts.textTheme ?? "gold";
+  const captionBgStyle: CaptionBgStyle = opts.captionBgStyle ?? "solid_dark";
+  const thumbnailTitle = (opts.thumbnailTitle?.trim() || finalHookTitle || product).slice(0, 60);
+  const thumbnailSvgDataUrl = buildThumbnailSvgDataUrl({
+    title: thumbnailTitle,
+    subtitle: `${product} · ${brand}`,
+    brand,
+    textTheme,
+    aspectRatio: aspect,
+  });
   const captionYMap: Record<TextPosition, number> = {
     top: 0.22,
     center: 0.52,
@@ -803,7 +876,7 @@ export async function produceFromDecodedBlueprint(opts: {
   const renderCacheSig = createHash("sha1")
     .update(
       JSON.stringify({
-        v: 4,
+        v: 5,
         raw: finalRawPaths.map(fileSignature),
         voiceId,
         audioMode,
@@ -811,6 +884,8 @@ export async function produceFromDecodedBlueprint(opts: {
         aspect,
         captionPos,
         headlinePos,
+        textTheme,
+        captionBgStyle,
         hook: finalHookTitle,
         cta: finalCtaText,
         scenes: outScenes.map((s) => [s.newVoiceover, s.newOnScreenText, s.selectedRawCut, s.zoom, s.transition]),
@@ -891,6 +966,8 @@ export async function produceFromDecodedBlueprint(opts: {
           headlineY,
           hideCaptions,
           hideHeadlines,
+          textTheme,
+          captionBgStyle,
           coverBottomSubtitles: audioMode === "voiceover",
           out: finalMp4,
           workdir: join(workdir, "render"),
@@ -904,7 +981,7 @@ export async function produceFromDecodedBlueprint(opts: {
         copyFileSync(finalMp4, cachedMp4Path);
         renderedVideoUrl = `/v1/uploads/${cachedMp4Name}`;
         renderedDurationSec = Math.round((mediaDuration(cachedMp4Path) || resolvedPlan.total) * 10) / 10;
-        renderNotes = `Đã dựng thành công Video MP4 mới (${renderedDurationSec}s · ${aspect}) từ ${finalRawPaths.length} video quay sẵn theo đúng công thức của Video Mẫu (${outScenes.length} cảnh · ${audioDescLabel} · phụ đề: ${captionPos} · chuẩn âm -14 LUFS).`;
+        renderNotes = `Đã dựng thành công Video MP4 mới (${renderedDurationSec}s · ${aspect}) từ ${finalRawPaths.length} video quay sẵn theo đúng công thức của Video Mẫu (${outScenes.length} cảnh · ${audioDescLabel} · màu chữ: ${textTheme} · nền chữ: ${captionBgStyle} · vị trí chữ: ${captionPos} · chuẩn âm -14 LUFS).`;
       }
     } catch (e) {
       logger.warn("video_decode.render_fallback", { error: String(e).slice(0, 250) });
@@ -923,6 +1000,10 @@ export async function produceFromDecodedBlueprint(opts: {
     editStyle: style,
     captionPosition: captionPos,
     headlinePosition: headlinePos,
+    textTheme,
+    captionBgStyle,
+    thumbnailTitle,
+    thumbnailSvgDataUrl,
     hookTitle: finalHookTitle,
     ctaText: finalCtaText,
     caption: finalCaption,
@@ -938,6 +1019,9 @@ const ChatEditVideoSchema = z.object({
   changesSummary: z.array(z.string()).min(1).max(6),
   captionPosition: z.enum(["top", "center", "bottom", "hidden"]),
   headlinePosition: z.enum(["top", "center", "bottom", "hidden"]),
+  textTheme: z.enum(["gold", "yellow_full", "emerald", "coral", "cyan", "violet"]),
+  captionBgStyle: z.enum(["solid_dark", "translucent", "brand_box", "none"]),
+  thumbnailTitle: z.string(),
   editStyle: z.enum(["dynamic", "smooth", "clean"]),
   hookTitle: z.string(),
   ctaText: z.string(),
@@ -956,7 +1040,7 @@ const ChatEditVideoSchema = z.object({
 });
 
 /**
- * BƯỚC 3: KHUNG CHAT ĐẠO DIỄN AI — Thay đổi Cách Cắt (nhịp, giây cắt, zoom, chuyển cảnh), Lời Thoại, và Vị Trí Đặt Chữ bằng hội thoại tự nhiên
+ * BƯỚC 3: KHUNG CHAT ĐẠO DIỄN AI — Thay đổi Kịch Bản/Lời Thoại, Màu Chữ, Nền Chữ, Vị Trí Đặt Chữ, Thumbnail & Cách Cắt bằng hội thoại tự nhiên
  */
 export async function chatEditVideoProduction(opts: {
   bizId: string;
@@ -982,10 +1066,49 @@ export async function chatEditVideoProduction(opts: {
   const buildDeterministicEdit = () => {
     let nextCaptionPos: TextPosition = cur.captionPosition ?? "bottom";
     let nextHeadlinePos: TextPosition = cur.headlinePosition ?? "top";
+    let nextTextTheme: TextTheme = cur.textTheme ?? "gold";
+    let nextCaptionBgStyle: CaptionBgStyle = cur.captionBgStyle ?? "solid_dark";
+    let nextThumbnailTitle: string = cur.thumbnailTitle ?? cur.hookTitle ?? cur.product;
     let nextStyle: EditStyle = cur.editStyle ?? "dynamic";
     let nextHook = cur.hookTitle;
     let nextCta = cur.ctaText;
     const changes: string[] = [];
+
+    // Nhận diện yêu cầu đổi màu chữ
+    if (/(màu xanh lá|xanh ngọc|emerald)/i.test(msgLower)) {
+      nextTextTheme = "emerald";
+      changes.push("Đã đổi màu chữ sang Xanh Ngọc Lục Bảo (Emerald).");
+    } else if (/(màu đỏ|đỏ cam|cam đỏ|coral|hồng)/i.test(msgLower)) {
+      nextTextTheme = "coral";
+      changes.push("Đã đổi màu chữ sang Đỏ Cam Nổi Bật (Coral).");
+    } else if (/(xanh dương|xanh biển|cyan)/i.test(msgLower)) {
+      nextTextTheme = "cyan";
+      changes.push("Đã đổi màu chữ sang Xanh Dương Sáng (Cyan).");
+    } else if (/(màu tím|tím neon|violet)/i.test(msgLower)) {
+      nextTextTheme = "violet";
+      changes.push("Đã đổi màu chữ sang Tím Neon Hiện Đại (Violet).");
+    } else if (/(vàng rực|full vàng|toàn bộ vàng)/i.test(msgLower)) {
+      nextTextTheme = "yellow_full";
+      changes.push("Đã đổi màu chữ sang Vàng Rực Toàn Bộ (Yellow Full).");
+    } else if (/(màu vàng|vàng kim|gold)/i.test(msgLower)) {
+      nextTextTheme = "gold";
+      changes.push("Đã đổi màu chữ sang Vàng Kim Sang Trọng (Gold).");
+    }
+
+    // Nhận diện yêu cầu đổi nền chữ
+    if (/(không nền|bỏ nền chữ|tắt nền chữ|chữ không nền|trong suốt hoàn toàn)/i.test(msgLower)) {
+      nextCaptionBgStyle = "none";
+      changes.push("Đã bỏ hộp nền chữ (chỉ giữ chữ có viền đen sắc nét).");
+    } else if (/(nền mờ|nền trong suốt|hộp mờ)/i.test(msgLower)) {
+      nextCaptionBgStyle = "translucent";
+      changes.push("Đã đổi nền chữ sang Hộp Mờ Trong Suốt (Translucent).");
+    } else if (/(nền màu|hộp màu|nền thương hiệu)/i.test(msgLower)) {
+      nextCaptionBgStyle = "brand_box";
+      changes.push("Đã đổi nền chữ sang Hộp Màu Thương Hiệu (Brand Box).");
+    } else if (/(nền đen|hộp đen|nền đậm)/i.test(msgLower)) {
+      nextCaptionBgStyle = "solid_dark";
+      changes.push("Đã đổi nền chữ sang Hộp Đen Đậm Tương Phản Cao (Solid Dark).");
+    }
 
     // Nhận diện yêu cầu đổi vị trí đặt chữ / phụ đề / tiêu đề
     if (/(ẩn chữ|tắt chữ|bỏ chữ|không hiện chữ|ẩn phụ đề|tắt phụ đề)/i.test(msgLower)) {
@@ -1090,6 +1213,9 @@ export async function chatEditVideoProduction(opts: {
       changesSummary: changes,
       captionPosition: nextCaptionPos,
       headlinePosition: nextHeadlinePos,
+      textTheme: nextTextTheme,
+      captionBgStyle: nextCaptionBgStyle,
+      thumbnailTitle: nextThumbnailTitle,
       editStyle: nextStyle,
       hookTitle: nextHook,
       ctaText: nextCta,
@@ -1112,21 +1238,23 @@ export async function chatEditVideoProduction(opts: {
         schema: ChatEditVideoSchema,
         system: [
           `Bạn là Đạo diễn Dựng Phim AI trực tiếp hỗ trợ người dùng chỉnh sửa Video ngay trong phòng dựng của ${cur.brandName || "ZONO"}.`,
-          "Người dùng vừa gửi một tin nhắn yêu cầu thay đổi CÁCH CẮT (giây bắt đầu/kết thúc rawStartSec/rawEndSec, hiệu ứng zoom, chuyển cảnh transition, phong cách dựng editStyle), LỜI THOẠI & CHỮ NỔI (newVoiceover, newOnScreenText, hookTitle, ctaText), hoặc VỊ TRÍ ĐẶT CHỮ (captionPosition, headlinePosition).",
+          "Người dùng vừa gửi một tin nhắn yêu cầu thay đổi KỊCH BẢN / LỜI THOẠI (newVoiceover, newOnScreenText, hookTitle, ctaText), MÀU CHỮ (textTheme), NỀN CHỮ (captionBgStyle), VỊ TRÍ ĐẶT CHỮ (captionPosition, headlinePosition), THUMBNAIL (thumbnailTitle), hoặc CÁCH CẮT (rawStartSec/rawEndSec, zoom, transition, editStyle).",
           "Quy tắc bắt buộc:",
+          "- `textTheme` (màu chữ): 'gold' (Vàng Kim), 'yellow_full' (Vàng Rực), 'emerald' (Xanh Ngọc), 'coral' (Đỏ Cam), 'cyan' (Xanh Dương), 'violet' (Tím Neon).",
+          "- `captionBgStyle` (kiểu nền chữ): 'solid_dark' (Hộp Đen Đậm), 'translucent' (Hộp Mờ Trong Suốt), 'brand_box' (Hộp Màu Thương Hiệu), 'none' (Không Nền).",
           "- `captionPosition` (vị trí phụ đề lời thoại): chọn 'top' (trên cao 22%), 'center' (chính giữa 52%), 'bottom' (dưới đáy 77%), hoặc 'hidden' (ẩn phụ đề).",
           "- `headlinePosition` (vị trí tiêu đề cảnh): chọn 'top', 'center', 'bottom', hoặc 'hidden'.",
           "- `editStyle`: 'dynamic' (nhịp nhanh TikTok), 'smooth' (mượt điện ảnh), hoặc 'clean' (tối giản).",
-          "- Giữ đúng số lượng cảnh hiện có. Nếu người dùng chỉ yêu cầu sửa Cảnh X hoặc chỉ yêu cầu đổi vị trí chữ/cách cắt, hãy giữ nguyên lời thoại của các cảnh không yêu cầu sửa.",
+          "- Giữ đúng số lượng cảnh hiện có. Nếu người dùng yêu cầu đổi kịch bản sang nội dung mới, hãy viết lại lời thoại (newVoiceover) và chữ nổi (newOnScreenText) cho tất cả các cảnh thật cuốn hút.",
           "- `reply`: Trả lời ngắn gọn, thân thiện bằng tiếng Việt cho anh chủ biết đã sửa những gì.",
         ].join("\n"),
         user: [
           `YÊU CẦU CỦA NGƯỜI DÙNG: "${msg}"`,
           `TRẠNG THÁI VIDEO HIỆN TẠI:`,
           `- Chủ đề: ${cur.topic} | Sản phẩm: ${cur.product}`,
-          `- Vị trí phụ đề hiện tại (captionPosition): ${cur.captionPosition ?? "bottom"}`,
-          `- Vị trí tiêu đề cảnh hiện tại (headlinePosition): ${cur.headlinePosition ?? "top"}`,
-          `- Phong cách dựng hiện tại (editStyle): ${cur.editStyle}`,
+          `- Màu chữ hiện tại (textTheme): ${cur.textTheme ?? "gold"} | Kiểu nền chữ (captionBgStyle): ${cur.captionBgStyle ?? "solid_dark"}`,
+          `- Vị trí phụ đề hiện tại (captionPosition): ${cur.captionPosition ?? "bottom"} | Vị trí tiêu đề (headlinePosition): ${cur.headlinePosition ?? "top"}`,
+          `- Phong cách dựng hiện tại (editStyle): ${cur.editStyle} | Thumbnail: "${cur.thumbnailTitle ?? cur.hookTitle}"`,
           `- Hook 3s đầu: "${cur.hookTitle}" | CTA cuối: "${cur.ctaText}"`,
           `- Danh sách ${cur.scenes.length} phân cảnh hiện tại:`,
           ...cur.scenes.map(
@@ -1158,6 +1286,9 @@ export async function chatEditVideoProduction(opts: {
     editStyle: editPlan.editStyle,
     captionPosition: editPlan.captionPosition,
     headlinePosition: editPlan.headlinePosition,
+    textTheme: editPlan.textTheme,
+    captionBgStyle: editPlan.captionBgStyle,
+    thumbnailTitle: editPlan.thumbnailTitle,
     customHookTitle: editPlan.hookTitle,
     customCtaText: editPlan.ctaText,
     renderMp4: true,

@@ -187,9 +187,18 @@ def sfx_file(kind, cache):
 # ------------------------------------------------------------------ text track (Pillow)
 STYLES = {
     # accent = màu nhấn (từ đang đọc, thanh tiêu đề); hook = nền tiêu đề mở đầu; grade = bộ lọc chỉnh màu
-    "dynamic": {"accent": (255, 214, 10), "hook": (255, 59, 92), "zoom": 0.16, "grade": "eq=contrast=1.08:saturation=1.18:brightness=0.01,unsharp=5:5:0.5", "vignette": False},
-    "smooth": {"accent": (255, 226, 160), "hook": (20, 20, 24), "zoom": 0.09, "grade": "eq=contrast=1.04:saturation=1.05", "vignette": True},
-    "clean": {"accent": (64, 220, 255), "hook": (0, 120, 220), "zoom": 0.07, "grade": "eq=contrast=1.03:saturation=1.03,unsharp=5:5:0.35", "vignette": False},
+    "dynamic": {"accent": (255, 214, 10), "hook": (255, 59, 92), "text": (255, 255, 255), "zoom": 0.16, "grade": "eq=contrast=1.08:saturation=1.18:brightness=0.01,unsharp=5:5:0.5", "vignette": False},
+    "smooth": {"accent": (255, 226, 160), "hook": (20, 20, 24), "text": (255, 255, 255), "zoom": 0.09, "grade": "eq=contrast=1.04:saturation=1.05", "vignette": True},
+    "clean": {"accent": (64, 220, 255), "hook": (0, 120, 220), "text": (255, 255, 255), "zoom": 0.07, "grade": "eq=contrast=1.03:saturation=1.03,unsharp=5:5:0.35", "vignette": False},
+}
+
+TEXT_THEMES = {
+    "gold": {"accent": (255, 214, 10), "hook": (235, 45, 85), "text": (255, 255, 255)},
+    "yellow_full": {"accent": (255, 255, 255), "hook": (217, 119, 6), "text": (255, 214, 10)},
+    "emerald": {"accent": (52, 211, 153), "hook": (16, 145, 96), "text": (255, 255, 255)},
+    "coral": {"accent": (255, 214, 10), "hook": (220, 38, 38), "text": (255, 245, 235)},
+    "cyan": {"accent": (56, 189, 248), "hook": (2, 132, 199), "text": (255, 255, 255)},
+    "violet": {"accent": (192, 132, 252), "hook": (124, 58, 237), "text": (255, 255, 255)},
 }
 
 
@@ -256,18 +265,25 @@ def draw_layer(img, layer, st, W, H, style):
         total_h = lh * len(lines)
         y0 = int(H * p.get("y", 0.77)) - total_h // 2
         space = d.textlength(" ", font=fnt)
-        # Vẽ nền hộp tối gọn theo đúng vị trí dọc y0 (Top / Center / Bottom) của phụ đề
+        bg_style = p.get("bgStyle", "solid_dark")
         box_w = int(W * 0.90)
         box_x0 = (W - box_w) // 2
         box_y0 = max(int(16 * base), y0 - int(22 * base))
         box_y1 = min(H - int(16 * base), y0 + total_h + int(22 * base))
-        d.rounded_rectangle([box_x0, box_y0, box_x0 + box_w, box_y1], radius=int(22 * base), fill=(12, 14, 22, 248))
+        if bg_style == "solid_dark":
+            d.rounded_rectangle([box_x0, box_y0, box_x0 + box_w, box_y1], radius=int(22 * base), fill=(12, 14, 22, 248))
+        elif bg_style == "translucent":
+            d.rounded_rectangle([box_x0, box_y0, box_x0 + box_w, box_y1], radius=int(22 * base), fill=(15, 20, 35, 165))
+        elif bg_style == "brand_box":
+            d.rounded_rectangle([box_x0, box_y0, box_x0 + box_w, box_y1], radius=int(22 * base), fill=style["hook"] + (235,))
+        base_txt_col = style.get("text", (255, 255, 255))
+        stroke_w = int(8 * base) if bg_style == "none" else int(6 * base)
         for li, idxs in enumerate(lines):
             lw = sum(d.textlength(words[i], font=fnt) for i in idxs) + space * (len(idxs) - 1)
             x = (W - lw) / 2
             for i in idxs:
-                col = acc if i == active else (255, 255, 255)
-                d.text((x, y0 + li * lh), words[i], font=fnt, fill=col + (255,), stroke_width=int(6 * base), stroke_fill=(0, 0, 0, 255))
+                col = acc if i == active else base_txt_col
+                d.text((x, y0 + li * lh), words[i], font=fnt, fill=col + (255,), stroke_width=stroke_w, stroke_fill=(0, 0, 0, 255))
                 x += d.textlength(words[i], font=fnt) + space
         anchor_y = (y0 + total_h / 2) / H
         mode = "pop_small"
@@ -358,7 +374,10 @@ def draw_layer(img, layer, st, W, H, style):
 
 def build_text_track(plan, work, W, H, fps, total):
     from PIL import Image
-    style = STYLES.get(plan.get("style"), STYLES["dynamic"])
+    base_style = STYLES.get(plan.get("style"), STYLES["dynamic"])
+    theme_override = TEXT_THEMES.get(plan.get("textTheme", ""), {})
+    style = {**base_style, **theme_override}
+    bg_style = plan.get("captionBgStyle", "solid_dark")
     layers = []
     hook = plan.get("hook")
     if hook and hook.get("text"):
@@ -370,11 +389,11 @@ def build_text_track(plan, work, W, H, fps, total):
                 t1 = min(total, sc["start"] + sc["content"] - 0.1)
                 if t1 - t0 > 0.8:
                     layers.append(Layer("headline", t0, t1, {"text": sc["onScreen"], "y": plan.get("headlineY", 0.27)}, in_d=0.35, out_d=0.3))
-    cover_bottom = bool(plan.get("coverBottomSubtitles", bool(plan.get("captions"))))
+    cover_bottom = bool(plan.get("coverBottomSubtitles", bool(plan.get("captions")))) and bg_style == "solid_dark"
     if not plan.get("hideCaptions", False):
         for ch in plan.get("captions", []):
             if ch["words"]:
-                layers.append(Layer("caption", ch["t0"], ch["t1"], {"words": ch["words"], "y": plan.get("captionY", 0.77)}, in_d=0.08, out_d=0.05))
+                layers.append(Layer("caption", ch["t0"], ch["t1"], {"words": ch["words"], "y": plan.get("captionY", 0.77), "bgStyle": bg_style}, in_d=0.08, out_d=0.05))
     cta = plan.get("cta")
     if cta and cta.get("text"):
         layers.append(Layer("cta", cta["t0"], cta["t1"], cta, in_d=0.4, out_d=0.0))

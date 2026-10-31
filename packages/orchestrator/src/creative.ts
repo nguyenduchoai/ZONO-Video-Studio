@@ -34,7 +34,8 @@ export const FLOW_TOOLS = {
   "review-do-an-vat": {
     skill: "flow-review-do-an-vat", label: "Review Đồ Ăn Vặt AI V6", minutes: 40,
     hint: "Ảnh bao bì sản phẩm + ảnh nhân vật review (Tool bắt buộc 2 ảnh này; thiếu thì AI tự tạo ảnh trên Flow), tên sản phẩm, giọng, ưu đãi/CTA",
-    toolUrl: "https://flow.google.com/project/af2cb6c3-2519-40b3-ad29-58156bf9e264/tool/906532d8-6672-4f21-8bc4-55e5bd9cac91",
+    toolUrl: "https://flow.google.com/project/c726cd18-b6c2-4ca5-9a11-0a759531124d/tool/906532d8-6672-4f21-8bc4-55e5bd9cac91",
+    sharedUrl: "https://flow.google.com/shared/tool/906532d8-6672-4f21-8bc4-55e5bd9cac91",
     slots: [
       { role: "Nhân vật / người review", label: "Người review (nhân vật chính)", hint: "Ô A trong Tool · ảnh rõ mặt, nửa người — thiếu thì AI tự tạo" },
       { role: "Bao bì / sản phẩm", label: "Ảnh sản phẩm / bao bì", hint: "Ô B trong Tool · ảnh thật của sản phẩm — thiếu thì AI tự tạo" },
@@ -55,7 +56,8 @@ export const FLOW_TOOLS = {
   "review-thoi-trang": {
     skill: "flow-review-thoi-trang", label: "KOC FASHION – AI VIDEO STUDIO", modelNote: "", minutes: 45,
     hint: "Ảnh người mẫu/KOC + ảnh sản phẩm thời trang (thiếu thì AI tự tạo trên Flow), tên – chất liệu – màu, giá/ưu đãi, CTA",
-    toolUrl: "https://flow.google.com/project/af2cb6c3-2519-40b3-ad29-58156bf9e264/tool/160aa62c-4027-46a9-a46a-7e5edb523c05",
+    toolUrl: "https://flow.google.com/project/c726cd18-b6c2-4ca5-9a11-0a759531124d/tool/1419ed9c-053a-4e2d-bfe7-ff5738dfa90d",
+    sharedUrl: "https://flow.google.com/shared/tool/160aa62c-4027-46a9-a46a-7e5edb523c05",
     slots: [
       { role: "Người mẫu / KOC", label: "Người mẫu / KOC (nhân vật chính)", hint: "Bước 1 NHÂN VẬT · rõ mặt, nửa người/toàn thân — thiếu thì AI tự tạo" },
       { role: "Sản phẩm thời trang", label: "Ảnh sản phẩm (mặt trước)", hint: "Bước 2 · ảnh thật, rõ màu/logo — ảnh tham chiếu chính" },
@@ -78,7 +80,8 @@ export const FLOW_TOOLS = {
   "nguoi-que-so-sanh": {
     skill: "flow-nguoi-que-so-sanh", label: "Người que so sánh sản phẩm", toolTitle: "Storyboard Studio VN", modelNote: "", minutes: 40,
     hint: "Sản phẩm A vs B + tiêu chí so sánh (giá, chất lượng, tiện lợi…), ảnh 2 sản phẩm, ảnh người que mẫu (thiếu thì AI tự tạo), giọng, CTA",
-    toolUrl: "https://flow.google.com/project/af2cb6c3-2519-40b3-ad29-58156bf9e264/tool/7bf9f78b-cd78-4a29-9dc6-dc1ff72d1732",
+    toolUrl: "https://flow.google.com/project/c726cd18-b6c2-4ca5-9a11-0a759531124d/tool/7bf9f78b-cd78-4a29-9dc6-dc1ff72d1732",
+    sharedUrl: "https://flow.google.com/shared/tool/7bf9f78b-cd78-4a29-9dc6-dc1ff72d1732",
     slots: [
       { role: "Nhân vật người que", label: "Người que mẫu (nhân vật chính)", hint: "Quyết định nét vẽ cả video — thiếu thì AI tạo người que trên Flow" },
       { role: "Sản phẩm A", label: "Sản phẩm A (của mình)", hint: "Ảnh rõ sản phẩm / bao bì" },
@@ -100,7 +103,8 @@ export const FLOW_TOOLS = {
     skill: "flow-video-nhan-hieu", label: "Video nhân hiệu · BrandUp", toolTitle: "BRANDUP STUDIO", minutes: 45,
     modelNote: "VIDEO MODEL trong Tool: giữ \"Gemini Omni 1.1\" (KHÔNG chọn Google Veo 3.1). Chỉ khi Omni báo \"usage limit\" ở mọi cảnh mới thử Veo 3.1 một lần.",
     hint: "Ảnh chân dung rõ mặt của chính người xây nhân hiệu (bắt buộc) + chủ đề/quan điểm/câu chuyện thật, giọng (nam/nữ), bối cảnh, CTA",
-    toolUrl: "https://flow.google.com/project/af2cb6c3-2519-40b3-ad29-58156bf9e264/tool/505263ff-28b6-4c01-a5df-8dc66a5da221",
+    toolUrl: "https://flow.google.com/project/c726cd18-b6c2-4ca5-9a11-0a759531124d/tool/d9369067-8447-460c-ba83-dcdaf628ff32",
+    sharedUrl: "https://flow.google.com/shared/tool/505263ff-28b6-4c01-a5df-8dc66a5da221",
     slots: [
       { role: "Chân dung nhân hiệu", label: "Chân dung người xây nhân hiệu", hint: "Rõ mặt, chính diện — bắt buộc (đúng người đứng tên nhân hiệu)", required: true },
       { role: "Ảnh khác của nhân vật", label: "Ảnh khác của cùng người", hint: "Góc khác / nửa người / trang phục muốn giữ · tuỳ chọn" },
@@ -139,14 +143,15 @@ export const FLOW_TOOLS = {
   "koc-thoi-trang-nu": {
     skill: "flow-koc-thoi-trang-nu", label: "KOC thời trang nữ · Studio v3", toolTitle: "KOC Fashion Studio v3", minutes: 45,
     hint: "Ảnh sản phẩm thời trang nữ (bắt buộc, 1–3 món) + ảnh KOC và bối cảnh (thiếu thì AI tạo), tên – điểm nổi bật – giá/ưu đãi",
-    toolUrl: "https://flow.google.com/project/b8bbfcb1-c140-4d8f-955b-008d1138bb7f/tool/91a76ef9-7703-42d5-a264-7031a9b6a5f6",
+    toolUrl: "https://flow.google.com/project/c726cd18-b6c2-4ca5-9a11-0a759531124d/tool/91a76ef9-7703-42d5-a264-7031a9b6a5f6",
+    sharedUrl: "https://flow.google.com/shared/tool/91a76ef9-7703-42d5-a264-7031a9b6a5f6",
     slots: [
       { role: "Sản phẩm SP1", label: "Sản phẩm chính (SP1)", hint: "Ô SP1 · ảnh thật rõ màu, hoạ tiết — bắt buộc", required: true },
       { role: "KOC nữ", label: "KOC / người mẫu nữ", hint: "Ô KOC (mặt, tóc, dáng) · thiếu thì AI tạo người mẫu" },
       { role: "Sản phẩm SP2", label: "Món phối thêm (SP2)", hint: "Ô SP2 · tuỳ chọn" },
       { role: "Bối cảnh", label: "Background (bối cảnh)", hint: "Ô Background · thiếu thì AI tạo phòng/bối cảnh" },
     ],
-    // Read from the Tool's own source on 2026-10-03 (shared tool 91a76ef9 "KOC Fashion Studio v3", account tuan0931579009).
+    // Read from the Tool's own source on 2026-10-03 (shared tool 91a76ef9 "KOC Fashion Studio v3").
     uiMap: [
       "Màn chào \"KOC FASHION / AI VIDEO STUDIO\" → \"Bắt đầu\". Tool KHÔNG lưu phiên (tải lại trang là mất hết). Cột trái: \"Model video\" (Veo 3.1 - Fast/Lite/Quality, Omni 1.1 Flash), \"Tỷ lệ khung hình (ảnh + video)\" 9:16/16:9, \"Âm thanh (áp cho tất cả cảnh)\"; các dropdown là nút tự vẽ (bấm giá trị hiện tại → bấm dòng chọn).",
       "KHÔNG bấm \"Tạo full video 1 click\" (chạy liền không dừng soát ảnh, và tự ghép thêm một video thừa vào trang) và KHÔNG bấm \"Bắt đầu lại\". Chạy từng bước bằng các nút trong vùng làm việc.",
@@ -159,14 +164,15 @@ export const FLOW_TOOLS = {
   "review-gia-dung": {
     skill: "flow-review-gia-dung", label: "Review đồ gia dụng", toolTitle: "TOOL REVIEW GIA DỤNG", minutes: 35,
     hint: "Ảnh đồ gia dụng (bắt buộc, 1–3 ảnh) + công dụng, thông số, giá/ưu đãi, tên thương hiệu/shop; ảnh KOC nếu có (thiếu thì AI tự sinh)",
-    toolUrl: "https://flow.google.com/project/b8bbfcb1-c140-4d8f-955b-008d1138bb7f/tool/c126d178-1bd0-49e8-bc27-c6b53870a42b",
+    toolUrl: "https://flow.google.com/project/c726cd18-b6c2-4ca5-9a11-0a759531124d/tool/c126d178-1bd0-49e8-bc27-c6b53870a42b",
+    sharedUrl: "https://flow.google.com/shared/tool/c126d178-1bd0-49e8-bc27-c6b53870a42b",
     slots: [
       { role: "Sản phẩm 1", label: "Sản phẩm (ảnh tổng thể)", hint: "Ô 1 · ảnh thật rõ dáng, màu — bắt buộc", required: true },
       { role: "Sản phẩm 2", label: "Chi tiết / đang dùng", hint: "Ô 2 · tuỳ chọn" },
       { role: "Sản phẩm 3", label: "Phụ kiện / màu khác", hint: "Ô 3 · tuỳ chọn" },
       { role: "KOC mẫu", label: "KOC / người review", hint: "\"Dùng KOC Mẫu\" — thiếu thì AI tự sinh" },
     ],
-    // Read from the Tool's own source on 2026-10-05 (shared tool c126d178 "TOOL REVIEW GIA DỤNG", account tuan0931579009).
+    // Read from the Tool's own source on 2026-10-05 (shared tool c126d178 "TOOL REVIEW GIA DỤNG").
     uiMap: [
       "Màn chào \"TOOL REVIEW GIA DỤNG\" → \"Bắt đầu sản xuất\". Tool KHÔNG lưu phiên. Cột trái \"AI STUDIO\" từ trên xuống: 1. Hình ảnh Sản phẩm (3 ô +) · 2. Thông tin sản phẩm (textarea \"Mô tả công dụng, tính năng, ưu đãi...\") · 3. Nhân vật KOC (2 nút \"AI Tự Sinh\" / \"Dùng KOC Mẫu\", chọn Dùng KOC Mẫu mới hiện ô \"Tải ảnh KOC mẫu\") · 4. Thiết lập AI (\"Tên Thương Hiệu\" mặc định GIA DỤNG VIỆT, dropdown \"Model Video\") · nút \"TẠO SHOWROOM GỐC\" · 5. Xuất bản: \"LÊN KỊCH BẢN KOC\", \"SẢN XUẤT TOÀN BỘ CLIPS\", \"TẢI GÓI ZIP\" (không bấm).",
       "Bấm ô ảnh sản phẩm / ô KOC → Flow mở hộp \"Select media\" (NGOÀI iframe, trong trang chính): tải ảnh mới bằng \"Upload media\" + browser_file_upload, hoặc chọn ảnh có sẵn. Gán: \"Sản phẩm 1/2/3\" → ô 1/2/3; \"KOC mẫu\" → bấm \"Dùng KOC Mẫu\" rồi ô \"Tải ảnh KOC mẫu\"; không có ảnh KOC → để \"AI Tự Sinh\".",
@@ -178,13 +184,14 @@ export const FLOW_TOOLS = {
   "review-nha-hang": {
     skill: "flow-review-nha-hang-shop", label: "Review nhà hàng · quán · shop", toolTitle: "TOOL TẠO VIDEO REVIEW NHÀ HÀNG - QUÁN XÁ", minutes: 40,
     hint: "Ảnh thật mặt tiền + không gian (bắt buộc), tên, địa chỉ, loại hình, món/dịch vụ nổi bật, giá, giờ mở cửa, ưu đãi; ảnh người review nếu có (không có thì AI tạo nhân vật ảo)",
-    toolUrl: "https://flow.google.com/project/b8bbfcb1-c140-4d8f-955b-008d1138bb7f/tool/159cfd94-4f1a-481a-bd77-9e297bd1ae24",
+    toolUrl: "https://flow.google.com/project/c726cd18-b6c2-4ca5-9a11-0a759531124d/tool/159cfd94-4f1a-481a-bd77-9e297bd1ae24",
+    sharedUrl: "https://flow.google.com/shared/tool/159cfd94-4f1a-481a-bd77-9e297bd1ae24",
     slots: [
       { role: "Mặt tiền", label: "Mặt tiền (ngoài quán)", hint: "Ô MẶT TIỀN · cảnh 1 · ảnh thật thấy biển hiệu — bắt buộc", required: true },
       { role: "Không gian", label: "Không gian bên trong", hint: "Ô KHÔNG GIAN · cảnh 2 trở đi · ảnh thật — bắt buộc", required: true },
       { role: "Người review", label: "Người review (KOC)", hint: "Ô ẢNH NHÂN VẬT THAM CHIẾU — thiếu thì tạo nhân vật ảo" },
     ],
-    // Read from the Tool's own source on 2026-10-05 (shared tool 159cfd94 "TOOL TẠO VIDEO REVIEW NHÀ HÀNG - QUÁN XÁ", account tuan0931579009).
+    // Read from the Tool's own source on 2026-10-05 (shared tool 159cfd94 "TOOL TẠO VIDEO REVIEW NHÀ HÀNG - QUÁN XÁ").
     uiMap: [
       "3 cột: trái \"Thiết lập Review\" · giữa 3 tab \"Kịch bản\" / \"Ảnh (9:16)\" / \"Video (9:16)\" · phải \"Quy trình Sản xuất\" với 3 nút theo thứ tự \"Tạo kịch bản\" → \"Tạo N ảnh (…)\" → \"Tạo N clip (…)\". Tool KHÔNG lưu phiên. Dropdown là nút tự vẽ (bấm giá trị hiện tại → bấm dòng chọn).",
       "Cột trái: \"Tên cửa hàng/quán\", \"Địa chỉ cụ thể\", \"Ý tưởng kịch bản\" (BẮT BUỘC — trống thì alert; là ô duy nhất mang nội dung vào kịch bản: viết món/dịch vụ, giá, giờ, ưu đãi có trong brief, không thêm gì), \"Tổng thời lượng\" 8s…64s (số đoạn = ÷8; theo thời lượng job, làm tròn bội 8), \"Khung hình\", \"Model Ảnh\", \"Model Video\" (Omni Flash / Veo 3.1 Lite / Fast / Quality), 3 ô ảnh, \"Loại hình kinh doanh\", \"Giọng văn / Phong cách\", thanh \"Mức độ đánh giá\" (chỉ hiển thị).",
@@ -193,7 +200,13 @@ export const FLOW_TOOLS = {
     ],
   },
   "cooking-director": {
-    skill: "flow-cooking-director-video", label: "Flow Cooking Director v2", minutes: 45, hint: "3 ảnh (chân dung người dẫn, món ăn, bao bì/góc bếp) + tên, giá, điểm nổi bật", toolUrl: null, uiMap: [],
+    skill: "flow-cooking-director-video", label: "Flow Cooking Director v2 · Đạo Diễn AI", toolTitle: "Director AI: Character consistent", minutes: 45, hint: "3 ảnh (chân dung người dẫn, món ăn, bao bì/góc bếp) + tên, giá, điểm nổi bật",
+    toolUrl: "https://flow.google.com/project/c726cd18-b6c2-4ca5-9a11-0a759531124d/tool/1f7438cf-cab7-4449-9311-196bfc399c6d",
+    sharedUrl: "https://flow.google.com/shared/tool/5a0891a5-c3d0-4252-ab1d-a06ae4181fb7",
+    uiMap: [
+      "Tiêu đề trong Tool là \"ĐẠO DIỄN AI (VIETNAMESE)\". Chọn Phong cách hình ảnh (Điện ảnh chân thực), Model AI Video (Omni Flash), Tỷ lệ khung hình (TikTok 9:16).",
+      "Tải ảnh nhân vật (Portrait) và mẫu giọng (Voice Clone) ở phần Character Bible, nhập ý tưởng kịch bản rồi bấm \"Tạo kịch bản mới\" → tạo ảnh và render video từng cảnh.",
+    ],
     slots: [
       { role: "Nhân vật / người dẫn", label: "Người dẫn (nhân vật chính)", hint: "Chân dung rõ mặt" },
       { role: "Sản phẩm / món ăn", label: "Món ăn / sản phẩm", hint: "Ảnh thật của món / sản phẩm" },
@@ -201,7 +214,13 @@ export const FLOW_TOOLS = {
     ],
   },
   "cinematic": {
-    skill: "flow-cinematic-short-film", label: "Cinematic Short Film Studio", minutes: 50, hint: "Ảnh nhân vật/bối cảnh/đạo cụ + chủ đề, thông điệp, thời lượng 30/60/90s", toolUrl: null, uiMap: [],
+    skill: "flow-cinematic-short-film", label: "Cinematic Short Film Studio · Đạo Diễn AI", toolTitle: "Director AI: Character consistent", minutes: 50, hint: "Ảnh nhân vật/bối cảnh/đạo cụ + chủ đề, thông điệp, thời lượng 30/60/90s",
+    toolUrl: "https://flow.google.com/project/c726cd18-b6c2-4ca5-9a11-0a759531124d/tool/1f7438cf-cab7-4449-9311-196bfc399c6d",
+    sharedUrl: "https://flow.google.com/shared/tool/5a0891a5-c3d0-4252-ab1d-a06ae4181fb7",
+    uiMap: [
+      "Tiêu đề trong Tool là \"ĐẠO DIỄN AI (VIETNAMESE)\". Chọn Phong cách hình ảnh (Điện ảnh chân thực), Model AI Video (Omni Flash), Tỷ lệ khung hình (TikTok 9:16).",
+      "Tải ảnh nhân vật (Portrait) ở phần Character Bible, nhập ý tưởng kịch bản phim ngắn rồi bấm \"Tạo kịch bản mới\" → tạo ảnh và render video từng cảnh.",
+    ],
     slots: [
       { role: "Nhân vật chính", label: "Nhân vật chính", hint: "Người / nhân vật xuất hiện xuyên suốt phim" },
       { role: "Sản phẩm / đạo cụ", label: "Sản phẩm / đạo cụ", hint: "Tuỳ chọn" },
@@ -232,7 +251,7 @@ export const FLOW_TOOLS = {
     engine: "liveportrait", skill: "", label: "Ảnh chân dung cử động", minutes: 5, hint: "1 ảnh chân dung rõ mặt + video biểu cảm mẫu (có sẵn hoặc tải lên) → LivePortrait làm ảnh cử động; có thể lồng giọng đọc", toolUrl: null, uiMap: [],
     slots: [{ role: "Nhân vật", label: "Ảnh chân dung", hint: "Chính diện, rõ mặt, 1 người", required: true }],
   },
-} as { [k: string]: { engine?: "flow" | "moneyprinter" | "liveportrait" | "news" | "anim" | "edit"; /** Flow không có Tool: dùng trình tạo video thường trên trang dự án. */ generator?: boolean; skill: string; label: string; /** Name the Tool itself shows, when the card label differs. */ toolTitle?: string; /** Replaces the "use Veo model X" line when the skill fixes the model ("" = no line). */ modelNote?: string; minutes: number; hint: string; toolUrl: string | null; uiMap: string[]; slots?: { role: string; label: string; hint: string; required?: boolean }[] } };
+} as { [k: string]: { engine?: "flow" | "moneyprinter" | "liveportrait" | "news" | "anim" | "edit"; /** Flow không có Tool: dùng trình tạo video thường trên trang dự án. */ generator?: boolean; skill: string; label: string; /** Name the Tool itself shows, when the card label differs. */ toolTitle?: string; /** Replaces the "use Veo model X" line when the skill fixes the model ("" = no line). */ modelNote?: string; minutes: number; hint: string; toolUrl: string | null; sharedUrl?: string | null; uiMap: string[]; slots?: { role: string; label: string; hint: string; required?: boolean }[] } };
 export type FlowToolKey = "review-do-an-vat" | "review-thoi-trang" | "nguoi-que-so-sanh" | "nhan-hieu" | "koc-thoi-trang-nu" | "review-gia-dung" | "review-nha-hang" | "cooking-director" | "cinematic" | "auto-video" | "news-video" | "anim-video" | "edit-source" | "portrait" | "nhan-hieu-dao-ly";
 export const engineOf = (tool: string) => FLOW_TOOLS[tool]?.engine ?? "flow";
 
@@ -366,13 +385,14 @@ export function flowSettings(bizId: string) {
   };
 }
 
-export const toolUrlFor = (fs: ReturnType<typeof flowSettings>, key: string) => fs.toolUrls?.[key] || FLOW_TOOLS[key]?.toolUrl || null;
-/** Link Tool Flow hợp lệ (Sếp dán link bản sao của Tool trong project của mình). */
-export const FLOW_TOOL_URL_RE = /^https:\/\/(flow\.google\.com|labs\.google)\/\S*\/tool\/[\w-]+/;
+export const toolUrlFor = (fs: ReturnType<typeof flowSettings>, key: string) => fs.toolUrls?.[key] || FLOW_TOOLS[key]?.toolUrl || FLOW_TOOLS[key]?.sharedUrl || null;
+/** Link Tool Flow hợp lệ (Sếp dán link bản sao trong project của mình hoặc link chia sẻ /shared/tool/...). */
+export const FLOW_TOOL_URL_RE = /^https:\/\/(flow\.google\.com|labs\.google)\/(\S*\/tool\/|shared\/tool\/)[\w-]+/;
 
 /** How this machine runs the skill: Playwright tools on Chrome Flow, local folders, no human in the loop. */
-export function environmentInstructions(o: { toolLabel: string; toolUrl: string | null; /** Link mặc định của Tool (FLOW_TOOLS) — khác toolUrl nghĩa là Sếp đang dùng bản sao (Remix) của mình. */ defaultToolUrl?: string | null; uiMap: string[]; email: string | null; workdir: string; rawDir: string; generator?: boolean }) {
+export function environmentInstructions(o: { toolLabel: string; toolUrl: string | null; sharedUrl?: string | null; /** Link mặc định của Tool (FLOW_TOOLS) — khác toolUrl nghĩa là Sếp đang dùng bản sao (Remix) của mình. */ defaultToolUrl?: string | null; uiMap: string[]; email: string | null; workdir: string; rawDir: string; generator?: boolean }) {
   const isCopy = !!o.toolUrl && !!o.defaultToolUrl && o.toolUrl !== o.defaultToolUrl;
+  const fallbackShare = o.sharedUrl || (o.toolUrl?.includes("/shared/tool/") ? o.toolUrl : null);
   return [
     "# MÔI TRƯỜNG CHẠY (máy Mac của doanh nghiệp, chạy tự động, KHÔNG có người theo dõi) — áp cho skill ở trên",
     `- Trình duyệt = các tool mcp__flow__browser_* (Playwright) đã gắn sẵn vào "Chrome Flow"${o.email ? `, đăng nhập Google ${o.email}` : ""}. Đây là thay thế cho Claude in Chrome trong skill: bỏ qua bước đọc skill chrome-browser / ToolSearch / tabs_context_mcp.`,
@@ -399,12 +419,18 @@ export function environmentInstructions(o: { toolLabel: string; toolUrl: string 
       `- LẤY CLIP (thay bước \"Tải về\" của skill — KHÔNG bấm Tải xuống): xong cảnh k thì bấm vào thẻ cảnh k để mở trình phát rồi chạy: zono-flow-save --one ${join(o.workdir, "clips")}/scene_0k.mp4 (k = 1, 2, 3… đúng THỨ TỰ LỜI THOẠI, không theo thứ tự trên lưới). Đóng trình phát, làm tiếp cảnh sau. Đủ file cho mọi cảnh mới hậu kỳ.`,
     ] : [
     o.toolUrl
-        ? (isCopy
-          // Link bản sao (Remix) của Sếp: có thể đã ĐỔI TÊN Tool — không đòi đúng tiêu đề gốc, không vào chế độ Edit.
-          ? `- Mở THẲNG Tool: browser_navigate ${o.toolUrl} (KHÔNG thêm ?mode=EDIT — chế độ Edit mở trình soạn Tool). Đây là BẢN SAO (Remix) Tool "${o.toolLabel}" trong project của chính Sếp, có thể ĐÃ ĐỔI TÊN: tiêu đề khác "${o.toolLabel}" vẫn ĐÚNG Tool — nhận theo giao diện (bản đồ giao diện dưới đây), không coi là sai Tool. Đang ở chế độ Edit / thấy "Tool Builder" → bấm "Tool" (hoặc "Done") để về chế độ chạy. Công cụ đang ở bước cũ → bấm bước 1 trên thanh tiến trình để làm sản phẩm mới.`
-          : `- Mở THẲNG Tool "${o.toolLabel}": browser_navigate ${o.toolUrl} — tiêu đề trên cùng phải là "${o.toolLabel}". Công cụ đang ở bước cũ → bấm bước 1 trên thanh tiến trình để làm sản phẩm mới.`)
+        ? (o.toolUrl.includes("/shared/tool/")
+          ? `- Mở link chia sẻ Tool: browser_navigate ${o.toolUrl} → bấm "Dùng thử trong một dự án" (Try in a project) → chọn dự án đầu tiên trong danh sách → bấm "Mở" (Open) để vào Tool trong dự án của Sếp.`
+          : isCopy
+            // Link bản sao (Remix) của Sếp: có thể đã ĐỔI TÊN Tool — không đòi đúng tiêu đề gốc, không vào chế độ Edit.
+            ? `- Mở THẲNG Tool: browser_navigate ${o.toolUrl} (KHÔNG thêm ?mode=EDIT — chế độ Edit mở trình soạn Tool). Đây là BẢN SAO (Remix) Tool "${o.toolLabel}" trong project của chính Sếp, có thể ĐÃ ĐỔI TÊN: tiêu đề khác "${o.toolLabel}" vẫn ĐÚNG Tool — nhận theo giao diện (bản đồ giao diện dưới đây), không coi là sai Tool. Đang ở chế độ Edit / thấy "Tool Builder" → bấm "Tool" (hoặc "Done" / "Xong") để về chế độ chạy. Công cụ đang ở bước cũ → bấm bước 1 trên thanh tiến trình để làm sản phẩm mới.`
+            : `- Mở THẲNG Tool "${o.toolLabel}": browser_navigate ${o.toolUrl} — nhận theo giao diện Tool (bản đồ giao diện dưới đây). Đang ở chế độ Edit / thấy "Trình tạo công cụ" → bấm "Xong" (hoặc "Done") để về chế độ chạy. Công cụ đang ở bước cũ → bấm bước 1 trên thanh tiến trình để làm sản phẩm mới.`)
         : `- Mở Tool "${o.toolLabel}" theo đúng skill (sidebar Tools / "Công cụ của tôi" / "Công cụ được chia sẻ với tôi").`,
-      ...(o.toolUrl ? [`- KHÔNG MỞ ĐƯỢC TOOL vì quyền (trang báo "You need access" / "Request access" / "Bạn cần quyền truy cập" / "Yêu cầu quyền truy cập", không tìm thấy project/Tool, hoặc bị đẩy về trang chủ Flow): KHÔNG bấm "Request access", KHÔNG thử đường khác. Dừng ngay, ghi result.json status "blocked", notes bắt đầu bằng "NO_TOOL_ACCESS:" kèm chữ trang hiển thị.`] : []),
+      ...(o.toolUrl ? [
+        fallbackShare
+          ? `- Nếu mở ${o.toolUrl} báo không tìm thấy dự án/404 hoặc thuộc tài khoản Google khác: mở ngay link chia sẻ ${fallbackShare} → bấm "Dùng thử trong một dự án" (Try in a project) → chọn dự án đầu tiên → bấm "Mở" (Open) rồi chạy Tool bình thường.`
+          : `- KHÔNG MỞ ĐƯỢC TOOL vì quyền (trang báo "You need access" / "Request access" / "Bạn cần quyền truy cập" / "Yêu cầu quyền truy cập", không tìm thấy project/Tool, hoặc bị đẩy về trang chủ Flow): KHÔNG bấm "Request access", KHÔNG thử đường khác. Dừng ngay, ghi result.json status "blocked", notes bắt đầu bằng "NO_TOOL_ACCESS:" kèm chữ trang hiển thị.`,
+      ] : []),
       `- BẮT BUỘC chạy hết các bước BÊN TRONG Tool "${o.toolLabel}" (không tự viết prompt Veo ngoài Tool, không dùng công cụ khác).`,
       ...(o.uiMap.length ? ["- Bản đồ giao diện Tool (đọc trực tiếp từ Tool, ưu tiên hơn mô tả trong skill nếu khác):", ...o.uiMap.map((l) => `  • ${l}`)] : []),
       "- Chưa đăng nhập / hết tín dụng / không mở được Tool → dừng ngay, ghi result.json status \"blocked\" kèm lý do. KHÔNG đăng nhập hộ, KHÔNG nhập mật khẩu, KHÔNG đổi cài đặt tài khoản, KHÔNG xóa gì, KHÔNG mua thêm tín dụng.",
@@ -1163,7 +1189,7 @@ export async function runVideoJob(jobId: string) {
     `# SKILL ĐANG CHẠY: ${tool.skill} (v${skill.version})`,
     skill.body,
     "",
-    ...(chrome ? claudeChromeEnvironment({ toolLabel: tool.toolTitle ?? tool.label, toolUrl: toolUrlFor(fs, input.tool), defaultToolUrl: tool.toolUrl, uiMap: tool.uiMap, email, workdir, generator: tool.generator, deviceId: chrome.deviceId, label: chrome.label }) : environmentInstructions({ toolLabel: tool.toolTitle ?? tool.label, toolUrl: toolUrlFor(fs, input.tool), defaultToolUrl: tool.toolUrl, uiMap: tool.uiMap, email, workdir, rawDir, generator: tool.generator })),
+    ...(chrome ? claudeChromeEnvironment({ toolLabel: tool.toolTitle ?? tool.label, toolUrl: toolUrlFor(fs, input.tool), defaultToolUrl: tool.toolUrl, uiMap: tool.uiMap, email, workdir, generator: tool.generator, deviceId: chrome.deviceId, label: chrome.label }) : environmentInstructions({ toolLabel: tool.toolTitle ?? tool.label, toolUrl: toolUrlFor(fs, input.tool), sharedUrl: tool.sharedUrl, defaultToolUrl: tool.toolUrl, uiMap: tool.uiMap, email, workdir, rawDir, generator: tool.generator })),
     `- KẾT THÚC: dùng Write ghi kết quả JSON vào ${join(workdir, "result.json")} đúng schema sau rồi in "XONG — có thể đóng cửa sổ". Schema: ${JSON.stringify(Object.fromEntries(Object.entries(z.toJSONSchema(FlowResult, { target: "draft-7" }) as Row).filter(([k]) => k !== "$schema")))}`,
     `- Bị chặn/lỗi giữa chừng cũng PHẢI ghi result.json với status "blocked"/"failed" và lý do trong notes. finalPath = ${join(workdir, "final.mp4")} khi thành công. caption = caption đăng kênh (tiếng Việt, ≤ 300 ký tự, 3-5 hashtag). script = lời thoại từng cảnh.`,
     ...(dna ? ["", `# THƯƠNG HIỆU: ${brandOfDna(bizId)} (áp dụng DNA dưới đây cho lời thoại, caption, claim)`, dna] : ["", `# THƯƠNG HIỆU: kênh khác/khách hàng. KHÔNG dùng giọng hay tên ${brandOfDna(bizId)}; theo thông tin trong brief.`]),
