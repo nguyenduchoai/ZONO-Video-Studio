@@ -360,12 +360,16 @@ export async function decodeVideoBlueprint(opts: {
   const recommendedEditStyle: EditStyle =
     avgShotSec <= 2.8 ? "dynamic" : avgShotSec <= 4.8 ? "clean" : "smooth";
 
-  // 3. Khớp lời thoại thực tế theo từng phân cảnh (shot)
+  // 3. Khớp lời thoại thực tế theo từng phân cảnh (shot) bằng tâm điểm thời gian của từng từ để không bị lặp từ ở ranh giới 2 cảnh
   const shotTranscripts = rawShots.map((sh, idx) => {
-    const ws = words.filter((w) => w.s >= sh.start - 0.15 && w.e <= sh.end + 0.25);
+    const isLast = idx === rawShots.length - 1;
+    const ws = words.filter((w) => {
+      const mid = (w.s + w.e) / 2;
+      return mid >= sh.start && (isLast ? mid <= sh.end + 0.5 : mid < sh.end);
+    });
     if (ws.length > 0) return ws.map((w) => w.w).join(" ");
     if (idx === 0) return "Mở đầu gây chú ý trong 3 giây đầu";
-    if (idx === rawShots.length - 1) return "Tổng kết thông điệp & lời kêu gọi hành động";
+    if (isLast) return "Tổng kết thông điệp & lời kêu gọi hành động";
     return `Triển khai nội dung phân cảnh ${idx + 1}`;
   });
 
@@ -424,37 +428,60 @@ export async function decodeVideoBlueprint(opts: {
   let decodedByProvider = "faster_whisper_local";
 
   if (opts.useClaude !== false && targetProvider !== "sandbox") {
-    try {
-      const g = await generate({
-        bizId: opts.bizId,
-        agentKey: "creative",
-        tier: "small",
-        preferredProvider: opts.preferredProvider ?? "claude_cli",
-        fast: true,
-        schema: ClaudeDecodeSchema,
-        system: [
-          "Bạn là Đạo diễn Phân tích Kịch bản Video Ngắn của ZONO Studio.",
-          "Dựa trên lời thoại thực tế bóc băng (Whisper) của từng phân cảnh, hãy tóm tắt ngắn gọn ý chính của từng cảnh, công thức Hook 3s đầu và gợi ý chọn cảnh quay sẵn tương ứng.",
-          "TUYỆT ĐỐI KHÔNG viết thông số ống kính máy ảnh dài dòng vào visualDescription; hãy viết ngắn gọn ý nghĩa nội dung của cảnh đó bằng tiếng Việt tự nhiên.",
-        ].join("\n"),
-        user: [
-          `Thông số Video Mẫu: Thời lượng ${durationSec}s, ${shotCount} phân cảnh (trung bình ${avgShotSec}s/cảnh).`,
-          opts.referenceNotes ? `Chủ đề người dùng muốn làm: ${opts.referenceNotes}` : "",
-          fullTranscript ? `Toàn bộ lời thoại thực tế trong Video Mẫu: "${fullTranscript}"` : "",
-          "Lời thoại theo từng cảnh:",
-          ...rawShots.map((sh, i) => `- Cảnh ${i + 1} (${sh.start.toFixed(1)}s -> ${sh.end.toFixed(1)}s, dài ${(sh.end - sh.start).toFixed(1)}s): "${shotTranscripts[i]}"`),
-          `Hãy trả về đúng ${rawShots.length} phần tử trong mảng shots.`,
-        ]
-          .filter(Boolean)
-          .join("\n"),
-        sandbox: buildDefaultDecode,
-      });
-      if (g.output?.shots?.length) {
-        claudeOut = g.output;
-        decodedByProvider = g.provider || targetProvider;
+    const cacheRoot = resolve("data/creative/decoded/_cache");
+    mkdirSync(cacheRoot, { recursive: true });
+    const aiDecodeCacheKey = createHash("sha1")
+      .update(`v2|${fileSignature(resolvedPath)}|${targetProvider}|${shotCount}|${(opts.referenceNotes ?? "").trim()}`)
+      .digest("hex")
+      .slice(0, 18);
+    const aiDecodeCacheFile = join(cacheRoot, `ai_decode_${aiDecodeCacheKey}.json`);
+    let loadedFromCache = false;
+    if (existsSync(aiDecodeCacheFile)) {
+      try {
+        const cached = JSON.parse(readFileSync(aiDecodeCacheFile, "utf8"));
+        if (cached?.output?.shots?.length === rawShots.length) {
+          claudeOut = cached.output;
+          decodedByProvider = cached.provider || targetProvider;
+          loadedFromCache = true;
+        }
+      } catch {
+        // recompute
       }
-    } catch (e) {
-      logger.warn("video_decode.claude_fallback", { error: String(e).slice(0, 250) });
+    }
+    if (!loadedFromCache) {
+      try {
+        const g = await generate({
+          bizId: opts.bizId,
+          agentKey: "creative",
+          tier: "small",
+          preferredProvider: opts.preferredProvider ?? "claude_cli",
+          fast: true,
+          schema: ClaudeDecodeSchema,
+          system: [
+            "Bạn là Đạo diễn Phân tích Kịch bản Video Ngắn của ZONO Studio.",
+            "Dựa trên lời thoại thực tế bóc băng (Whisper) của từng phân cảnh, hãy tóm tắt ngắn gọn ý chính của từng cảnh, công thức Hook 3s đầu và gợi ý chọn cảnh quay sẵn tương ứng.",
+            "TUYỆT ĐỐI KHÔNG viết thông số ống kính máy ảnh dài dòng vào visualDescription; hãy viết ngắn gọn ý nghĩa nội dung của cảnh đó bằng tiếng Việt tự nhiên.",
+          ].join("\n"),
+          user: [
+            `Thông số Video Mẫu: Thời lượng ${durationSec}s, ${shotCount} phân cảnh (trung bình ${avgShotSec}s/cảnh).`,
+            opts.referenceNotes ? `Chủ đề người dùng muốn làm: ${opts.referenceNotes}` : "",
+            fullTranscript ? `Toàn bộ lời thoại thực tế trong Video Mẫu: "${fullTranscript}"` : "",
+            "Lời thoại theo từng cảnh:",
+            ...rawShots.map((sh, i) => `- Cảnh ${i + 1} (${sh.start.toFixed(1)}s -> ${sh.end.toFixed(1)}s, dài ${(sh.end - sh.start).toFixed(1)}s): "${shotTranscripts[i]}"`),
+            `Hãy trả về đúng ${rawShots.length} phần tử trong mảng shots.`,
+          ]
+            .filter(Boolean)
+            .join("\n"),
+          sandbox: buildDefaultDecode,
+        });
+        if (g.output?.shots?.length) {
+          claudeOut = g.output;
+          decodedByProvider = g.provider || targetProvider;
+          writeFileSync(aiDecodeCacheFile, JSON.stringify({ provider: decodedByProvider, output: claudeOut }));
+        }
+      } catch (e) {
+        logger.warn("video_decode.claude_fallback", { error: String(e).slice(0, 250) });
+      }
     }
   }
 
@@ -634,47 +661,73 @@ export async function produceFromDecodedBlueprint(opts: {
   let providerUsed = opts.customScenes?.length ? "user_edited_timeline" : "local_template_matcher";
 
   const prov = effectiveProvider(opts.bizId);
+  const targetCloneProvider = opts.preferredProvider ?? prov.provider;
   if (!opts.customScenes?.length && opts.useClaude !== false && (opts.preferredProvider || (prov.ready && prov.provider !== "sandbox"))) {
-    try {
-      const g = await generate({
-        bizId: opts.bizId,
-        agentKey: "creative",
-        preferredProvider: opts.preferredProvider,
-        fast: true,
-        tier: "medium",
-        schema: ClaudeClonePlanSchema,
-        system: [
-          `Bạn là Đạo diễn Kịch Bản & Dựng Phim Thực Chiến của thương hiệu ${brand}.`,
-          "Nhiệm vụ: Dựa trên NỘI DUNG LỜI THOẠI GỐC & NHỊP CẮT của Video Mẫu đã Decode và DANH SÁCH VIDEO QUAY SẴN (Raw Footage) của người dùng, hãy:",
-          "1. Học cách dẫn dắt câu chuyện của Video Mẫu để viết lời thoại tiếng Việt mới (`newVoiceover`) thật tự nhiên, cuốn hút, mỗi cảnh 1 ý nối tiếp nhau (TUYỆT ĐỐI KHÔNG lặp lại cùng một câu ở các cảnh và KHÔNG đọc thuật ngữ kỹ thuật góc máy) cho Chủ đề/Sản phẩm mới.",
-          "2. Viết chữ nổi trên màn hình (`newOnScreenText`, ≤ 6 chữ) súc tích cho từng cảnh.",
-          "3. Chọn đoạn video quay sẵn (`rawSourceIndex`, `rawStartSec`, `rawEndSec`) phù hợp nhất với từng cảnh.",
-        ].join("\n"),
-        user: [
-          `CHỦ ĐỀ / YÊU CẦU MỚI: ${opts.topic}`,
-          `SẢN PHẨM / THƯƠNG HIỆU: ${product} (${brand})`,
-          `BẢN GHI LỜI THOẠI GỐC TRONG VIDEO MẪU: "${opts.blueprint.fullTranscript || "Không có lời thoại"}"`,
-          `CẤU TRÚC TỪNG CẢNH CỦA VIDEO MẪU (${targetShots.length} cảnh, tổng ${opts.blueprint.durationSec}s, nhịp ${opts.blueprint.pacingLabel}):`,
-          `- Mở bài 3s đầu của Video Mẫu: ${opts.blueprint.hookFormula.first3SecHook}`,
-          ...targetShots.map(
-            (s) =>
-              `  + Cảnh ${s.sceneNumber} (${s.durationSec}s): Lời gốc trong mẫu="${s.spokenText || ""}" | Ý chính="${s.visualDescription}" | Zoom="${s.recommendedZoom}"`,
-          ),
-          "DANH SÁCH VIDEO QUAY SẴN CỦA NGƯỜI DÙNG:",
-          ...sources.map(
-            (s) =>
-              `- Video nguồn #${s.index} (${basename(s.path)}, dài ${s.duration.toFixed(1)}s): Các đoạn cắt: ${s.shots.map((sh) => `[${sh.start.toFixed(1)}s-${sh.end.toFixed(1)}s]`).join(", ")}`,
-          ),
-          `Hãy trả về đúng ${targetShots.length} cảnh trong mảng scenes, mỗi cảnh có lời thoại (newVoiceover) riêng biệt nối tiếp nhau thành kịch bản hoàn chỉnh.`,
-        ].join("\n"),
-        sandbox: buildDefaultClonePlan,
-      });
-      if (g.output?.scenes?.length) {
-        clonePlan = g.output;
-        providerUsed = g.provider || opts.preferredProvider || prov.provider;
+    const cacheRoot = resolve("data/creative/decoded/_cache");
+    mkdirSync(cacheRoot, { recursive: true });
+    const aiCloneCacheKey = createHash("sha1")
+      .update(
+        `v2|${fileSignature(opts.blueprint.sourceVideoPath)}|${targetCloneProvider}|${targetShots.length}|${opts.topic.trim()}|${product}|${finalRawPaths.map(fileSignature).join(",")}`,
+      )
+      .digest("hex")
+      .slice(0, 18);
+    const aiCloneCacheFile = join(cacheRoot, `ai_clone_${aiCloneCacheKey}.json`);
+    let loadedFromCache = false;
+    if (existsSync(aiCloneCacheFile)) {
+      try {
+        const cached = JSON.parse(readFileSync(aiCloneCacheFile, "utf8"));
+        if (cached?.output?.scenes?.length === targetShots.length) {
+          clonePlan = cached.output;
+          providerUsed = cached.provider || targetCloneProvider;
+          loadedFromCache = true;
+        }
+      } catch {
+        // recompute
       }
-    } catch (e) {
-      logger.warn("video_decode.clone_claude_fallback", { error: String(e).slice(0, 250) });
+    }
+    if (!loadedFromCache) {
+      try {
+        const g = await generate({
+          bizId: opts.bizId,
+          agentKey: "creative",
+          preferredProvider: opts.preferredProvider ?? "claude_cli",
+          fast: true,
+          tier: "medium",
+          schema: ClaudeClonePlanSchema,
+          system: [
+            `Bạn là Đạo diễn Kịch Bản & Dựng Phim Thực Chiến của thương hiệu ${brand}.`,
+            "Nhiệm vụ: Dựa trên NỘI DUNG LỜI THOẠI GỐC & NHỊP CẮT của Video Mẫu đã Decode và DANH SÁCH VIDEO QUAY SẴN (Raw Footage) của người dùng, hãy:",
+            "1. Học cách dẫn dắt câu chuyện của Video Mẫu để viết lời thoại tiếng Việt mới (`newVoiceover`) thật tự nhiên, cuốn hút, mỗi cảnh 1 ý nối tiếp nhau (TUYỆT ĐỐI KHÔNG lặp lại cùng một câu ở các cảnh và KHÔNG đọc thuật ngữ kỹ thuật góc máy) cho Chủ đề/Sản phẩm mới.",
+            "2. Viết chữ nổi trên màn hình (`newOnScreenText`, ≤ 6 chữ) súc tích cho từng cảnh.",
+            "3. Chọn đoạn video quay sẵn (`rawSourceIndex`, `rawStartSec`, `rawEndSec`) phù hợp nhất với từng cảnh.",
+          ].join("\n"),
+          user: [
+            `CHỦ ĐỀ / YÊU CẦU MỚI: ${opts.topic}`,
+            `SẢN PHẨM / THƯƠNG HIỆU: ${product} (${brand})`,
+            `BẢN GHI LỜI THOẠI GỐC TRONG VIDEO MẪU: "${opts.blueprint.fullTranscript || "Không có lời thoại"}"`,
+            `CẤU TRÚC TỪNG CẢNH CỦA VIDEO MẪU (${targetShots.length} cảnh, tổng ${opts.blueprint.durationSec}s, nhịp ${opts.blueprint.pacingLabel}):`,
+            `- Mở bài 3s đầu của Video Mẫu: ${opts.blueprint.hookFormula.first3SecHook}`,
+            ...targetShots.map(
+              (s) =>
+                `  + Cảnh ${s.sceneNumber} (${s.durationSec}s): Lời gốc trong mẫu="${s.spokenText || ""}" | Ý chính="${s.visualDescription}" | Zoom="${s.recommendedZoom}"`,
+            ),
+            "DANH SÁCH VIDEO QUAY SẴN CỦA NGƯỜI DÙNG:",
+            ...sources.map(
+              (s) =>
+                `- Video nguồn #${s.index} (${basename(s.path)}, dài ${s.duration.toFixed(1)}s): Các đoạn cắt: ${s.shots.map((sh) => `[${sh.start.toFixed(1)}s-${sh.end.toFixed(1)}s]`).join(", ")}`,
+            ),
+            `Hãy trả về đúng ${targetShots.length} cảnh trong mảng scenes, mỗi cảnh có lời thoại (newVoiceover) riêng biệt nối tiếp nhau thành kịch bản hoàn chỉnh.`,
+          ].join("\n"),
+          sandbox: buildDefaultClonePlan,
+        });
+        if (g.output?.scenes?.length) {
+          clonePlan = g.output;
+          providerUsed = g.provider || opts.preferredProvider || prov.provider;
+          writeFileSync(aiCloneCacheFile, JSON.stringify({ provider: providerUsed, output: clonePlan }));
+        }
+      } catch (e) {
+        logger.warn("video_decode.clone_claude_fallback", { error: String(e).slice(0, 250) });
+      }
     }
   }
 
@@ -712,15 +765,39 @@ export async function produceFromDecodedBlueprint(opts: {
     };
   });
 
-  // 3. Nếu renderMp4 !== false, dựng luôn file MP4 thật trên máy Local bằng pro_edit.py render + VieNeu-TTS (chạy song song & có Cache)
-  const latestCloned = available.find((v) => v.url.includes("cloned_clone_"));
-  let renderedVideoUrl: string | null = latestCloned?.url ?? opts.blueprint.sourceVideoUrl;
-  let renderedDurationSec = opts.blueprint.durationSec;
-  let renderNotes = `Đã lập bảng phân cảnh học theo Video Mẫu (${outScenes.length} cảnh · ${opts.blueprint.pacingLabel}).`;
+  // 3. Nếu renderMp4 !== false, dựng luôn file MP4 thật trên máy Local bằng pro_edit.py render + VieNeu-TTS (chạy song song & có Cache theo nội dung kịch bản)
+  const voiceId = opts.voiceName && VI_VOICES.some((v) => v.id === opts.voiceName) ? opts.voiceName : VI_VOICES[0].id;
+  const renderCacheSig = createHash("sha1")
+    .update(
+      JSON.stringify({
+        v: 3,
+        raw: finalRawPaths.map(fileSignature),
+        voiceId,
+        audioMode,
+        style,
+        aspect,
+        hook: clonePlan.hookTitle,
+        cta: clonePlan.ctaText,
+        scenes: outScenes.map((s) => [s.newVoiceover, s.newOnScreenText, s.selectedRawCut, s.zoom, s.transition]),
+      }),
+    )
+    .digest("hex")
+    .slice(0, 14);
+  const cachedMp4Name = `cloned_v3_${renderCacheSig}.mp4`;
+  const cachedMp4Path = resolve("data/uploads", cachedMp4Name);
 
-  if (opts.renderMp4 !== false) {
+  let renderedVideoUrl: string | null = existsSync(cachedMp4Path)
+    ? `/v1/uploads/${cachedMp4Name}`
+    : opts.blueprint.sourceVideoUrl;
+  let renderedDurationSec = existsSync(cachedMp4Path)
+    ? Math.round((mediaDuration(cachedMp4Path) || opts.blueprint.durationSec) * 10) / 10
+    : opts.blueprint.durationSec;
+  const audioDescLabel =
+    audioMode === "keep_audio" ? "giữ âm thanh gốc + nhạc nền nhẹ" : `lồng tiếng mới VieNeu-TTS (${voiceId}) · đã tắt tiếng gốc`;
+  let renderNotes = `Đã dựng Video MP4 mới (${renderedDurationSec}s · ${aspect}) theo đúng ${outScenes.length} cảnh của Video Mẫu (${audioDescLabel}).`;
+
+  if (opts.renderMp4 !== false && !existsSync(cachedMp4Path)) {
     try {
-      const voiceId = opts.voiceName && VI_VOICES.some((v) => v.id === opts.voiceName) ? opts.voiceName : VI_VOICES[0].id;
       const rate = style === "dynamic" ? 1.06 : 1.0;
 
       const voices: { text: string; file: string; duration: number; heard: Word[] }[] =
@@ -777,12 +854,10 @@ export async function produceFromDecodedBlueprint(opts: {
         timeoutMs: 180_000,
       });
       if (rRun.code === 0 && existsSync(finalMp4) && statSync(finalMp4).size > 10_000) {
-        const pub = ensurePublicUploadCopy(finalMp4, `cloned_${prodId}`);
-        renderedVideoUrl = pub.publicUrl;
-        renderedDurationSec = Math.round((mediaDuration(finalMp4) || resolvedPlan.total) * 10) / 10;
-        const audioDesc =
-          audioMode === "keep_audio" ? "giữ âm thanh gốc + nhạc nền nhẹ" : `giọng đọc VieNeu-TTS (${voiceId})`;
-        renderNotes = `Đã dựng thành công Video MP4 mới (${renderedDurationSec}s · ${aspect}) từ ${finalRawPaths.length} video quay sẵn theo đúng công thức của Video Mẫu (${outScenes.length} cảnh · ${audioDesc} · chuẩn âm -14 LUFS).`;
+        copyFileSync(finalMp4, cachedMp4Path);
+        renderedVideoUrl = `/v1/uploads/${cachedMp4Name}`;
+        renderedDurationSec = Math.round((mediaDuration(cachedMp4Path) || resolvedPlan.total) * 10) / 10;
+        renderNotes = `Đã dựng thành công Video MP4 mới (${renderedDurationSec}s · ${aspect}) từ ${finalRawPaths.length} video quay sẵn theo đúng công thức của Video Mẫu (${outScenes.length} cảnh · ${audioDescLabel} · chuẩn âm -14 LUFS).`;
       }
     } catch (e) {
       logger.warn("video_decode.render_fallback", { error: String(e).slice(0, 250) });

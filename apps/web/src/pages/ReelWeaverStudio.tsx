@@ -61,6 +61,7 @@ export function ReelWeaverStudio() {
 
   // State cho Trạm Decode Video Mẫu & Dựng Phim Từ Video Quay Sẵn (Local FFmpeg + Whisper + CLI AI)
   const [selectedCli, setSelectedCli] = useState<"claude_cli" | "gemini_cli" | "codex_cli">("claude_cli");
+  const [showOriginalVoice, setShowOriginalVoice] = useState<boolean>(false);
   const [decodeBusy, setDecodeBusy] = useState<boolean>(false);
   const [cloneBusy, setCloneBusy] = useState<boolean>(false);
   const [uploadPct, setUploadPct] = useState<number | null>(null);
@@ -74,10 +75,12 @@ export function ReelWeaverStudio() {
   // Tự động nạp sẵn 1 Video Mẫu đã Decode ngay khi mở trang để người dùng thấy kết quả tức thì
   useEffect(() => {
     if (!catalog) return;
-    if (catalog.aiProvider?.provider && ["claude_cli", "gemini_cli", "codex_cli"].includes(catalog.aiProvider.provider)) {
-      setSelectedCli(catalog.aiProvider.provider);
-    }
-    if (!decodedBlueprint && !decodeBusy) void handleDecodeVideo(undefined, true);
+    const initCli =
+      catalog.aiProvider?.provider && ["claude_cli", "gemini_cli", "codex_cli"].includes(catalog.aiProvider.provider)
+        ? catalog.aiProvider.provider
+        : "claude_cli";
+    setSelectedCli(initCli);
+    if (!decodedBlueprint && !decodeBusy) void handleDecodeVideo(undefined, true, initCli);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [catalog]);
 
@@ -89,15 +92,36 @@ export function ReelWeaverStudio() {
         videoPath,
         referenceNotes: topic,
         useWhisper: true,
-        useClaude: useClaudeForDecode && !silent,
+        useClaude: useClaudeForDecode,
         preferredProvider: activeCli,
       });
       setDecodedBlueprint(res.blueprint);
       if (res.blueprint?.recommendedEditStyle) {
         setEditStyle(res.blueprint.recommendedEditStyle);
       }
+      // Đồng bộ tức thì số cảnh của Bước 3 bên dưới theo đúng số cảnh vừa Decode ở Bước 1 (tránh lệch số cảnh trong lúc chờ AI viết lời mới)
+      if (res.blueprint?.decodedShots?.length) {
+        setEditableScenes(
+          res.blueprint.decodedShots.map((dShot: any, idx: number) => ({
+            sceneNumber: idx + 1,
+            templateTiming: `${dShot.startSec.toFixed(1)}s – ${dShot.endSec.toFixed(1)}s (${dShot.durationSec.toFixed(1)}s)`,
+            durationSec: dShot.durationSec,
+            originalShotSummary: dShot.visualDescription,
+            newVoiceover: `Đang dùng ${activeCli === "claude_cli" ? "Claude CLI" : activeCli === "gemini_cli" ? "Gemini CLI" : "Codex CLI"} viết lời Voice mới cho Cảnh ${idx + 1}...`,
+            newOnScreenText: dShot.onScreenText || `ĐIỂM NHẤN #${idx + 1}`,
+            selectedRawCut: {
+              sourceIndex: 0,
+              sourceFileName: res.blueprint.sourceFileName,
+              startSec: dShot.startSec,
+              endSec: dShot.endSec,
+            },
+            zoom: dShot.recommendedZoom || "in",
+            transition: dShot.recommendedTransition || "slideleft",
+          })),
+        );
+      }
       if (!silent) {
-        toast(`Đã Decode xong bằng ${activeCli === "claude_cli" ? "Claude CLI" : activeCli === "gemini_cli" ? "Gemini CLI" : "Codex CLI"} (${res.blueprint.shotCount} cảnh) — đang dựng Video MP4 mới...`, "info");
+        toast(`Đã Decode xong bằng ${activeCli === "claude_cli" ? "Claude CLI" : activeCli === "gemini_cli" ? "Gemini CLI" : "Codex CLI"} (${res.blueprint.shotCount} cảnh) — đang tự động viết kịch bản mới & dựng MP4 bên dưới...`, "info");
       }
       if (res.blueprint) {
         setCloneBusy(true);
@@ -112,14 +136,14 @@ export function ReelWeaverStudio() {
             audioMode,
             aspectRatio,
             editStyle: res.blueprint.recommendedEditStyle ?? editStyle ?? "dynamic",
-            renderMp4: !silent && renderRealMp4,
-            useClaude: !silent && useClaudeForDecode,
+            renderMp4: renderRealMp4,
+            useClaude: useClaudeForDecode,
             preferredProvider: activeCli,
           });
           setClonedResult(cloneRes.result);
           setEditableScenes(cloneRes.result?.scenes ?? []);
           if (!silent) {
-            toast("🎉 Đã Decode & dựng xong Video MP4 mới hoàn chỉnh!", "ok");
+            toast(`🎉 Đã cập nhật xong ${cloneRes.result?.scenes?.length ?? res.blueprint.shotCount} cảnh & Video MP4 mới bên dưới!`, "ok");
           }
         } finally {
           setCloneBusy(false);
@@ -260,7 +284,7 @@ export function ReelWeaverStudio() {
                     type="button"
                     onClick={() => {
                       setSelectedCli(cli.id);
-                      toast(`Đã chuyển bộ não AI sang ${cli.label}!`, "ok");
+                      void handleDecodeVideo(decodedBlueprint?.sourceVideoPath, false, cli.id);
                     }}
                     className={cx(
                       "inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-bold transition",
@@ -321,10 +345,10 @@ export function ReelWeaverStudio() {
                 </span>
                 <div>
                   <h2 className="text-base font-extrabold text-ink">
-                    Bước 1: Giải Mã Video Mẫu (Bóc Tách Lời Thoại Gốc, Ý Chính & Nhịp Cắt)
+                    Bước 1: Giải Mã Video Mẫu (Bóc Tách Phân Cảnh & AI Viết Lời Voice Mới)
                   </h2>
                   <p className="text-xs text-muted">
-                    Tải lên 1 video mẫu anh thích (TikTok/Reels/Quảng cáo) hoặc chọn ngay video có sẵn trên máy. Faster-Whisper tự bóc tách từng câu thoại gốc & CLI AI viết lại kịch bản mới.
+                    Tải lên 1 video mẫu anh thích hoặc chọn video có sẵn. Decode xong hệ thống tự động đưa sang AI viết lại kịch bản mới & dựng MP4 bên dưới.
                   </p>
                 </div>
               </div>
@@ -338,10 +362,7 @@ export function ReelWeaverStudio() {
                     onChange={(e) => {
                       const nextCli = e.target.value as "claude_cli" | "gemini_cli" | "codex_cli";
                       setSelectedCli(nextCli);
-                      toast(
-                        `Đã chọn ${nextCli === "claude_cli" ? "Claude CLI" : nextCli === "gemini_cli" ? "Gemini CLI" : "Codex CLI"} để phân tích & viết kịch bản!`,
-                        "ok",
-                      );
+                      void handleDecodeVideo(decodedBlueprint?.sourceVideoPath, false, nextCli);
                     }}
                     className="bg-transparent font-extrabold text-indigo-700 dark:text-indigo-200 focus:outline-none"
                   >
@@ -433,10 +454,13 @@ export function ReelWeaverStudio() {
                   <div className="grid grid-cols-2 gap-2">
                     {decodedBlueprint.sourceVideoUrl && (
                       <div>
-                        <div className="mb-1 text-[11px] font-bold text-muted">1. Video Mẫu Gốc:</div>
+                        <div className="mb-1 text-[11px] font-bold text-muted">
+                          1. Video Mẫu Gốc {audioMode === "voiceover" ? "(🔇 Đã tắt Voice cũ)" : ""}:
+                        </div>
                         <video
                           key={decodedBlueprint.sourceVideoUrl}
                           src={decodedBlueprint.sourceVideoUrl}
+                          muted={audioMode === "voiceover"}
                           controls
                           playsInline
                           preload="metadata"
@@ -446,7 +470,9 @@ export function ReelWeaverStudio() {
                     )}
                     {decodedBlueprint.contactSheetUrl && (
                       <div>
-                        <div className="mb-1 text-[11px] font-bold text-muted">2. Bảng Contact Sheet FFmpeg:</div>
+                        <div className="mb-1 text-[11px] font-bold text-muted">
+                          2. Bảng Contact Sheet ({decodedBlueprint.shotCount} cảnh):
+                        </div>
                         <img
                           src={decodedBlueprint.contactSheetUrl}
                           alt="Contact Sheet"
@@ -460,7 +486,7 @@ export function ReelWeaverStudio() {
                   <div className="rounded-xl border-2 border-emerald-500/40 bg-emerald-500/10 p-2.5 text-xs space-y-1.5">
                     <div className="flex items-center justify-between">
                       <span className="font-extrabold text-emerald-700 dark:text-emerald-300">
-                        3. 🎬 Video MP4 Mới Đã Dựng Theo Công Thức Decode:
+                        3. 🎬 Video MP4 Mới Đã Dựng ({audioMode === "voiceover" ? `Voice AI mới: ${voice}` : "Giữ âm thanh gốc"}):
                       </span>
                       {clonedResult?.renderedVideoUrl && !cloneBusy && (
                         <a
@@ -476,7 +502,7 @@ export function ReelWeaverStudio() {
                     {cloneBusy ? (
                       <div className="flex items-center gap-2 py-6 justify-center text-emerald-700 dark:text-emerald-300 font-semibold">
                         <Loader2 className="h-4 w-4 animate-spin" />
-                        Đang lồng tiếng VieNeu-TTS & kết xuất Video MP4 mới (~5s)...
+                        Đang dùng {selectedCli === "claude_cli" ? "Claude CLI" : selectedCli === "gemini_cli" ? "Gemini CLI" : "Codex CLI"} viết kịch bản mới & lồng tiếng VieNeu-TTS...
                       </div>
                     ) : (
                       clonedResult?.renderedVideoUrl && (
@@ -493,51 +519,73 @@ export function ReelWeaverStudio() {
                   </div>
 
                   <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-2.5 text-xs space-y-1">
-                    <div className="font-extrabold text-amber-800 dark:text-amber-300">
-                      🎯 Công thức Mở Bài (Hook 3 Giây Đầu) & Lời Thoại Gốc:
+                    <div className="flex items-center justify-between">
+                      <span className="font-extrabold text-amber-800 dark:text-amber-300">
+                        🎯 Công thức Mở Bài (Hook 3 Giây Đầu):
+                      </span>
+                      {audioMode === "voiceover" && decodedBlueprint.fullTranscript && (
+                        <button
+                          type="button"
+                          onClick={() => setShowOriginalVoice((v) => !v)}
+                          className="text-[11px] font-bold text-indigo-600 hover:underline"
+                        >
+                          {showOriginalVoice ? "🙈 Ẩn Voice cũ của video mẫu" : "👁️ Xem Voice cũ của video mẫu"}
+                        </button>
+                      )}
                     </div>
                     <p className="text-ink"><b>Mở bài:</b> {decodedBlueprint.hookFormula?.first3SecHook}</p>
-                    {decodedBlueprint.fullTranscript && (
+                    {(audioMode === "keep_audio" || showOriginalVoice) && decodedBlueprint.fullTranscript && (
                       <p className="text-muted">
-                        <b>🎙️ Toàn bộ lời gốc trong Video Mẫu:</b> "{decodedBlueprint.fullTranscript}"
+                        <b>🔊 Lời gốc trong Video Mẫu:</b> "{decodedBlueprint.fullTranscript}"
                       </p>
                     )}
                   </div>
                 </div>
 
-                <div className="space-y-2 rounded-2xl border border-line bg-soft/40 p-3.5 lg:col-span-7">
-                  <div className="flex items-center justify-between">
+                <div className="space-y-2.5 rounded-2xl border border-line bg-soft/40 p-3.5 lg:col-span-7">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="text-xs font-extrabold text-indigo-600">
-                      🎞️ {decodedBlueprint.shotCount} Phân cảnh & Lời thoại gốc bóc tách từ Video Mẫu
+                      🎞️ Đồng bộ {decodedBlueprint.shotCount} Phân cảnh Decode & Kịch bản Voice Mới (AI: {clonedResult?.providerUsed || decodedBlueprint.decodedByProvider || selectedCli})
                     </span>
                     <span className="text-[11px] font-medium text-muted">
-                      Bộ não: <b>{decodedBlueprint.decodedByProvider || selectedCli}</b> · {decodedBlueprint.pacingLabel}
+                      {audioMode === "voiceover" ? `🔇 Đã ẩn Voice cũ · Đang dùng Voice mới (${voice})` : "🔊 Đang giữ Voice gốc"}
                     </span>
                   </div>
-                  <div className="max-h-72 space-y-2 overflow-y-auto pr-1 scroll-thin">
-                    {(decodedBlueprint.decodedShots ?? []).map((sh: any) => (
-                      <div key={sh.sceneNumber} className="rounded-xl border border-line bg-card p-2.5 text-xs space-y-1.5">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <span className="font-extrabold text-ink">
-                            Cảnh {sh.sceneNumber} ({sh.startSec}s → {sh.endSec}s · dài {sh.durationSec}s)
-                          </span>
-                          <div className="flex items-center gap-1.5">
-                            <Badge tone="blue">Zoom: {sh.recommendedZoom}</Badge>
-                            <Badge tone="amber">Chuyển: {sh.recommendedTransition}</Badge>
+                  {/* Hiển thị đầy đủ TẤT CẢ các cảnh dạng lưới 2 cột (không cuộn ẩn làm tưởng nhầm chỉ có 2 cảnh) */}
+                  <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                    {(decodedBlueprint.decodedShots ?? []).map((sh: any, idx: number) => {
+                      const matchedClone = editableScenes[idx];
+                      return (
+                        <div key={sh.sceneNumber} className="rounded-xl border border-line bg-card p-2.5 text-xs space-y-1.5">
+                          <div className="flex flex-wrap items-center justify-between gap-1.5">
+                            <span className="font-extrabold text-ink">
+                              Cảnh {sh.sceneNumber} ({sh.startSec}s → {sh.endSec}s · {sh.durationSec}s)
+                            </span>
+                            <div className="flex items-center gap-1">
+                              <Badge tone="blue">Zoom: {sh.recommendedZoom}</Badge>
+                              <Badge tone="amber">{sh.recommendedTransition}</Badge>
+                            </div>
                           </div>
+                          <p className="text-muted">📝 <b>Ý chính Decode:</b> {sh.visualDescription}</p>
+                          {audioMode === "voiceover" ? (
+                            <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1.5 font-semibold text-emerald-900 dark:text-emerald-200">
+                              🎙️ <b>Voice mới (AI):</b> "{matchedClone?.newVoiceover || "Đang tạo lời thoại mới..."}"
+                            </div>
+                          ) : (
+                            sh.spokenText && (
+                              <p className="rounded-lg bg-indigo-500/[0.08] px-2.5 py-1.5 font-semibold text-ink">
+                                🔊 Lời gốc giữ nguyên: "{sh.spokenText}"
+                              </p>
+                            )
+                          )}
+                          {audioMode === "voiceover" && showOriginalVoice && sh.spokenText && (
+                            <p className="text-[11px] italic text-muted">
+                              (Voice cũ đã tắt: "{sh.spokenText}")
+                            </p>
+                          )}
                         </div>
-                        {sh.spokenText ? (
-                          <p className="rounded-lg bg-indigo-500/[0.08] px-2.5 py-1.5 font-semibold text-ink">
-                            🎙️ Lời gốc trong cảnh: "{sh.spokenText}"
-                          </p>
-                        ) : (
-                          <p className="text-muted">📝 Nội dung cảnh: {sh.visualDescription}</p>
-                        )}
-                        <p className="text-emerald-700 dark:text-emerald-300 font-semibold">
-                          💡 Gợi ý ghép cảnh quay sẵn: {sh.howToShootOrSelect}
-                        </p>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -759,7 +807,7 @@ export function ReelWeaverStudio() {
           </Card>
 
           {/* BƯỚC 3: CHỈNH SỬA TRỰC TIẾP TỪNG CẢNH & XUẤT LẠI MP4 SIÊU TỐC */}
-          {clonedResult && (
+          {(clonedResult || editableScenes.length > 0) && (
             <Card className="border-2 border-emerald-500/35 p-5 space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-3">
                 <div className="flex items-center gap-2.5">
@@ -768,13 +816,17 @@ export function ReelWeaverStudio() {
                   </span>
                   <div>
                     <h3 className="text-base font-extrabold text-emerald-700 dark:text-emerald-300">
-                      Bước 3: Tinh Chỉnh Từng Câu Thoại & Tải Phim MP4 Hoàn Chỉnh ({clonedResult.hookTitle})
+                      Bước 3: Tinh Chỉnh {editableScenes.length} Cảnh Đã Đồng Bộ Theo Decode & Tải MP4 ({clonedResult?.hookTitle || "Kịch Bản Mới"})
                     </h3>
-                    <p className="text-xs text-muted">{clonedResult.renderNotes}</p>
+                    <p className="text-xs text-muted">
+                      {cloneBusy
+                        ? `Đang dùng ${selectedCli === "claude_cli" ? "Claude CLI" : selectedCli === "gemini_cli" ? "Gemini CLI" : "Codex CLI"} viết lời Voice mới & kết xuất MP4 cho đúng ${editableScenes.length} cảnh...`
+                        : clonedResult?.renderNotes}
+                    </p>
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <Badge tone="green">Bộ não: {clonedResult.providerUsed}</Badge>
+                  <Badge tone="green">Bộ não AI: {clonedResult?.providerUsed || selectedCli}</Badge>
                   <Button
                     size="sm"
                     variant="primary"
@@ -852,7 +904,7 @@ export function ReelWeaverStudio() {
                   <div className="rounded-2xl border border-line bg-card p-3.5 space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-extrabold text-ink">🎬 Video MP4 Hoàn Chỉnh:</span>
-                      {clonedResult.renderedVideoUrl && (
+                      {clonedResult?.renderedVideoUrl && !cloneBusy && (
                         <a
                           href={clonedResult.renderedVideoUrl}
                           download={`zono-video-${Date.now()}.mp4`}
@@ -864,14 +916,21 @@ export function ReelWeaverStudio() {
                       )}
                     </div>
 
-                    {clonedResult.renderedVideoUrl && (
-                      <video
-                        key={clonedResult.renderedVideoUrl}
-                        src={clonedResult.renderedVideoUrl}
-                        controls
-                        playsInline
-                        className="mx-auto max-h-80 w-full rounded-2xl border border-line bg-black object-contain shadow-sm"
-                      />
+                    {cloneBusy ? (
+                      <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 py-12 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        <span>Đang dựng Video MP4 mới & tắt Voice cũ...</span>
+                      </div>
+                    ) : (
+                      clonedResult?.renderedVideoUrl && (
+                        <video
+                          key={clonedResult.renderedVideoUrl}
+                          src={clonedResult.renderedVideoUrl}
+                          controls
+                          playsInline
+                          className="mx-auto max-h-80 w-full rounded-2xl border border-line bg-black object-contain shadow-sm"
+                        />
+                      )
                     )}
 
                     <div className="rounded-xl bg-soft p-3 text-xs space-y-1.5">
@@ -879,14 +938,14 @@ export function ReelWeaverStudio() {
                         <span className="font-bold text-ink">Caption gợi ý đăng kênh:</span>
                         <button
                           type="button"
-                          onClick={() => copyText("clone_cap", clonedResult.caption || "")}
+                          onClick={() => copyText("clone_cap", clonedResult?.caption || "")}
                           className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 hover:underline"
                         >
                           {copiedKey === "clone_cap" ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
                           Sao chép
                         </button>
                       </div>
-                      <p className="text-muted leading-relaxed">{clonedResult.caption}</p>
+                      <p className="text-muted leading-relaxed">{clonedResult?.caption || "Đang tạo caption mới..."}</p>
                     </div>
                   </div>
                 </div>

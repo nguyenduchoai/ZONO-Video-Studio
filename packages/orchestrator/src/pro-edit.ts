@@ -205,8 +205,7 @@ export function resolveEditPlan(inp: ResolveInput) {
     else {
       const v = inp.voices?.[i];
       if (v?.file) Object.assign(audio, { voice: v.file, voiceAt: r3(starts[i] + lead), voiceVolume: 1.0 });
-      // tiếng gốc chỉ còn nhỏ làm không khí (nếu video có tiếng)
-      if (cuts.every((c) => inp.sources[c.src]?.hasAudio)) Object.assign(audio, { source: true, sourceIsVoice: false, sourceVolume: 0.1, sourceAt: r3(Math.max(0, starts[i] - d)) });
+      // Khi làm Voice mới (voiceover), tắt hoàn toàn tiếng nói cũ của video gốc (source: false) để không bị lẫn giọng cũ.
     }
     outScenes.push({
       start: starts[i], content: content[i], segLen, trans: tr ? { type: tr.type, dur: tr.dur } : null, zoom, onScreen: (s.onScreen ?? "").trim(),

@@ -75,16 +75,16 @@ def detect_shots(path, duration):
     cuts = sorted({round(float(m), 2) for m in re.findall(r"pts_time:([0-9.]+)", r.stderr)})
     bounds = [0.0] + [c for c in cuts if 0.4 < c < duration - 0.4] + [round(duration, 2)]
     shots = [[bounds[i], bounds[i + 1]] for i in range(len(bounds) - 1) if bounds[i + 1] - bounds[i] > 0.05]
-    # gộp cảnh quá ngắn (< 1s) vào cảnh trước; chia cảnh quá dài (> 8s) thành đoạn ≤ 6s
+    # gộp cảnh quá ngắn (< 1.2s) vào cảnh trước; giữ nguyên các cảnh cắt thật của video (chỉ chia đều nếu cả video dài > 14s mà chỉ có 1 cảnh duy nhất)
     merged = []
     for s in shots:
-        if merged and s[1] - s[0] < 1.0:
+        if merged and s[1] - s[0] < 1.2:
             merged[-1][1] = s[1]
         else:
             merged.append(s)
     out = []
     for a, b in merged:
-        n = max(1, math.ceil((b - a) / 6.0)) if b - a > 8.0 else 1
+        n = max(1, math.ceil((b - a) / 7.0)) if (len(merged) == 1 and b - a > 14.0) or (b - a > 18.0) else 1
         step = (b - a) / n
         out += [[round(a + k * step, 2), round(a + (k + 1) * step, 2)] for k in range(n)]
     while len(out) > 60:  # quá nhiều → gộp các cặp ngắn nhất
@@ -248,20 +248,26 @@ def draw_layer(img, layer, st, W, H, style):
     anchor_y = 0.5
     mode = "pop"
     if layer.kind == "caption":
-        fs = int(72 * base)
+        fs = int(64 * base)
         fnt = font(fs)
         words = [w["text"] for w in p["words"]]
-        lines = wrap_words(d, words, fnt, W - int(150 * base))[:3]
+        lines = wrap_words(d, words, fnt, W - int(160 * base))[:3]
         lh = int(fs * 1.28)
         total_h = lh * len(lines)
-        y0 = int(H * p.get("y", 0.68)) - total_h // 2
+        y0 = int(H * p.get("y", 0.77)) - total_h // 2
         space = d.textlength(" ", font=fnt)
+        # Vẽ nền hộp tối che hoàn toàn phụ đề cũ (nếu video gốc có chữ chìm ở vùng 70%-86% khung hình)
+        box_w = int(W * 0.90)
+        box_x0 = (W - box_w) // 2
+        box_y0 = min(y0 - int(24 * base), int(H * 0.71))
+        box_y1 = max(y0 + total_h + int(24 * base), int(H * 0.85))
+        d.rounded_rectangle([box_x0, box_y0, box_x0 + box_w, box_y1], radius=int(22 * base), fill=(12, 14, 22, 248))
         for li, idxs in enumerate(lines):
             lw = sum(d.textlength(words[i], font=fnt) for i in idxs) + space * (len(idxs) - 1)
             x = (W - lw) / 2
             for i in idxs:
                 col = acc if i == active else (255, 255, 255)
-                d.text((x, y0 + li * lh), words[i], font=fnt, fill=col + (255,), stroke_width=int(7 * base), stroke_fill=(0, 0, 0, 255))
+                d.text((x, y0 + li * lh), words[i], font=fnt, fill=col + (255,), stroke_width=int(6 * base), stroke_fill=(0, 0, 0, 255))
                 x += d.textlength(words[i], font=fnt) + space
         anchor_y = (y0 + total_h / 2) / H
         mode = "pop_small"
@@ -363,9 +369,10 @@ def build_text_track(plan, work, W, H, fps, total):
             t1 = min(total, sc["start"] + sc["content"] - 0.1)
             if t1 - t0 > 0.8:
                 layers.append(Layer("headline", t0, t1, {"text": sc["onScreen"], "y": plan.get("headlineY", 0.27)}, in_d=0.35, out_d=0.3))
+    has_captions = bool(plan.get("captions"))
     for ch in plan.get("captions", []):
         if ch["words"]:
-            layers.append(Layer("caption", ch["t0"], ch["t1"], {"words": ch["words"], "y": plan.get("captionY", 0.68)}, in_d=0.14, out_d=0.08))
+            layers.append(Layer("caption", ch["t0"], ch["t1"], {"words": ch["words"], "y": plan.get("captionY", 0.77)}, in_d=0.08, out_d=0.05))
     cta = plan.get("cta")
     if cta and cta.get("text"):
         layers.append(Layer("cta", cta["t0"], cta["t1"], cta, in_d=0.4, out_d=0.0))
@@ -383,6 +390,20 @@ def build_text_track(plan, work, W, H, fps, total):
     frames_dir = os.path.join(work, "text")
     os.makedirs(frames_dir, exist_ok=True)
     cache, entries, blank = {}, [], None
+    base_scale = min(W, H) / 1080.0
+    box_w = int(W * 0.90)
+    box_x0 = (W - box_w) // 2
+    box_y0 = int(H * 0.71)
+    box_y1 = int(H * 0.85)
+
+    def make_base_canvas():
+        from PIL import ImageDraw
+        im = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        if has_captions:
+            dr = ImageDraw.Draw(im)
+            dr.rounded_rectangle([box_x0, box_y0, box_x0 + box_w, box_y1], radius=int(22 * base_scale), fill=(12, 14, 22, 248))
+        return im
+
     for i, t in enumerate(times[:-1]):
         t1 = times[i + 1]
         if t1 - t < 1e-3:
@@ -393,11 +414,11 @@ def build_text_track(plan, work, W, H, fps, total):
         if not active:
             if blank is None:
                 blank = os.path.join(frames_dir, "blank.png")
-                Image.new("RGBA", (W, H), (0, 0, 0, 0)).save(blank, compress_level=1)
+                make_base_canvas().save(blank, compress_level=1)
             entries.append((blank, t1 - t))
             continue
         if sig not in cache:
-            img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+            img = make_base_canvas()
             for L in active:
                 draw_layer(img, L, L.state(mid, fps), W, H, style)
             path = os.path.join(frames_dir, f"f{len(cache):05d}.png")
