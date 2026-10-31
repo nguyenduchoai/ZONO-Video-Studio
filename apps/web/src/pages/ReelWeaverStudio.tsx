@@ -271,7 +271,7 @@ export function ReelWeaverStudio() {
     setDecoding(true);
     setErrorMsg(null);
     try {
-      const res: any = await api.post("/studio/decode-video", {
+      const res: any = await api.post("studio/decode-video", {
         videoPath: targetPath || undefined,
         useWhisper: true,
         useClaude: true,
@@ -297,7 +297,7 @@ export function ReelWeaverStudio() {
         }
 
         // Gọi AI tạo luôn kịch bản câu thoại mới khớp đúng số cảnh vừa Decode (renderMp4 = false để hiện kịch bản tức thì)
-        const cloneRes: any = await api.post("/studio/clone-from-decoded", {
+        const cloneRes: any = await api.post("studio/clone-from-decoded", {
           blueprint: bp,
           rawVideoPaths: activeRaws,
           topic,
@@ -337,7 +337,7 @@ export function ReelWeaverStudio() {
     setRewritingScript(true);
     setErrorMsg(null);
     try {
-      const res: any = await api.post("/studio/clone-from-decoded", {
+      const res: any = await api.post("studio/clone-from-decoded", {
         blueprint,
         rawVideoPaths: rawFootages.length > 0 ? rawFootages.map((r) => r.path) : [blueprint.sourceVideoPath],
         topic,
@@ -376,7 +376,7 @@ export function ReelWeaverStudio() {
     setBuildingVideo(true);
     setErrorMsg(null);
     try {
-      const res: any = await api.post("/studio/clone-from-decoded", {
+      const res: any = await api.post("studio/clone-from-decoded", {
         blueprint,
         rawVideoPaths: rawFootages.length > 0 ? rawFootages.map((r) => r.path) : [blueprint.sourceVideoPath],
         topic,
@@ -419,7 +419,7 @@ export function ReelWeaverStudio() {
     setChatLoading(true);
     setErrorMsg(null);
     try {
-      const res: any = await api.post("/studio/chat-edit-video", {
+      const res: any = await api.post("studio/chat-edit-video", {
         message: msg,
         blueprint,
         currentProduction: {
