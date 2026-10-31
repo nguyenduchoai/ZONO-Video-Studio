@@ -1412,7 +1412,7 @@ export async function completeVideoJob(jobId: string, agentRes: z.infer<typeof F
   audit(bizId, "creative_agent", "creative.video_ready", { type: "creative_job", id: jobId }, { assetId: asset.id, duration: meta.duration });
   emit(bizId, "creative.updated", { jobId, status: "done" });
   emit(bizId, "approval.created", { approvalId: approval.id, title: approval.title });
-  notifyDesktop(`Video "${job.title}" đã xong`, `Đã ghép + chèn phụ đề (${Math.round(meta.duration ?? res.durationSec)} giây). Mở "Duyệt & Phê duyệt" để xem và duyệt đăng nháp.`);
+  notifyDesktop(`Video "${job.title}" đã xong`, `Đã ghép + chèn phụ đề (${Math.round(meta.duration ?? res.durationSec)} giây). Mở Xưởng làm video để xem và tải về.`);
 }
 
 /**

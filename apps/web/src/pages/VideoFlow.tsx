@@ -91,7 +91,7 @@ const ANIM_SAMPLE_PRESETS: Record<string, { title: string; product: string; hook
   },
 };
 const STATUS: Record<string, [string, any]> = {
-  queued: ["Chờ trình duyệt", "gray"], running: ["Đang sản xuất", "blue"], done: ["Xong, chờ duyệt", "green"],
+  queued: ["Chờ trình duyệt", "gray"], running: ["Đang sản xuất", "blue"], done: ["✓ Hoàn thành", "green"],
   approved: ["Đã duyệt", "blue"], drafted: ["Đã lên nháp kênh", "green"],
   failed: ["Lỗi", "red"], blocked: ["Bị chặn", "amber"], cancelled: ["Đã hủy", "gray"],
 };
@@ -833,7 +833,6 @@ function JobDetail({ id }: { id: string }) {
         )}
         {j.result?.caption && <div className="rounded-xl bg-soft p-3 text-xs"><p className="mb-1 font-semibold">Caption</p><p className="whitespace-pre-wrap">{j.result.caption}</p></div>}
         {j.result?.redoneScenes?.length > 0 && <p className="text-xs text-muted">Cảnh làm lại: {j.result.redoneScenes.map((r: any) => `#${r.scene} (${r.reason})`).join("; ")}</p>}
-        {j.approval?.status === "pending" && <Link to={`/approvals?id=${j.approval.id}`}><Button size="sm" variant="primary">Duyệt video →</Button></Link>}
         {j.drafts?.length > 0 && (
           <div className="space-y-1">{j.drafts.map((d: any) => <p key={d.id} className="flex items-center gap-2 text-xs"><PlatformIcon p={d.platform} size={14} />{d.name}: {d.status === "draft_uploaded" ? (d.simulated ? <Badge tone="amber">nháp mô phỏng · chưa lên kênh thật</Badge> : <a href={d.draft_url} target="_blank" rel="noreferrer" className="text-blue-600">đã lên nháp</a>) : d.status}{d.error ? ` · ${d.error}` : ""}</p>)}</div>
         )}
