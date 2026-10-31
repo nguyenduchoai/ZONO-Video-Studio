@@ -198,6 +198,49 @@ export function creativeRoutes(app: FastifyInstance) {
     return { path, size: statSync(path).size };
   });
 
+  // Serve uploaded / decoded / rendered files from data/uploads with HTTP Range support so <video> and <img> work smoothly.
+  app.get("/v1/uploads/:file", async (req, reply) => {
+    const rawName = String((req.params as Row).file ?? "");
+    const safeName = basename(decodeURIComponent(rawName));
+    const fullPath = join(UPLOAD_DIR, safeName);
+    if (!safeName || !existsSync(fullPath)) {
+      return reply.status(404).send({ code: "NOT_FOUND", message: "Không thấy tệp tải lên" });
+    }
+    const ext = safeName.toLowerCase().split(".").pop() ?? "";
+    const mimeMap: Record<string, string> = {
+      mp4: "video/mp4",
+      mov: "video/quicktime",
+      m4v: "video/mp4",
+      webm: "video/webm",
+      png: "image/png",
+      jpg: "image/jpeg",
+      jpeg: "image/jpeg",
+      webp: "image/webp",
+      mp3: "audio/mpeg",
+      wav: "audio/wav",
+      m4a: "audio/mp4",
+    };
+    const mime = mimeMap[ext] ?? "application/octet-stream";
+    const size = statSync(fullPath).size;
+    const range = req.headers.range;
+    reply.header("accept-ranges", "bytes").header("cache-control", "no-cache").type(mime);
+    if ((req.query as Row).download) {
+      reply.header("content-disposition", `attachment; filename="${safeName}"`);
+    }
+    if (range) {
+      const [s, e] = range.replace("bytes=", "").split("-");
+      const start = Number(s) || 0;
+      const end = e ? Math.min(size - 1, Number(e)) : size - 1;
+      reply
+        .status(206)
+        .header("content-range", `bytes ${start}-${end}/${size}`)
+        .header("content-length", end - start + 1);
+      return reply.send(createReadStream(fullPath, { start, end }));
+    }
+    reply.header("content-length", size);
+    return reply.send(createReadStream(fullPath));
+  });
+
   // Video streaming with HTTP Range so the <video> player can seek.
   app.get("/v1/media/:id", async (req, reply) => {
     const a = byId<Row>("creative_asset", (req.params as Row).id);

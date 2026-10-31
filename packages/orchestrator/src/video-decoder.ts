@@ -174,10 +174,10 @@ export function listLocalAvailableVideos(): { path: string; url: string; name: s
       try {
         const st = statSync(candidate);
         if (st.size > 10_000) {
-          // Copy a public preview into data/uploads if needed when selected
+          const pub = ensurePublicUploadCopy(candidate, `sample_${dirName.slice(0, 8)}`);
           results.push({
             path: candidate,
-            url: `/v1/uploads/sample_${dirName}_final.mp4`,
+            url: pub.publicUrl,
             name: `Video Mẫu Local #${dirName.slice(0, 8)} (${(st.size / 1048576).toFixed(1)} MB)`,
             sizeMB: Math.round((st.size / 1048576) * 10) / 10,
             updatedAt: st.mtime.toISOString(),

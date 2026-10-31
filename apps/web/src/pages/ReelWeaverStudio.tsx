@@ -388,6 +388,7 @@ export function ReelWeaverStudio() {
                           src={decodedBlueprint.sourceVideoUrl}
                           controls
                           playsInline
+                          preload="metadata"
                           className="h-36 w-full rounded-xl border border-line bg-black object-contain"
                         />
                       </div>
@@ -433,6 +434,7 @@ export function ReelWeaverStudio() {
                           src={clonedResult.renderedVideoUrl}
                           controls
                           playsInline
+                          preload="metadata"
                           className="h-48 w-full rounded-xl border border-emerald-500/40 bg-black object-contain shadow-sm"
                         />
                       )
