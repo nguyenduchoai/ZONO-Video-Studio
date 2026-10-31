@@ -9,6 +9,7 @@ import {
   FRAMEWEAVER_STORY_STYLES,
   MOONREEL_NICHES,
   buildFrameWeaverProductionPlan,
+  chatEditVideoProduction,
   checkMuse2ApiHealth,
   decodeVideoBlueprint,
   executeMuseRpc,
@@ -370,6 +371,8 @@ export function coreRoutes(app: FastifyInstance) {
         audioMode: z.enum(["voiceover", "keep_audio"]).optional(),
         aspectRatio: z.enum(["9:16", "16:9"]).optional(),
         editStyle: z.enum(["dynamic", "smooth", "clean"]).optional(),
+        captionPosition: z.enum(["top", "center", "bottom", "hidden"]).optional(),
+        headlinePosition: z.enum(["top", "center", "bottom", "hidden"]).optional(),
         renderMp4: z.boolean().optional(),
         useClaude: z.boolean().optional(),
         preferredProvider: z.enum(["claude_cli", "gemini_cli", "codex_cli"]).optional(),
@@ -380,6 +383,7 @@ export function coreRoutes(app: FastifyInstance) {
               newVoiceover: z.string(),
               newOnScreenText: z.string(),
               zoom: z.string().optional(),
+              transition: z.string().optional(),
               rawSourceIndex: z.number().int().min(0).optional(),
               rawStartSec: z.number().min(0).optional(),
               rawEndSec: z.number().min(0).optional(),
@@ -399,12 +403,41 @@ export function coreRoutes(app: FastifyInstance) {
       audioMode: p.audioMode,
       aspectRatio: p.aspectRatio,
       editStyle: p.editStyle,
+      captionPosition: p.captionPosition,
+      headlinePosition: p.headlinePosition,
       renderMp4: p.renderMp4 ?? false,
       useClaude: p.useClaude ?? true,
       preferredProvider: p.preferredProvider,
       customScenes: p.customScenes,
     });
     return { ok: true, result };
+  });
+
+  r.post("/v1/studio/chat-edit-video", async ({ bizId, body }) => {
+    const p = z
+      .object({
+        message: z.string().min(1),
+        blueprint: z.any(),
+        currentProduction: z.any(),
+        rawVideoPaths: z.array(z.string()).optional(),
+        voiceName: z.string().optional(),
+        audioMode: z.enum(["voiceover", "keep_audio"]).optional(),
+        aspectRatio: z.enum(["9:16", "16:9"]).optional(),
+        preferredProvider: z.enum(["claude_cli", "gemini_cli", "codex_cli"]).optional(),
+      })
+      .parse(body);
+    const out = await chatEditVideoProduction({
+      bizId,
+      message: p.message,
+      blueprint: p.blueprint,
+      currentProduction: p.currentProduction,
+      rawVideoPaths: p.rawVideoPaths,
+      voiceName: p.voiceName,
+      audioMode: p.audioMode,
+      aspectRatio: p.aspectRatio,
+      preferredProvider: p.preferredProvider,
+    });
+    return { ok: true, ...out };
   });
 
   r.post("/v1/studio/reelweaver-plan", async ({ bizId, body, actor }) => {

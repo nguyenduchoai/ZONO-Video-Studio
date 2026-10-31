@@ -256,11 +256,11 @@ def draw_layer(img, layer, st, W, H, style):
         total_h = lh * len(lines)
         y0 = int(H * p.get("y", 0.77)) - total_h // 2
         space = d.textlength(" ", font=fnt)
-        # Vẽ nền hộp tối che hoàn toàn phụ đề cũ (nếu video gốc có chữ chìm ở vùng 70%-86% khung hình)
+        # Vẽ nền hộp tối gọn theo đúng vị trí dọc y0 (Top / Center / Bottom) của phụ đề
         box_w = int(W * 0.90)
         box_x0 = (W - box_w) // 2
-        box_y0 = min(y0 - int(24 * base), int(H * 0.71))
-        box_y1 = max(y0 + total_h + int(24 * base), int(H * 0.85))
+        box_y0 = max(int(16 * base), y0 - int(22 * base))
+        box_y1 = min(H - int(16 * base), y0 + total_h + int(22 * base))
         d.rounded_rectangle([box_x0, box_y0, box_x0 + box_w, box_y1], radius=int(22 * base), fill=(12, 14, 22, 248))
         for li, idxs in enumerate(lines):
             lw = sum(d.textlength(words[i], font=fnt) for i in idxs) + space * (len(idxs) - 1)
@@ -363,16 +363,18 @@ def build_text_track(plan, work, W, H, fps, total):
     hook = plan.get("hook")
     if hook and hook.get("text"):
         layers.append(Layer("hook", hook["t0"], hook["t1"], hook, in_d=0.35, out_d=0.3))
-    for sc in plan["scenes"]:
-        if sc.get("onScreen"):
-            t0 = sc["start"] + 0.1
-            t1 = min(total, sc["start"] + sc["content"] - 0.1)
-            if t1 - t0 > 0.8:
-                layers.append(Layer("headline", t0, t1, {"text": sc["onScreen"], "y": plan.get("headlineY", 0.27)}, in_d=0.35, out_d=0.3))
-    has_captions = bool(plan.get("captions"))
-    for ch in plan.get("captions", []):
-        if ch["words"]:
-            layers.append(Layer("caption", ch["t0"], ch["t1"], {"words": ch["words"], "y": plan.get("captionY", 0.77)}, in_d=0.08, out_d=0.05))
+    if not plan.get("hideHeadlines", False):
+        for sc in plan["scenes"]:
+            if sc.get("onScreen"):
+                t0 = sc["start"] + 0.1
+                t1 = min(total, sc["start"] + sc["content"] - 0.1)
+                if t1 - t0 > 0.8:
+                    layers.append(Layer("headline", t0, t1, {"text": sc["onScreen"], "y": plan.get("headlineY", 0.27)}, in_d=0.35, out_d=0.3))
+    cover_bottom = bool(plan.get("coverBottomSubtitles", bool(plan.get("captions"))))
+    if not plan.get("hideCaptions", False):
+        for ch in plan.get("captions", []):
+            if ch["words"]:
+                layers.append(Layer("caption", ch["t0"], ch["t1"], {"words": ch["words"], "y": plan.get("captionY", 0.77)}, in_d=0.08, out_d=0.05))
     cta = plan.get("cta")
     if cta and cta.get("text"):
         layers.append(Layer("cta", cta["t0"], cta["t1"], cta, in_d=0.4, out_d=0.0))
@@ -399,7 +401,7 @@ def build_text_track(plan, work, W, H, fps, total):
     def make_base_canvas():
         from PIL import ImageDraw
         im = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-        if has_captions:
+        if cover_bottom:
             dr = ImageDraw.Draw(im)
             dr.rounded_rectangle([box_x0, box_y0, box_x0 + box_w, box_y1], radius=int(22 * base_scale), fill=(12, 14, 22, 248))
         return im

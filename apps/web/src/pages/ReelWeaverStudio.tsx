@@ -62,6 +62,13 @@ export function ReelWeaverStudio() {
   // State cho Trạm Decode Video Mẫu & Dựng Phim Từ Video Quay Sẵn (Local FFmpeg + Whisper + CLI AI)
   const [selectedCli, setSelectedCli] = useState<"claude_cli" | "gemini_cli" | "codex_cli">("claude_cli");
   const [showOriginalVoice, setShowOriginalVoice] = useState<boolean>(false);
+  const [captionPosition, setCaptionPosition] = useState<"top" | "center" | "bottom" | "hidden">("bottom");
+  const [headlinePosition, setHeadlinePosition] = useState<"top" | "center" | "bottom" | "hidden">("top");
+  const [chatInput, setChatInput] = useState<string>("");
+  const [chatBusy, setChatBusy] = useState<boolean>(false);
+  const [chatHistory, setChatHistory] = useState<
+    { role: "user" | "ai"; text: string; changes?: string[]; provider?: string }[]
+  >([]);
   const [decodeBusy, setDecodeBusy] = useState<boolean>(false);
   const [cloneBusy, setCloneBusy] = useState<boolean>(false);
   const [uploadPct, setUploadPct] = useState<number | null>(null);
@@ -136,6 +143,8 @@ export function ReelWeaverStudio() {
             audioMode,
             aspectRatio,
             editStyle: res.blueprint.recommendedEditStyle ?? editStyle ?? "dynamic",
+            captionPosition,
+            headlinePosition,
             renderMp4: renderRealMp4,
             useClaude: useClaudeForDecode,
             preferredProvider: activeCli,
@@ -156,11 +165,19 @@ export function ReelWeaverStudio() {
     }
   };
 
-  const handleCloneFromDecoded = async (useEditedScenes = false) => {
+  const handleCloneFromDecoded = async (
+    useEditedScenes = false,
+    posOverride?: {
+      captionPosition?: "top" | "center" | "bottom" | "hidden";
+      headlinePosition?: "top" | "center" | "bottom" | "hidden";
+    },
+  ) => {
     if (!decodedBlueprint) {
       toast("Vui lòng chọn hoặc tải 1 Video Mẫu ở Bước 1 trước!", "err");
       return;
     }
+    const nextCaptionPos = posOverride?.captionPosition ?? captionPosition;
+    const nextHeadlinePos = posOverride?.headlinePosition ?? headlinePosition;
     setCloneBusy(true);
     try {
       const res = await api.post<any>("studio/clone-from-decoded", {
@@ -173,6 +190,8 @@ export function ReelWeaverStudio() {
         audioMode,
         aspectRatio,
         editStyle,
+        captionPosition: nextCaptionPos,
+        headlinePosition: nextHeadlinePos,
         renderMp4: renderRealMp4,
         useClaude: !useEditedScenes,
         preferredProvider: selectedCli,
@@ -182,6 +201,7 @@ export function ReelWeaverStudio() {
               newVoiceover: s.newVoiceover,
               newOnScreenText: s.newOnScreenText,
               zoom: s.zoom,
+              transition: s.transition,
               rawSourceIndex: s.selectedRawCut?.sourceIndex,
               rawStartSec: s.selectedRawCut?.startSec,
               rawEndSec: s.selectedRawCut?.endSec,
@@ -190,15 +210,92 @@ export function ReelWeaverStudio() {
       });
       setClonedResult(res.result);
       setEditableScenes(res.result?.scenes ?? []);
+      if (res.result?.captionPosition) setCaptionPosition(res.result.captionPosition);
+      if (res.result?.headlinePosition) setHeadlinePosition(res.result.headlinePosition);
       toast(
         useEditedScenes
-          ? "Đã kết xuất lại Video MP4 theo đúng lời thoại & chữ nổi anh vừa chỉnh sửa!"
+          ? "Đã kết xuất lại Video MP4 theo đúng cách cắt, lời thoại & vị trí chữ anh vừa chỉnh!"
           : "Đã học theo Video Decode và dựng xong Phim Mới từ Video Quay Sẵn!",
         "ok",
       );
     } catch (e: any) {
       toast(e?.message ?? "Lỗi khi dựng phim theo công thức Decode", "err");
     } finally {
+      setCloneBusy(false);
+    }
+  };
+
+  const handleChatEditVideo = async (presetText?: string) => {
+    const msg = (presetText ?? chatInput).trim();
+    if (!msg) {
+      toast("Vui lòng nhập yêu cầu thay đổi cách cắt, lời thoại hoặc vị trí đặt chữ!", "err");
+      return;
+    }
+    if (!decodedBlueprint) {
+      toast("Đang tải Video Mẫu Decode, vui lòng thử lại sau giây lát!", "err");
+      return;
+    }
+    if (!presetText) setChatInput("");
+    setChatHistory((prev) => [...prev, { role: "user", text: msg }]);
+    setChatBusy(true);
+    setCloneBusy(true);
+    try {
+      const currentProd = clonedResult ?? {
+        id: "init",
+        topic,
+        product: catalog?.productsSummary || topic,
+        brandName: catalog?.brandName || "ZONO",
+        providerUsed: selectedCli,
+        blueprintId: decodedBlueprint.id,
+        pacingApplied: decodedBlueprint.pacingLabel,
+        editStyle,
+        captionPosition,
+        headlinePosition,
+        hookTitle: `${topic.slice(0, 28).toUpperCase()}`,
+        ctaText: "Nhắn tin ngay để nhận ưu đãi!",
+        caption: topic,
+        scenes: editableScenes,
+        renderedVideoUrl: null,
+        renderedDurationSec: decodedBlueprint.durationSec,
+        renderNotes: "",
+      };
+      const res = await api.post<any>("studio/chat-edit-video", {
+        message: msg,
+        blueprint: decodedBlueprint,
+        currentProduction: {
+          ...currentProd,
+          captionPosition,
+          headlinePosition,
+          editStyle,
+          scenes: editableScenes.length ? editableScenes : currentProd.scenes,
+        },
+        rawVideoPaths: rawFootageList.map((r) => r.path),
+        voiceName: voice,
+        audioMode,
+        aspectRatio,
+        preferredProvider: selectedCli,
+      });
+      if (res.production) {
+        setClonedResult(res.production);
+        setEditableScenes(res.production.scenes ?? []);
+        if (res.production.captionPosition) setCaptionPosition(res.production.captionPosition);
+        if (res.production.headlinePosition) setHeadlinePosition(res.production.headlinePosition);
+        if (res.production.editStyle) setEditStyle(res.production.editStyle);
+      }
+      setChatHistory((prev) => [
+        ...prev,
+        {
+          role: "ai",
+          text: res.reply || "Đã cập nhật kịch bản, cách cắt, vị trí chữ và kết xuất lại Video MP4 mới!",
+          changes: res.changesSummary ?? [],
+          provider: res.providerUsed || selectedCli,
+        },
+      ]);
+      toast("🎉 Đã áp dụng yêu cầu Chat & dựng lại Video MP4 mới!", "ok");
+    } catch (e: any) {
+      toast(e?.message ?? "Lỗi khi xử lý yêu cầu Chat chỉnh sửa video", "err");
+    } finally {
+      setChatBusy(false);
       setCloneBusy(false);
     }
   };
@@ -587,6 +684,131 @@ export function ReelWeaverStudio() {
                       );
                     })}
                   </div>
+
+                  {/* 💬 KHUNG CHAT ĐẠO DIỄN AI TRỰC TIẾP: THAY ĐỔI CÁCH CẮT, LỜI THOẠI, VỊ TRÍ ĐẶT CHỮ */}
+                  <div className="mt-3 rounded-2xl border-2 border-indigo-500/40 bg-indigo-500/[0.07] p-3.5 space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-indigo-600 text-xs font-bold text-white">
+                          💬
+                        </span>
+                        <div>
+                          <div className="text-xs font-extrabold text-indigo-800 dark:text-indigo-200">
+                            Chat Đạo Diễn AI ({selectedCli === "claude_cli" ? "Claude CLI" : selectedCli === "gemini_cli" ? "Gemini CLI" : "Codex CLI"}): Sửa Cách Cắt · Lời Thoại · Vị Trí Đặt Chữ
+                          </div>
+                          <div className="text-[11px] text-muted">
+                            Nhắn yêu cầu bất kỳ hoặc bấm nút chọn nhanh bên dưới — AI tự động sửa và kết xuất lại Video MP4 ngay lập tức!
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Thanh chọn nhanh Vị trí đặt chữ Phụ đề (Caption Position) */}
+                      <div className="flex flex-wrap items-center gap-1 rounded-xl border border-indigo-500/30 bg-card px-2 py-1 text-[11px]">
+                        <span className="font-bold text-muted mr-1">📍 Vị trí đặt chữ:</span>
+                        {[
+                          { id: "top" as const, label: "⬆️ Trên cao" },
+                          { id: "center" as const, label: "🎯 Chính giữa" },
+                          { id: "bottom" as const, label: "⬇️ Dưới đáy" },
+                          { id: "hidden" as const, label: "🙈 Ẩn chữ" },
+                        ].map((pos) => (
+                          <button
+                            key={pos.id}
+                            type="button"
+                            disabled={cloneBusy || chatBusy}
+                            onClick={() => {
+                              setCaptionPosition(pos.id);
+                              void handleCloneFromDecoded(true, { captionPosition: pos.id });
+                            }}
+                            className={cx(
+                              "rounded-lg px-2 py-0.5 font-bold transition",
+                              captionPosition === pos.id
+                                ? "bg-indigo-600 text-white shadow-xs"
+                                : "bg-soft text-ink hover:bg-indigo-500/15",
+                            )}
+                          >
+                            {pos.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Các nút gợi ý Chat 1-Click theo 3 nhóm: Vị trí chữ · Cách cắt · Lời thoại */}
+                    <div className="flex flex-wrap gap-1.5 text-[11px]">
+                      {[
+                        "📍 Đưa chữ phụ đề ra chính giữa màn hình",
+                        "📍 Đưa chữ phụ đề lên phía trên màn hình",
+                        "✂️ Đổi cách cắt sang nhịp nhanh TikTok + Zoom Punch mạnh",
+                        "🎬 Đổi cách cắt sang nhịp mượt điện ảnh (Dissolve êm)",
+                        "⏱️ Cắt ngắn mỗi cảnh đi cho nhịp nhanh gọn hơn",
+                        "🎙️ Viết lại lời thoại tất cả các cảnh ngắn gọn, chốt đơn mạnh hơn",
+                      ].map((chip) => (
+                        <button
+                          key={chip}
+                          type="button"
+                          disabled={chatBusy || cloneBusy}
+                          onClick={() => void handleChatEditVideo(chip)}
+                          className="rounded-lg border border-indigo-500/30 bg-card px-2.5 py-1 font-semibold text-indigo-700 dark:text-indigo-200 hover:bg-indigo-600 hover:text-white transition disabled:opacity-50"
+                        >
+                          {chip}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Ô nhập Chat trực tiếp */}
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        void handleChatEditVideo();
+                      }}
+                      className="flex flex-col gap-2 sm:flex-row"
+                    >
+                      <input
+                        type="text"
+                        value={chatInput}
+                        onChange={(e) => setChatInput(e.target.value)}
+                        placeholder="Nhập yêu cầu cho AI: VD 'Đưa chữ lên giữa màn hình, sửa lời cảnh 1 ngắn hơn, cắt cảnh 2 nhịp nhanh Zoom Punch'..."
+                        className="flex-1 rounded-xl border border-indigo-500/40 bg-card px-3.5 py-2 text-xs font-medium text-ink focus:border-indigo-600 focus:outline-none"
+                      />
+                      <Button
+                        type="submit"
+                        size="sm"
+                        variant="primary"
+                        loading={chatBusy || cloneBusy}
+                        className="bg-indigo-600 hover:bg-indigo-700 px-4 py-2 text-xs font-bold shrink-0"
+                      >
+                        <Wand2 className="mr-1.5 h-3.5 w-3.5" />
+                        Gửi AI & Dựng Lại MP4
+                      </Button>
+                    </form>
+
+                    {/* Lịch sử phản hồi của Đạo diễn AI */}
+                    {chatHistory.length > 0 && (
+                      <div className="max-h-40 space-y-1.5 overflow-y-auto rounded-xl border border-line bg-card p-2.5 text-xs">
+                        {chatHistory.slice(-4).map((m, i) => (
+                          <div
+                            key={i}
+                            className={cx(
+                              "rounded-lg px-2.5 py-1.5",
+                              m.role === "user"
+                                ? "bg-indigo-500/10 font-semibold text-indigo-800 dark:text-indigo-200"
+                                : "bg-emerald-500/10 text-emerald-900 dark:text-emerald-200",
+                            )}
+                          >
+                            <div>
+                              <b>{m.role === "user" ? "🧑 Anh yêu cầu:" : `🤖 Đạo diễn AI (${m.provider || selectedCli}):`}</b> {m.text}
+                            </div>
+                            {m.changes && m.changes.length > 0 && (
+                              <ul className="mt-1 list-disc pl-4 text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
+                                {m.changes.map((c, ci) => (
+                                  <li key={ci}>{c}</li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
@@ -840,37 +1062,132 @@ export function ReelWeaverStudio() {
               </div>
 
               <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
-                {/* Cột trái: Bảng chỉnh sửa trực tiếp từng cảnh */}
-                <div className="space-y-2.5 lg:col-span-8">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-bold text-ink">
-                      ✏️ Anh có thể sửa trực tiếp lời thoại hoặc chữ nổi trên màn hình của từng cảnh dưới đây rồi bấm "Xuất lại MP4":
+                {/* Cột trái: Bảng chỉnh sửa trực tiếp từng cảnh (Cách cắt, Lời thoại, Vị trí đặt chữ) */}
+                <div className="space-y-3 lg:col-span-8">
+                  <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-indigo-500/30 bg-indigo-500/[0.06] p-3 text-xs">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-extrabold text-indigo-800 dark:text-indigo-200">📍 Vị trí chữ Phụ đề:</span>
+                        <select
+                          value={captionPosition}
+                          onChange={(e) => {
+                            const nextPos = e.target.value as "top" | "center" | "bottom" | "hidden";
+                            setCaptionPosition(nextPos);
+                            void handleCloneFromDecoded(true, { captionPosition: nextPos });
+                          }}
+                          className="rounded-lg border border-indigo-500/40 bg-card px-2.5 py-1 text-xs font-bold text-ink"
+                        >
+                          <option value="top">⬆️ Đặt ở Trên cao (22%)</option>
+                          <option value="center">🎯 Đặt Chính giữa (52%)</option>
+                          <option value="bottom">⬇️ Đặt ở Dưới đáy (77% · Mặc định)</option>
+                          <option value="hidden">🙈 Ẩn chữ Phụ đề</option>
+                        </select>
+                      </div>
+
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-extrabold text-indigo-800 dark:text-indigo-200">🏷️ Vị trí Tiêu đề cảnh:</span>
+                        <select
+                          value={headlinePosition}
+                          onChange={(e) => {
+                            const nextHPos = e.target.value as "top" | "center" | "bottom" | "hidden";
+                            setHeadlinePosition(nextHPos);
+                            void handleCloneFromDecoded(true, { headlinePosition: nextHPos });
+                          }}
+                          className="rounded-lg border border-indigo-500/40 bg-card px-2.5 py-1 text-xs font-bold text-ink"
+                        >
+                          <option value="top">⬆️ Trên cao (27%)</option>
+                          <option value="center">🎯 Chính giữa (48%)</option>
+                          <option value="bottom">⬇️ Phía dưới (68%)</option>
+                          <option value="hidden">🙈 Ẩn Tiêu đề cảnh</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <span className="text-[11px] font-semibold text-muted">
+                      ✏️ Sửa trực tiếp bên dưới hoặc dùng Khung Chat Đạo Diễn AI rồi bấm "Xuất lại MP4"
                     </span>
                   </div>
 
                   <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
                     {editableScenes.map((sc: any, idx: number) => (
                       <div key={sc.sceneNumber} className="rounded-2xl border border-line bg-soft/40 p-3 text-xs space-y-2">
-                        <div className="flex items-center justify-between gap-2">
+                        <div className="flex flex-wrap items-center justify-between gap-1.5">
                           <span className="font-extrabold text-indigo-700 dark:text-indigo-300">
                             Cảnh {sc.sceneNumber} ({sc.templateTiming})
                           </span>
-                          <select
-                            value={sc.zoom || "in"}
-                            onChange={(e) => updateEditableScene(idx, { zoom: e.target.value })}
-                            className="rounded-lg border border-line bg-card px-2 py-0.5 text-[11px] font-semibold text-ink"
-                          >
-                            <option value="punch">Zoom Punch</option>
-                            <option value="in">Zoom In</option>
-                            <option value="out">Zoom Out</option>
-                            <option value="pan_left">Pan Trái</option>
-                            <option value="pan_right">Pan Phải</option>
-                            <option value="none">Giữ tĩnh</option>
-                          </select>
+                          <div className="flex items-center gap-1">
+                            <select
+                              value={sc.zoom || "in"}
+                              onChange={(e) => updateEditableScene(idx, { zoom: e.target.value })}
+                              className="rounded-lg border border-line bg-card px-2 py-0.5 text-[11px] font-semibold text-ink"
+                              title="Hiệu ứng Zoom khung hình"
+                            >
+                              <option value="punch">Zoom Punch</option>
+                              <option value="in">Zoom In</option>
+                              <option value="out">Zoom Out</option>
+                              <option value="pan_left">Pan Trái</option>
+                              <option value="pan_right">Pan Phải</option>
+                              <option value="none">Giữ tĩnh</option>
+                            </select>
+                            <select
+                              value={sc.transition || "slideleft"}
+                              onChange={(e) => updateEditableScene(idx, { transition: e.target.value })}
+                              className="rounded-lg border border-line bg-card px-2 py-0.5 text-[11px] font-semibold text-ink"
+                              title="Hiệu ứng chuyển cảnh"
+                            >
+                              <option value="cut">Cắt dứt khoát (Cut)</option>
+                              <option value="slideleft">Trượt nhanh (Slide)</option>
+                              <option value="zoomin">Phóng chuyển (ZoomIn)</option>
+                              <option value="dissolve">Hòa tan mượt (Dissolve)</option>
+                              <option value="fade">Mờ dần (Fade)</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        {/* Chỉnh trực tiếp Cách cắt (Từ giây -> Đến giây) */}
+                        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-emerald-500/25 bg-emerald-500/[0.06] px-2.5 py-1.5 text-[11px]">
+                          <span className="font-bold text-emerald-800 dark:text-emerald-300">
+                            ✂️ Cách cắt ({sc.selectedRawCut?.sourceFileName || "Video gốc"}):
+                          </span>
+                          <div className="flex items-center gap-1 font-semibold text-ink">
+                            <span>Từ</span>
+                            <input
+                              type="number"
+                              step="0.5"
+                              min="0"
+                              value={sc.selectedRawCut?.startSec ?? 0}
+                              onChange={(e) =>
+                                updateEditableScene(idx, {
+                                  selectedRawCut: {
+                                    ...sc.selectedRawCut,
+                                    startSec: Math.max(0, Number(e.target.value) || 0),
+                                  },
+                                })
+                              }
+                              className="w-14 rounded border border-line bg-card px-1.5 py-0.5 text-center text-[11px] font-bold"
+                            />
+                            <span>s →</span>
+                            <input
+                              type="number"
+                              step="0.5"
+                              min="0.5"
+                              value={sc.selectedRawCut?.endSec ?? 5}
+                              onChange={(e) =>
+                                updateEditableScene(idx, {
+                                  selectedRawCut: {
+                                    ...sc.selectedRawCut,
+                                    endSec: Math.max(0.5, Number(e.target.value) || 5),
+                                  },
+                                })
+                              }
+                              className="w-14 rounded border border-line bg-card px-1.5 py-0.5 text-center text-[11px] font-bold"
+                            />
+                            <span>s</span>
+                          </div>
                         </div>
 
                         <div>
-                          <label className="block text-[10px] font-bold uppercase text-muted">Chữ nổi trên màn hình (Caption):</label>
+                          <label className="block text-[10px] font-bold uppercase text-muted">Chữ nổi trên màn hình (Tiêu đề cảnh):</label>
                           <input
                             type="text"
                             value={sc.newOnScreenText || ""}
@@ -889,10 +1206,6 @@ export function ReelWeaverStudio() {
                             onChange={(e) => updateEditableScene(idx, { newVoiceover: e.target.value })}
                             className="mt-0.5 w-full rounded-lg border border-line bg-card px-2.5 py-1.5 text-xs text-ink"
                           />
-                        </div>
-
-                        <div className="text-[11px] text-emerald-700 dark:text-emerald-300">
-                          ✂️ <b>Nguồn ghép:</b> {sc.selectedRawCut?.sourceFileName} ({sc.selectedRawCut?.startSec}s – {sc.selectedRawCut?.endSec}s)
                         </div>
                       </div>
                     ))}

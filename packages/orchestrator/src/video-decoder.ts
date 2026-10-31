@@ -52,6 +52,8 @@ export interface DecodedVideoBlueprint {
   reusablePromptTemplate: string;
 }
 
+export type TextPosition = "top" | "center" | "bottom" | "hidden";
+
 export interface ClonedProductionScene {
   sceneNumber: number;
   templateTiming: string;
@@ -79,6 +81,8 @@ export interface ClonedVideoProductionResult {
   blueprintId: string;
   pacingApplied: string;
   editStyle: EditStyle;
+  captionPosition: TextPosition;
+  headlinePosition: TextPosition;
   hookTitle: string;
   ctaText: string;
   caption: string;
@@ -550,6 +554,11 @@ export async function produceFromDecodedBlueprint(opts: {
   audioMode?: "voiceover" | "keep_audio";
   aspectRatio?: "9:16" | "16:9";
   editStyle?: EditStyle;
+  captionPosition?: TextPosition;
+  headlinePosition?: TextPosition;
+  customHookTitle?: string;
+  customCtaText?: string;
+  customCaption?: string;
   renderMp4?: boolean;
   useClaude?: boolean;
   preferredProvider?: "claude_cli" | "gemini_cli" | "codex_cli";
@@ -558,6 +567,7 @@ export async function produceFromDecodedBlueprint(opts: {
     newVoiceover: string;
     newOnScreenText: string;
     zoom?: string;
+    transition?: string;
     rawSourceIndex?: number;
     rawStartSec?: number;
     rawEndSec?: number;
@@ -758,26 +768,51 @@ export async function produceFromDecodedBlueprint(opts: {
         endSec: Math.round(endSec * 10) / 10,
       },
       zoom: custom?.zoom ?? cScene?.zoom ?? dShot.recommendedZoom,
-      transition: cScene?.transition ?? dShot.recommendedTransition,
+      transition: custom?.transition ?? cScene?.transition ?? dShot.recommendedTransition,
       directorNote:
         cScene?.directorNote ??
         `Áp nhịp ${dShot.durationSec.toFixed(1)}s của Video Mẫu vào nguồn quay sẵn #${srcIdx + 1}.`,
     };
   });
 
+  const finalHookTitle = (opts.customHookTitle ?? clonePlan.hookTitle).trim();
+  const finalCtaText = (opts.customCtaText ?? clonePlan.ctaText).trim();
+  const finalCaption = (opts.customCaption ?? clonePlan.caption).trim();
+
+  const captionPos: TextPosition = opts.captionPosition ?? "bottom";
+  const headlinePos: TextPosition = opts.headlinePosition ?? "top";
+  const captionYMap: Record<TextPosition, number> = {
+    top: 0.22,
+    center: 0.52,
+    bottom: 0.77,
+    hidden: 0.77,
+  };
+  const headlineYMap: Record<TextPosition, number> = {
+    top: 0.27,
+    center: 0.48,
+    bottom: 0.68,
+    hidden: 0.27,
+  };
+  const captionY = captionYMap[captionPos] ?? 0.77;
+  const headlineY = headlineYMap[headlinePos] ?? 0.27;
+  const hideCaptions = captionPos === "hidden";
+  const hideHeadlines = headlinePos === "hidden";
+
   // 3. Nếu renderMp4 !== false, dựng luôn file MP4 thật trên máy Local bằng pro_edit.py render + VieNeu-TTS (chạy song song & có Cache theo nội dung kịch bản)
   const voiceId = opts.voiceName && VI_VOICES.some((v) => v.id === opts.voiceName) ? opts.voiceName : VI_VOICES[0].id;
   const renderCacheSig = createHash("sha1")
     .update(
       JSON.stringify({
-        v: 3,
+        v: 4,
         raw: finalRawPaths.map(fileSignature),
         voiceId,
         audioMode,
         style,
         aspect,
-        hook: clonePlan.hookTitle,
-        cta: clonePlan.ctaText,
+        captionPos,
+        headlinePos,
+        hook: finalHookTitle,
+        cta: finalCtaText,
         scenes: outScenes.map((s) => [s.newVoiceover, s.newOnScreenText, s.selectedRawCut, s.zoom, s.transition]),
       }),
     )
@@ -814,9 +849,9 @@ export async function produceFromDecodedBlueprint(opts: {
       const proEditMode = audioMode === "keep_audio" ? ("speech" as const) : ("voiceover" as const);
       const editPlanInput: EditPlan = sanitizePlan(
         {
-          hook: clonePlan.hookTitle.slice(0, 90),
-          cta: clonePlan.ctaText.slice(0, 110),
-          caption: clonePlan.caption.slice(0, 380),
+          hook: finalHookTitle.slice(0, 90),
+          cta: finalCtaText.slice(0, 110),
+          caption: finalCaption.slice(0, 380),
           scenes: outScenes.map((s) => ({
             voice: s.newVoiceover,
             onScreen: s.newOnScreenText.slice(0, 70),
@@ -848,7 +883,19 @@ export async function produceFromDecodedBlueprint(opts: {
 
       const finalMp4 = join(workdir, "cloned_final.mp4");
       const planFile = join(workdir, "plan.json");
-      writeFileSync(planFile, JSON.stringify({ ...resolvedPlan, out: finalMp4, workdir: join(workdir, "render") }));
+      writeFileSync(
+        planFile,
+        JSON.stringify({
+          ...resolvedPlan,
+          captionY,
+          headlineY,
+          hideCaptions,
+          hideHeadlines,
+          coverBottomSubtitles: audioMode === "voiceover",
+          out: finalMp4,
+          workdir: join(workdir, "render"),
+        }),
+      );
 
       const rRun = await runProcess(bin, [join(TOOLS_DIR, "pro_edit.py"), "render", planFile], {
         timeoutMs: 180_000,
@@ -857,7 +904,7 @@ export async function produceFromDecodedBlueprint(opts: {
         copyFileSync(finalMp4, cachedMp4Path);
         renderedVideoUrl = `/v1/uploads/${cachedMp4Name}`;
         renderedDurationSec = Math.round((mediaDuration(cachedMp4Path) || resolvedPlan.total) * 10) / 10;
-        renderNotes = `Đã dựng thành công Video MP4 mới (${renderedDurationSec}s · ${aspect}) từ ${finalRawPaths.length} video quay sẵn theo đúng công thức của Video Mẫu (${outScenes.length} cảnh · ${audioDescLabel} · chuẩn âm -14 LUFS).`;
+        renderNotes = `Đã dựng thành công Video MP4 mới (${renderedDurationSec}s · ${aspect}) từ ${finalRawPaths.length} video quay sẵn theo đúng công thức của Video Mẫu (${outScenes.length} cảnh · ${audioDescLabel} · phụ đề: ${captionPos} · chuẩn âm -14 LUFS).`;
       }
     } catch (e) {
       logger.warn("video_decode.render_fallback", { error: String(e).slice(0, 250) });
@@ -874,12 +921,267 @@ export async function produceFromDecodedBlueprint(opts: {
     blueprintId: opts.blueprint.id,
     pacingApplied: opts.blueprint.pacingLabel,
     editStyle: style,
-    hookTitle: clonePlan.hookTitle,
-    ctaText: clonePlan.ctaText,
-    caption: clonePlan.caption,
+    captionPosition: captionPos,
+    headlinePosition: headlinePos,
+    hookTitle: finalHookTitle,
+    ctaText: finalCtaText,
+    caption: finalCaption,
     scenes: outScenes,
     renderedVideoUrl,
     renderedDurationSec,
     renderNotes,
+  };
+}
+
+const ChatEditVideoSchema = z.object({
+  reply: z.string(),
+  changesSummary: z.array(z.string()).min(1).max(6),
+  captionPosition: z.enum(["top", "center", "bottom", "hidden"]),
+  headlinePosition: z.enum(["top", "center", "bottom", "hidden"]),
+  editStyle: z.enum(["dynamic", "smooth", "clean"]),
+  hookTitle: z.string(),
+  ctaText: z.string(),
+  scenes: z.array(
+    z.object({
+      sceneNumber: z.number().int().min(1),
+      newVoiceover: z.string(),
+      newOnScreenText: z.string(),
+      rawSourceIndex: z.number().int().min(0),
+      rawStartSec: z.number().min(0),
+      rawEndSec: z.number().min(0),
+      zoom: z.enum(["in", "out", "punch", "pan_left", "pan_right", "none"]),
+      transition: z.string(),
+    }),
+  ),
+});
+
+/**
+ * BƯỚC 3: KHUNG CHAT ĐẠO DIỄN AI — Thay đổi Cách Cắt (nhịp, giây cắt, zoom, chuyển cảnh), Lời Thoại, và Vị Trí Đặt Chữ bằng hội thoại tự nhiên
+ */
+export async function chatEditVideoProduction(opts: {
+  bizId: string;
+  message: string;
+  blueprint: DecodedVideoBlueprint;
+  currentProduction: ClonedVideoProductionResult;
+  rawVideoPaths?: string[];
+  voiceName?: string;
+  audioMode?: "voiceover" | "keep_audio";
+  aspectRatio?: "9:16" | "16:9";
+  preferredProvider?: "claude_cli" | "gemini_cli" | "codex_cli";
+}): Promise<{
+  reply: string;
+  changesSummary: string[];
+  providerUsed: string;
+  production: ClonedVideoProductionResult;
+}> {
+  const msg = opts.message.trim();
+  const msgLower = msg.toLowerCase();
+  const cur = opts.currentProduction;
+
+  // 1. Xây dựng phương án chỉnh sửa thông minh (Deterministic Fallback + Tiền xử lý ý định của người dùng)
+  const buildDeterministicEdit = () => {
+    let nextCaptionPos: TextPosition = cur.captionPosition ?? "bottom";
+    let nextHeadlinePos: TextPosition = cur.headlinePosition ?? "top";
+    let nextStyle: EditStyle = cur.editStyle ?? "dynamic";
+    let nextHook = cur.hookTitle;
+    let nextCta = cur.ctaText;
+    const changes: string[] = [];
+
+    // Nhận diện yêu cầu đổi vị trí đặt chữ / phụ đề / tiêu đề
+    if (/(ẩn chữ|tắt chữ|bỏ chữ|không hiện chữ|ẩn phụ đề|tắt phụ đề)/i.test(msgLower)) {
+      nextCaptionPos = "hidden";
+      if (/(tất cả chữ|cả tiêu đề|hết chữ)/i.test(msgLower)) nextHeadlinePos = "hidden";
+      changes.push("Đã ẩn phụ đề trên khung hình video.");
+    } else if (/(chữ.*giữa|phụ đề.*giữa|đặt chữ.*giữa|đưa chữ.*giữa|center)/i.test(msgLower)) {
+      nextCaptionPos = "center";
+      changes.push("Đã chuyển vị trí đặt chữ phụ đề ra chính giữa màn hình (Center · 52%).");
+    } else if (/(chữ.*trên|phụ đề.*trên|đặt chữ.*trên|đưa chữ.*lên trên|lên đầu)/i.test(msgLower)) {
+      nextCaptionPos = "top";
+      if (nextHeadlinePos === "top") nextHeadlinePos = "center";
+      changes.push("Đã đưa chữ phụ đề lên vùng phía trên màn hình (Top · 22%).");
+    } else if (/(chữ.*dưới|phụ đề.*dưới|đặt chữ.*dưới|xuống dưới|mặc định)/i.test(msgLower)) {
+      nextCaptionPos = "bottom";
+      changes.push("Đã đặt chữ phụ đề ở vùng chuẩn phía dưới màn hình (Bottom · 77%).");
+    }
+
+    if (/(tiêu đề.*giữa)/i.test(msgLower)) {
+      nextHeadlinePos = "center";
+      changes.push("Đã đưa chữ nổi tiêu đề cảnh ra giữa màn hình.");
+    } else if (/(tiêu đề.*dưới)/i.test(msgLower)) {
+      nextHeadlinePos = "bottom";
+      changes.push("Đã chuyển chữ nổi tiêu đề cảnh xuống phía dưới.");
+    } else if (/(ẩn tiêu đề|bỏ tiêu đề)/i.test(msgLower)) {
+      nextHeadlinePos = "hidden";
+      changes.push("Đã ẩn tiêu đề cảnh trên màn hình.");
+    }
+
+    // Nhận diện yêu cầu đổi cách cắt / nhịp cắt / zoom / chuyển cảnh
+    let forceZoom: "in" | "out" | "punch" | "pan_left" | "pan_right" | "none" | null = null;
+    if (/(zoom punch|giật nhịp|nhịp nhanh|cắt nhanh|sôi động|tiktok)/i.test(msgLower)) {
+      nextStyle = "dynamic";
+      forceZoom = "punch";
+      changes.push("Đã đổi cách cắt sang Nhịp Nhanh TikTok (Dynamic) + hiệu ứng Zoom Punch dứt khoát.");
+    } else if (/(cắt mượt|nhịp chậm|điện ảnh|êm|smooth|dissolve|fade)/i.test(msgLower)) {
+      nextStyle = "smooth";
+      forceZoom = "in";
+      changes.push("Đã đổi cách cắt sang Nhịp Mượt Điện Ảnh (Smooth) + chuyển cảnh Dissolve êm ái.");
+    } else if (/(không zoom|tắt zoom|giữ tĩnh|clean)/i.test(msgLower)) {
+      nextStyle = "clean";
+      forceZoom = "none";
+      changes.push("Đã tắt hiệu ứng phóng khung hình (Zoom: none) để giữ góc máy tĩnh tự nhiên.");
+    }
+
+    const updatedScenes = cur.scenes.map((sc, idx) => {
+      let rawStart = sc.selectedRawCut.startSec;
+      let rawEnd = sc.selectedRawCut.endSec;
+      let voice = sc.newVoiceover;
+      let onScreen = sc.newOnScreenText;
+      let zoom = (forceZoom ?? sc.zoom) as "in" | "out" | "punch" | "pan_left" | "pan_right" | "none";
+      let transition = nextStyle === "smooth" ? "dissolve" : nextStyle === "dynamic" && idx > 0 ? "zoomin" : sc.transition;
+
+      // Nếu người dùng yêu cầu cắt ngắn hơn / nhanh hơn
+      if (/(cắt ngắn|nhanh hơn|rút gọn)/i.test(msgLower)) {
+        const curDur = Math.max(1.5, rawEnd - rawStart);
+        rawEnd = Math.round((rawStart + Math.max(2.0, curDur * 0.78)) * 10) / 10;
+      } else if (/(cắt dài hơn|chậm hơn|kéo dài)/i.test(msgLower)) {
+        const curDur = Math.max(1.5, rawEnd - rawStart);
+        rawEnd = Math.round((rawStart + curDur * 1.2) * 10) / 10;
+      } else if (/(đổi đoạn cắt|lùi đoạn cắt|dịch đoạn cắt)/i.test(msgLower)) {
+        const dur = Math.max(2.0, rawEnd - rawStart);
+        rawStart = Math.round((rawStart + 1.5) * 10) / 10;
+        rawEnd = Math.round((rawStart + dur) * 10) / 10;
+      }
+
+      // Nếu người dùng yêu cầu viết lại lời thoại ngắn gọn / chốt đơn mạnh hơn
+      if (/(ngắn gọn|súc tích|rút gọn lời)/i.test(msgLower)) {
+        const sentences = voice.split(/[.!?]+/).map((x) => x.trim()).filter(Boolean);
+        if (sentences[0] && sentences[0].length > 15) {
+          voice = `${sentences[0]}.`;
+        }
+      }
+
+      return {
+        sceneNumber: sc.sceneNumber,
+        newVoiceover: voice,
+        newOnScreenText: onScreen,
+        rawSourceIndex: sc.selectedRawCut.sourceIndex,
+        rawStartSec: rawStart,
+        rawEndSec: rawEnd,
+        zoom: (["in", "out", "punch", "pan_left", "pan_right", "none"].includes(zoom) ? zoom : "in") as
+          | "in"
+          | "out"
+          | "punch"
+          | "pan_left"
+          | "pan_right"
+          | "none",
+        transition,
+      };
+    });
+
+    if (/(ngắn gọn|súc tích|rút gọn lời|đổi lời|viết lại lời)/i.test(msgLower) && !changes.some((c) => c.includes("lời thoại"))) {
+      changes.push("Đã tinh chỉnh lại lời thoại các phân cảnh ngắn gọn, súc tích và bám sát nhịp hình hơn.");
+    }
+    if (!changes.length) {
+      changes.push(`Đã áp dụng yêu cầu "${msg.slice(0, 60)}" vào kịch bản cắt cảnh và kết xuất lại Video MP4.`);
+    }
+
+    return {
+      reply: `Đã cập nhật theo đúng yêu cầu của anh: ${changes.join(" ")} Hệ thống đã dựng lại file Video MP4 mới ngay bên trên!`,
+      changesSummary: changes,
+      captionPosition: nextCaptionPos,
+      headlinePosition: nextHeadlinePos,
+      editStyle: nextStyle,
+      hookTitle: nextHook,
+      ctaText: nextCta,
+      scenes: updatedScenes,
+    };
+  };
+
+  let editPlan = buildDeterministicEdit();
+  const prov = effectiveProvider(opts.bizId);
+  let providerUsed: string = opts.preferredProvider ?? prov.provider;
+
+  if (opts.preferredProvider || (prov.ready && prov.provider !== "sandbox")) {
+    try {
+      const g = await generate({
+        bizId: opts.bizId,
+        agentKey: "creative",
+        preferredProvider: opts.preferredProvider ?? "claude_cli",
+        fast: true,
+        tier: "medium",
+        schema: ChatEditVideoSchema,
+        system: [
+          `Bạn là Đạo diễn Dựng Phim AI trực tiếp hỗ trợ người dùng chỉnh sửa Video ngay trong phòng dựng của ${cur.brandName || "ZONO"}.`,
+          "Người dùng vừa gửi một tin nhắn yêu cầu thay đổi CÁCH CẮT (giây bắt đầu/kết thúc rawStartSec/rawEndSec, hiệu ứng zoom, chuyển cảnh transition, phong cách dựng editStyle), LỜI THOẠI & CHỮ NỔI (newVoiceover, newOnScreenText, hookTitle, ctaText), hoặc VỊ TRÍ ĐẶT CHỮ (captionPosition, headlinePosition).",
+          "Quy tắc bắt buộc:",
+          "- `captionPosition` (vị trí phụ đề lời thoại): chọn 'top' (trên cao 22%), 'center' (chính giữa 52%), 'bottom' (dưới đáy 77%), hoặc 'hidden' (ẩn phụ đề).",
+          "- `headlinePosition` (vị trí tiêu đề cảnh): chọn 'top', 'center', 'bottom', hoặc 'hidden'.",
+          "- `editStyle`: 'dynamic' (nhịp nhanh TikTok), 'smooth' (mượt điện ảnh), hoặc 'clean' (tối giản).",
+          "- Giữ đúng số lượng cảnh hiện có. Nếu người dùng chỉ yêu cầu sửa Cảnh X hoặc chỉ yêu cầu đổi vị trí chữ/cách cắt, hãy giữ nguyên lời thoại của các cảnh không yêu cầu sửa.",
+          "- `reply`: Trả lời ngắn gọn, thân thiện bằng tiếng Việt cho anh chủ biết đã sửa những gì.",
+        ].join("\n"),
+        user: [
+          `YÊU CẦU CỦA NGƯỜI DÙNG: "${msg}"`,
+          `TRẠNG THÁI VIDEO HIỆN TẠI:`,
+          `- Chủ đề: ${cur.topic} | Sản phẩm: ${cur.product}`,
+          `- Vị trí phụ đề hiện tại (captionPosition): ${cur.captionPosition ?? "bottom"}`,
+          `- Vị trí tiêu đề cảnh hiện tại (headlinePosition): ${cur.headlinePosition ?? "top"}`,
+          `- Phong cách dựng hiện tại (editStyle): ${cur.editStyle}`,
+          `- Hook 3s đầu: "${cur.hookTitle}" | CTA cuối: "${cur.ctaText}"`,
+          `- Danh sách ${cur.scenes.length} phân cảnh hiện tại:`,
+          ...cur.scenes.map(
+            (s) =>
+              `  + Cảnh ${s.sceneNumber} (${s.durationSec}s): Cắt từ nguồn #${s.selectedRawCut.sourceIndex} [${s.selectedRawCut.startSec}s -> ${s.selectedRawCut.endSec}s] | Zoom="${s.zoom}" | Chuyển="${s.transition}" | Chữ nổi="${s.newOnScreenText}" | Lời thoại="${s.newVoiceover}"`,
+          ),
+        ].join("\n"),
+        sandbox: buildDeterministicEdit,
+      });
+      if (g.output?.scenes?.length === cur.scenes.length) {
+        editPlan = g.output;
+        providerUsed = g.provider || providerUsed;
+      }
+    } catch (e) {
+      logger.warn("video_decode.chat_edit_fallback", { error: String(e).slice(0, 250) });
+    }
+  }
+
+  const newProduction = await produceFromDecodedBlueprint({
+    bizId: opts.bizId,
+    blueprint: opts.blueprint,
+    rawVideoPaths: opts.rawVideoPaths,
+    topic: cur.topic,
+    product: cur.product,
+    brandName: cur.brandName,
+    voiceName: opts.voiceName,
+    audioMode: opts.audioMode ?? "voiceover",
+    aspectRatio: opts.aspectRatio ?? "9:16",
+    editStyle: editPlan.editStyle,
+    captionPosition: editPlan.captionPosition,
+    headlinePosition: editPlan.headlinePosition,
+    customHookTitle: editPlan.hookTitle,
+    customCtaText: editPlan.ctaText,
+    renderMp4: true,
+    useClaude: false,
+    preferredProvider: opts.preferredProvider,
+    customScenes: editPlan.scenes.map((s) => ({
+      sceneNumber: s.sceneNumber,
+      newVoiceover: s.newVoiceover,
+      newOnScreenText: s.newOnScreenText,
+      zoom: s.zoom,
+      transition: s.transition,
+      rawSourceIndex: s.rawSourceIndex,
+      rawStartSec: s.rawStartSec,
+      rawEndSec: s.rawEndSec,
+    })),
+  });
+
+  return {
+    reply: editPlan.reply,
+    changesSummary: editPlan.changesSummary,
+    providerUsed,
+    production: {
+      ...newProduction,
+      providerUsed,
+    },
   };
 }
