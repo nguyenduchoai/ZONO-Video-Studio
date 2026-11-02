@@ -415,8 +415,16 @@ export async function runProEdit({ job, log, signal }: { job: Row; log: Log; sig
   const final = join(workdir, "final.mp4");
   const resolved = resolveEditPlan({ mode, style, aspect, sources, plan, voices, speech, music });
   const planFile = join(workdir, "plan.json");
+  // Giao diện chữ do người dùng chọn (màu chữ, nền hộp, vị trí) — cùng bảng toạ độ với bộ dựng Decode.
+  const capPos = (["top", "center", "bottom", "hidden"].includes(o.captionPosition) ? o.captionPosition : "bottom") as "top" | "center" | "bottom" | "hidden";
+  const headPos = (["top", "center", "bottom", "hidden"].includes(o.headlinePosition) ? o.headlinePosition : "top") as "top" | "center" | "bottom" | "hidden";
+  const textLook = {
+    captionY: { top: 0.22, center: 0.52, bottom: 0.77, hidden: 0.77 }[capPos], headlineY: { top: 0.27, center: 0.48, bottom: 0.68, hidden: 0.27 }[headPos],
+    hideCaptions: capPos === "hidden", hideHeadlines: headPos === "hidden",
+    ...(o.textTheme ? { textTheme: o.textTheme } : {}), ...(o.captionBgStyle ? { captionBgStyle: o.captionBgStyle } : {}),
+  };
   const render = async (p: ReturnType<typeof resolveEditPlan>) => {
-    writeFileSync(planFile, JSON.stringify({ ...p, out: final, workdir: join(workdir, "render") }));
+    writeFileSync(planFile, JSON.stringify({ ...p, ...textLook, out: final, workdir: join(workdir, "render") }));
     return py(["render", planFile], { log, signal });
   };
   log(`Dựng video ${resolved.total.toFixed(1)} giây (${resolved.width}x${resolved.height})`);

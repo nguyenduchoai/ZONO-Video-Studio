@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { api, apiUrl, currentBizId } from "../lib/api";
+import { QuickEdit } from "./QuickEdit";
 
 async function uploadMediaFile(file: File): Promise<{ path: string; name: string; url: string }> {
   const res = await fetch(apiUrl(`/v1/uploads/stream?name=${encodeURIComponent(file.name)}`), {
@@ -608,6 +609,9 @@ export function ReelWeaverStudio() {
           ⚠️ {errorMsg}
         </div>
       )}
+
+      {/* Đường nhanh nhất: 1 clip → video final, không cần Video Mẫu */}
+      <QuickEdit />
 
       {/* ==================== BƯỚC 1: UP VIDEO DECODE + ĐỔI KỊCH BẢN MỚI ==================== */}
       <div

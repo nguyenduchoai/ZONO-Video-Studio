@@ -280,6 +280,9 @@ export const CreativeInput = z.object({
   video: z.object({
     source: z.enum(["pexels", "pixabay", "local", "flow"]).optional(), materials: z.array(z.string()).max(30).optional(), flowJobId: z.string().optional(),
     /** Dựng từ video thô: style = phong cách dựng; music "none" = không nhạc nền. */ style: z.enum(["dynamic", "smooth", "clean"]).optional(), music: z.enum(["auto", "none"]).optional(),
+    /** Giao diện chữ khi dựng từ video thô: màu chữ, nền hộp chữ, vị trí phụ đề / tiêu đề. */
+    textTheme: z.enum(["gold", "yellow_full", "emerald", "coral", "cyan", "violet"]).optional(), captionBgStyle: z.enum(["solid_dark", "translucent", "brand_box", "none"]).optional(),
+    captionPosition: z.enum(["top", "center", "bottom", "hidden"]).optional(), headlinePosition: z.enum(["top", "center", "bottom", "hidden"]).optional(),
     scriptReady: z.boolean().optional(), terms: z.string().max(400).optional(), aspect: z.enum(["9:16", "16:9", "1:1"]).optional(), clipDuration: z.number().int().min(2).max(10).optional(),
     voiceName: z.string().max(60).optional(), voiceRate: z.number().min(0.6).max(1.6).optional(), bgm: z.enum(["random", "none"]).optional(),
     driving: z.string().max(60).optional(), drivingPath: z.string().optional(), voiceText: z.string().max(2000).optional(), seconds: z.number().int().min(3).max(20).optional(),
@@ -1382,7 +1385,7 @@ export async function completeVideoJob(jobId: string, agentRes: z.infer<typeof F
     body: `${caption}\n\n---\nLời thoại:\n${scriptText}`, status: "in_review", asset_id: asset.id,
   });
   if (source) update("content_item", source.id, { status: "video_made", asset_id: asset.id });
-  update("creative_job", jobId, { status: "done", step: "Đã xong, chờ duyệt", asset_id: asset.id, content_item_id: ci.id, ended_at: nowIso() });
+  update("creative_job", jobId, { status: "done", step: "Đã xong", asset_id: asset.id, content_item_id: ci.id, ended_at: nowIso() });
 
   // Review: technical checks in code + script/caption through the normal Review Agent (Jev + MKT QA)
   const tech = [

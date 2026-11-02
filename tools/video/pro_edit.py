@@ -383,9 +383,14 @@ def build_text_track(plan, work, W, H, fps, total):
     if hook and hook.get("text"):
         layers.append(Layer("hook", hook["t0"], hook["t1"], hook, in_d=0.35, out_d=0.3))
     if not plan.get("hideHeadlines", False):
+        hook_end = hook["t1"] + 0.1 if hook and hook.get("text") else 0.0
+        norm = lambda x: " ".join(str(x).lower().split())
         for sc in plan["scenes"]:
             if sc.get("onScreen"):
-                t0 = sc["start"] + 0.1
+                # không để tiêu đề cảnh chồng lên khung hook (hai khung cùng chữ xếp chồng nhau)
+                if hook and hook.get("text") and norm(sc["onScreen"]) == norm(hook["text"]):
+                    continue
+                t0 = max(sc["start"] + 0.1, hook_end)
                 t1 = min(total, sc["start"] + sc["content"] - 0.1)
                 if t1 - t0 > 0.8:
                     layers.append(Layer("headline", t0, t1, {"text": sc["onScreen"], "y": plan.get("headlineY", 0.27)}, in_d=0.35, out_d=0.3))
